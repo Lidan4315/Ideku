@@ -1,0 +1,89 @@
+/* Hapus padding default dari body */
+body {
+    padding: 0;
+    margin: 0;
+}
+
+/* Container utama menggunakan Flexbox */
+.page-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Memberi gaya pada input yang hanya bisa dibaca (readonly) */
+input[readonly] {
+    background-color: #e9ecef; /* Warna abu-abu muda seperti field disabled */
+    cursor: not-allowed;      /* Mengubah kursor mouse saat diarahkan ke field */
+}
+
+/* Style untuk Sidebar */
+.sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background: #2c3e50; /* Warna gelap untuk sidebar */
+    color: white;
+    position: sticky; /* Membuat sidebar tetap di tempat saat scroll */
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar .sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #4a627a;
+}
+
+/* Style untuk daftar link navigasi */
+.sidebar .nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1; /* Membuat daftar link memenuhi sisa ruang */
+}
+
+.sidebar .nav-links li a {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: #ecf0f1;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+
+.sidebar .nav-links li a:hover {
+    background: #34495e; /* Warna saat mouse hover */
+    color: white;
+}
+
+.sidebar .nav-links li a i {
+    margin-right: 15px;
+    font-size: 1.2rem;
+}
+
+/* Style untuk footer di sidebar */
+.sidebar-footer {
+    padding: 15px 20px;
+    margin-top: auto; /* Mendorong footer ke bagian paling bawah */
+    border-top: 1px solid #4a627a; /* Garis pemisah */
+}
+
+.sidebar-footer .user-info {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+/* Membatasi tinggi dropdown dan membuatnya bisa di-scroll */
+.dropdown-scrollable {
+    max-height: 50px; /* Atur tinggi maksimal sesuai kebutuhan */
+    overflow-y: auto;  /* Tambahkan scrollbar vertikal jika item melebihi tinggi maksimal */
+}
+
+/* Style untuk area konten utama */
+.main-content {
+    flex-grow: 1; /* Membuat area konten memenuhi sisa layar */
+    padding: 25px;
+    background-color: #f4f7f6; /* Warna latar belakang konten yang netral */
+}

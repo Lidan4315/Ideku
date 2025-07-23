@@ -1,0 +1,214 @@
+@model Ideku.ViewModels.IdeaCreateViewModel
+@{
+    ViewData["Title"] = "New Idea Submission";
+}
+
+<form asp-action="Create" asp-controller="Idea" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card h-60">
+                <div class="card-header">
+                    <h4>Initiator Profile</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="BadgeNumber" class="form-label"></label>
+                        <input asp-for="BadgeNumber" class="form-control" placeholder="Masukkan Badge Number lalu tekan Tab" />
+                        <span asp-validation-for="BadgeNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Name</label>
+                            <input type="text" id="initiatorName" class="form-control" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Division</label>
+                            <input type="text" id="initiatorDivision" class="form-control" readonly />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            <input type="text" id="initiatorDepartment" class="form-control" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Position</label>
+                            <input type="text" id="initiatorPosition" class="form-control" readonly />
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="initiatorEmail" class="form-control" readonly />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Idea Description</h4>
+                    <span class="badge bg-secondary">STAGE - S0</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Submission Date</label>
+                        <input type="text" class="form-control" value="@DateTime.Now.ToString("dd/MM/yyyy")" readonly />
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Division" class="form-label"></label>
+                            <select asp-for="Division" id="divisionDropdown" class="form-select dropdown-scrollable" asp-items="@(new SelectList(ViewBag.Divisions, "Id", "NamaDivisi"))">
+                                <option value="">-- Select Division --</option>
+                            </select>
+                            <span asp-validation-for="Division" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Department" class="form-label"></label>
+                            <select asp-for="Department" id="departmentDropdown" class="form-select">
+                                <option value="">-- Select Division First --</option>
+                            </select>
+                            <span asp-validation-for="Department" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Category" class="form-label"></label>
+                            <select asp-for="Category" class="form-select" asp-items="@(new SelectList(ViewBag.Categories, "Id", "NamaCategory"))">
+                                <option value="">-- Select Category --</option>
+                            </select>
+                            <span asp-validation-for="Category" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Event" class="form-label"></label>
+                            <select asp-for="Event" class="form-select" asp-items="@(new SelectList(ViewBag.Events, "Id", "NamaEvent"))">
+                                <option value="">-- Select Event --</option>
+                            </select>
+                            <span asp-validation-for="Event" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="IdeaName" class="form-label"></label>
+                        <input asp-for="IdeaName" class="form-control" />
+                        <span asp-validation-for="IdeaName" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="IdeaIssueBackground" class="form-label"></label>
+                        <textarea asp-for="IdeaIssueBackground" class="form-control" rows="2"></textarea>
+                        <span asp-validation-for="IdeaIssueBackground" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="IdeaSolution" class="form-label"></label>
+                        <textarea asp-for="IdeaSolution" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="SavingCost" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">USD</span>
+                                <input asp-for="SavingCost" class="form-control" type="number" placeholder="Provide plan saving cost here"/>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="AttachmentFile" class="form-label"></label>
+                            <input asp-for="AttachmentFile" class="form-control" type="file" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">SUBMIT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Mengambil semua elemen input dari form initiator
+            const badgeNumberInput = document.getElementById('BadgeNumber');
+            const nameInput = document.getElementById('initiatorName');
+            const divisionInput = document.getElementById('initiatorDivision');
+            const departmentInput = document.getElementById('initiatorDepartment');
+            const positionInput = document.getElementById('initiatorPosition');
+            const emailInput = document.getElementById('initiatorEmail');
+
+            // Fungsi untuk membersihkan semua field initiator
+            function clearInitiatorForm() {
+                nameInput.value = '';
+                divisionInput.value = '';
+                departmentInput.value = '';
+                positionInput.value = '';
+                emailInput.value = '';
+            }
+
+            // Event listener saat pengguna selesai mengisi Badge Number
+            badgeNumberInput.addEventListener('blur', function () {
+                const badgeId = this.value;
+                if (!badgeId) {
+                    clearInitiatorForm();
+                    return;
+                }
+
+                fetch(`/Idea/GetEmployeeData?id=${badgeId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            alert('Employee tidak ditemukan!');
+                            clearInitiatorForm();
+                            throw new Error('Employee not found');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Mengisi semua field dengan data yang diterima
+                        nameInput.value = data.name;
+                        divisionInput.value = data.division;
+                        departmentInput.value = data.department;
+                        positionInput.value = data.positionTitle;
+                        emailInput.value = data.email;
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+
+            // --- JAVASCRIPT UNTUK DROPDOWN DEPENDEN ---
+            const divisionDropdown = document.getElementById('divisionDropdown');
+            const departmentDropdown = document.getElementById('departmentDropdown');
+
+            divisionDropdown.addEventListener('change', function() {
+                const selectedDivisionId = this.value;
+
+                // Kosongkan dropdown departemen
+                departmentDropdown.innerHTML = '<option value="">Loading...</option>';
+
+                if (!selectedDivisionId) {
+                    departmentDropdown.innerHTML = '<option value="">-- Select Division First --</option>';
+                    return;
+                }
+
+                // Panggil API untuk mendapatkan departemen
+                fetch(`/Idea/GetDepartmentsByDivision?divisionId=${selectedDivisionId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        departmentDropdown.innerHTML = '<option value="">-- Select Department --</option>';
+                        data.forEach(department => {
+                            const option = document.createElement('option');
+                            option.value = department.id;
+                            option.textContent = department.namaDepartement;
+                            departmentDropdown.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching departments:', error);
+                        departmentDropdown.innerHTML = '<option value="">Error loading data</option>';
+                    });
+            });
+        });
+    </script>
+}

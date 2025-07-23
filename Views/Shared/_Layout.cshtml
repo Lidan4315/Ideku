@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Ideku</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="page-container">
+
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>Ideku App</h3>
+            </div>
+            <ul class="nav-links">
+                <li>
+                    <a asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-house-door-fill"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Idea" asp-action="Create"> 
+                        <i class="bi bi-lightbulb-fill"></i>
+                        <span>Submit New Idea</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Idea" asp-action="Index">
+                        <i class="bi bi-list-task"></i>
+                        <span>My Ideas</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="bi bi-shield-lock-fill"></i>
+                        <span>Employees</span>
+                    </a>
+                </li>
+            </ul>
+
+            @if (User.Identity.IsAuthenticated)
+            {
+                <div class="sidebar-footer">
+                    <div class="user-info">
+                        <span>Halo, <strong>@User.Identity.Name</strong>!</span>
+                    </div>
+                    <a class="btn btn-sm btn-outline-light w-100" asp-controller="Account" asp-action="Logout">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="main-content">
+            <main role="main" class="pb-3">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <partial name="_SuccessModal" />
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
