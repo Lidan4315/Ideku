@@ -1,0 +1,58 @@
+# C# Project specific
+*.cs.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
+# Rider - https://www.jetbrains.com/help/rider/Sharing_Configuration_Options.html
+.idea/
+*.sln.iml
+
+# User-specific files
+*.DotSettings.user
+
+# App settings - ignore local configurations
+appsettings.Development.json
+appsettings.local.json
+appsettings.*.local.json
+
+# Uploads
+wwwroot/uploads/
+
+# Secrets
+secrets.json
+
+# EF Core migrations - JANGAN ignore migrations untuk kolaborasi
+# /Migrations/
+
+# Nuget packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/
+# except build/, which is used as an MSBuild target.
+!/[Pp]ackages/build/
+
+# Windows thumbnail cache files
+Thumbs.db
+
+# Additional recommended ignores
+*.log
+*.tmp
+.env
+.env.local
