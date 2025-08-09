@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using MimeKit;
 using Ideku.Models;
 
-namespace Ideku.Services
+namespace Ideku.Services.Email
 {
     public class EmailService : IEmailService
     {

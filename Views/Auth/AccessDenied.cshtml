@@ -1,0 +1,30 @@
+@{
+    ViewData["Title"] = "Access Denied";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-lock text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="text-danger mb-3">Access Denied</h2>
+                    <p class="lead text-muted mb-4">
+                        You don't have permission to access this resource.
+                    </p>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a asp-action="Index" asp-controller="Home" class="btn btn-primary me-md-2">
+                            <i class="fas fa-home me-2"></i>Go Home
+                        </a>
+                        <a asp-action="Logout" asp-controller="Auth" class="btn btn-outline-secondary">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

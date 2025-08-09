@@ -1,6 +1,6 @@
 using Ideku.Models;
 
-namespace Ideku.Services
+namespace Ideku.Services.Email
 {
     public interface IEmailService
     {

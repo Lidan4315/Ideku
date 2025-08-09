@@ -1,6 +1,6 @@
 using Ideku.Models.Entities;
 
-namespace Ideku.Services
+namespace Ideku.Services.Notification
 {
     public interface INotificationService
     {

@@ -1,9 +1,10 @@
 using Ideku.Models;
 using Ideku.Models.Entities;
 using Ideku.Data.Context;
+using Ideku.Services.Email;
 using Microsoft.EntityFrameworkCore;
 
-namespace Ideku.Services
+namespace Ideku.Services.Notification
 {
     public class NotificationService : INotificationService
     {
