@@ -6,6 +6,7 @@ using Ideku.Services.Auth;
 using Ideku.Services.Email;
 using Ideku.Services.Notification;
 using Ideku.Services.Idea;
+using Ideku.Services.Workflow;
 using Ideku.Models;
 using Ideku.Models.Entities;
 
@@ -44,6 +45,7 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();
@@ -211,9 +213,9 @@ static void SeedDatabase(IServiceProvider services)
     // Seed Employees
     var employees = new[]
     {
-        new Employee { EMP_ID = "EMP001", NAME = "Super User", POSITION_TITLE = "System Administrator", DIVISION = "D01", DEPARTEMENT = "P01", EMAIL = "john.doe@company.com", POSITION_LVL = "Supervisor", EMP_STATUS = "Active" },
+        new Employee { EMP_ID = "EMP001", NAME = "Super User", POSITION_TITLE = "System Administrator", DIVISION = "D01", DEPARTEMENT = "P01", EMAIL = "some.other.email@example.com", POSITION_LVL = "Supervisor", EMP_STATUS = "Active" },
         new Employee { EMP_ID = "EMP002", NAME = "Faiq Lidan", POSITION_TITLE = "Frondend Developer", DIVISION = "D01", DEPARTEMENT = "P01", EMAIL = "faiqlidan03@gmail.com", POSITION_LVL = "Supervisor", EMP_STATUS = "Active" },
-        new Employee { EMP_ID = "EMP003", NAME = "Mike Johnson", POSITION_TITLE = "Software Developer", DIVISION = "D05", DEPARTEMENT = "P06", EMAIL = "mike.johnson@company.com", POSITION_LVL = "Supervisor", EMP_STATUS = "Active" },
+        new Employee { EMP_ID = "EMP003", NAME = "Mike Johnson", POSITION_TITLE = "Software Developer", DIVISION = "D05", DEPARTEMENT = "P06", EMAIL = "bpidstudent@gmail.com", POSITION_LVL = "Supervisor", EMP_STATUS = "Active" },
         new Employee { EMP_ID = "EMP004", NAME = "Sarah Wilson", POSITION_TITLE = "Finance Analyst", DIVISION = "D04", DEPARTEMENT = "P05", EMAIL = "sarah.wilson@company.com", POSITION_LVL = "Supervisor", EMP_STATUS = "Active" },
         new Employee { EMP_ID = "EMP005", NAME = "John Doe", POSITION_TITLE = "System Administrator", DIVISION = "D06", DEPARTEMENT = "P07", EMAIL = "admin@company.com", POSITION_LVL = "Supervisor", EMP_STATUS = "Active" }
     };
@@ -224,8 +226,8 @@ static void SeedDatabase(IServiceProvider services)
     var users = new[]
     {
         new User { EmployeeId = "EMP001", RoleId = 1, Username = "superuser", Name = "Super User", IsActing = false },
-        new User { EmployeeId = "EMP002", RoleId = 2, Username = "janesmith", Name = "Jane Smith", IsActing = false },
-        new User { EmployeeId = "EMP003", RoleId = 2, Username = "mikejohnson", Name = "Mike Johnson", IsActing = false },
+        new User { EmployeeId = "EMP002", RoleId = 2, Username = "faiqlidan", Name = "Faiq Lidan", IsActing = false },
+        new User { EmployeeId = "EMP003", RoleId = 4, Username = "workstream.leader", Name = "Mike Johnson (WSL)", IsActing = false }, // WORKSTREAM LEADER
         new User { EmployeeId = "EMP004", RoleId = 1, Username = "sarahwilson", Name = "Sarah Wilson", IsActing = false },
         new User { EmployeeId = "EMP005", RoleId = 3, Username = "johndoe", Name = "John Doe", IsActing = false }
     };

@@ -16,6 +16,12 @@ namespace Ideku.ViewModels
         [Display(Name = "Position")]
         public string Position { get; set; } = string.Empty;
 
+        [Display(Name = "Division")]
+        public string Division { get; set; } = string.Empty;
+
+        [Display(Name = "Department")]
+        public string Department { get; set; } = string.Empty;
+
         [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
 
