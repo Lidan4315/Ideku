@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ideku.Models.Entities
 {
-    [Table("Event")]
+    [Table("Events")]
     public class Event
     {
         [Key]

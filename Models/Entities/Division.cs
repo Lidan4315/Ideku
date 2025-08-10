@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ideku.Models.Entities
 {
-    [Table("Division")]
+    [Table("Divisions")]
     public class Division
     {
         [Key]
