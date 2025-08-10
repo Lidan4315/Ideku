@@ -116,19 +116,9 @@ namespace Ideku.Services.Idea
                 // Update IdeaCode
                 await _ideaRepository.UpdateIdeaCodeAsync(createdIdea.Id, ideaCode);
 
-                // Create initial workflow history
-                var workflowHistory = new WorkflowHistory
-                {
-                    IdeaId = createdIdea.Id,
-                    ActorUserId = model.InitiatorUserId,
-                    FromStage = 0, // Initial stage
-                    ToStage = 1,   // First stage after submission
-                    Action = "Submitted",
-                    Comments = "Idea submitted for review",
-                    Timestamp = DateTime.Now
-                };
-
-                await _workflowRepository.CreateAsync(workflowHistory);
+                // Note: No WorkflowHistory entry for initial submission
+                // Submission is already tracked by Idea.SubmittedDate
+                // WorkflowHistory will be created only for approval/rejection actions
 
                 createdIdea.IdeaCode = ideaCode; // Update the object with the final code
                 return (true, $"Idea '{model.IdeaName}' has been successfully submitted!", createdIdea);
