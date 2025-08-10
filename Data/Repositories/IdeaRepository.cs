@@ -70,5 +70,37 @@ namespace Ideku.Data.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<IEnumerable<Idea>> GetIdeasByStageAndStatusAsync(int stage, string status)
+        {
+            return await _context.Ideas
+                .Include(i => i.InitiatorUser)
+                    .ThenInclude(u => u.Employee)
+                .Include(i => i.TargetDivision)
+                .Include(i => i.TargetDepartment)
+                .Include(i => i.Category)
+                .Where(i => i.CurrentStage == stage && i.CurrentStatus == status)
+                .OrderBy(i => i.SubmittedDate)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Idea>> GetIdeasByStatusAsync(string status)
+        {
+            return await _context.Ideas
+                .Include(i => i.InitiatorUser)
+                    .ThenInclude(u => u.Employee)
+                .Include(i => i.TargetDivision)
+                .Include(i => i.TargetDepartment)
+                .Include(i => i.Category)
+                .Where(i => i.CurrentStatus == status)
+                .OrderBy(i => i.SubmittedDate)
+                .ToListAsync();
+        }
+
+        public async Task UpdateAsync(Idea idea)
+        {
+            _context.Ideas.Update(idea);
+            await _context.SaveChangesAsync();
+        }
     }
 }

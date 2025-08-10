@@ -11,5 +11,8 @@ namespace Ideku.Data.Repositories
         Task<bool> IsIdeaCodeExistAsync(string ideaCode);
         string GenerateIdeaCodeFromId(long ideaId);
         Task UpdateIdeaCodeAsync(long ideaId, string ideaCode);
+        Task<IEnumerable<Idea>> GetIdeasByStageAndStatusAsync(int stage, string status);
+        Task<IEnumerable<Idea>> GetIdeasByStatusAsync(string status);
+        Task UpdateAsync(Idea idea);
     }
 }

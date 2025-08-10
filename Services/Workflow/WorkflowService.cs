@@ -12,13 +12,15 @@ namespace Ideku.Services.Workflow
     {
         private readonly IEmailService _emailService;
         private readonly IUserRepository _userRepository;
+        private readonly IIdeaRepository _ideaRepository;
         private readonly ILogger<WorkflowService> _logger;
         private readonly EmailSettings _emailSettings;
 
-        public WorkflowService(IEmailService emailService, IUserRepository userRepository, ILogger<WorkflowService> logger, IOptions<EmailSettings> emailSettings)
+        public WorkflowService(IEmailService emailService, IUserRepository userRepository, IIdeaRepository ideaRepository, ILogger<WorkflowService> logger, IOptions<EmailSettings> emailSettings)
         {
             _emailService = emailService;
             _userRepository = userRepository;
+            _ideaRepository = ideaRepository;
             _logger = logger;
             _emailSettings = emailSettings.Value;
         }
@@ -111,6 +113,140 @@ namespace Ideku.Services.Workflow
     </div>
 </body>
 </html>";
+        }
+
+        public async Task<IEnumerable<Models.Entities.Idea>> GetPendingApprovalsForUserAsync(string username)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            if (user == null)
+            {
+                return new List<Models.Entities.Idea>();
+            }
+
+            // For now, this logic is simple: find ideas waiting for the specific user's role.
+            // This assumes a simple, linear workflow.
+            // A more complex system might check a dedicated "PendingApprover" table.
+            
+            // We need the IdeaRepository for this. Let's assume it's injected.
+            // The actual query logic will depend on the Idea and Role entities.
+            // For this example, let's find ideas where the status is "Submitted"
+            // and the user's role matches a hypothetical "RequiredRoleForNextStage".
+            // This is a placeholder for the real business logic.
+            
+            // A simple implementation:
+            if (user.Role.RoleName == "Superuser")
+            {
+                // A Superuser can see all pending ideas at any stage
+                return await _ideaRepository.GetIdeasByStatusAsync("Submitted");
+            }
+            else if (user.Role.RoleName == "Workstream Leader")
+            {
+                // A Workstream Leader should approve ideas at stage 0 (just submitted)
+                return await _ideaRepository.GetIdeasByStageAndStatusAsync(0, "Submitted");
+            }
+
+            // Return empty list if the user is not a designated approver in this simple logic
+            return new List<Models.Entities.Idea>();
+        }
+
+        public async Task<Models.Entities.Idea> GetIdeaForReview(int ideaId, string username)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            if (user == null)
+            {
+                _logger.LogWarning("No user found with username {Username} when trying to review idea {IdeaId}", username, ideaId);
+                return null;
+            }
+
+            var idea = await _ideaRepository.GetByIdAsync(ideaId);
+            if (idea == null)
+            {
+                _logger.LogWarning("No idea found with ID {IdeaId}", ideaId);
+                return null;
+            }
+
+            // Simple authorization logic:
+            // Does the user's role match the required role for the idea's current stage?
+            // This is a placeholder for more complex workflow logic.
+            bool canReview = false;
+            if (user.Role.RoleName == "Superuser")
+            {
+                canReview = true; // Superuser can review anything
+            }
+            else if (user.Role.RoleName == "Workstream Leader" && idea.CurrentStage == 0 && idea.CurrentStatus == "Submitted")
+            {
+                canReview = true;
+            }
+            // Add other roles and stages here, e.g.:
+            // else if (user.Role.RoleName == "Some Other Role" && idea.CurrentStage == 1 && idea.Status == "Pending Stage 2 Approval")
+            // {
+            //     canReview = true;
+            // }
+
+            if (!canReview)
+            {
+                _logger.LogWarning("User {Username} is not authorized to review idea {IdeaId} at its current stage and status.", username, ideaId);
+                return null;
+            }
+
+            return idea;
+        }
+
+        public async Task ProcessApprovalAsync(long ideaId, string username, string? comments, decimal? validatedSavingCost)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            var idea = await _ideaRepository.GetByIdAsync(ideaId);
+
+            if (user == null || idea == null)
+            {
+                _logger.LogError("User or Idea not found when processing approval for IdeaId {IdeaId}", ideaId);
+                return; // Or throw an exception
+            }
+
+            // TODO: Add robust authorization check here. For now, we assume the check passed in the controller.
+
+            idea.CurrentStatus = "Approved"; // This will need to be more dynamic based on the workflow stage
+            idea.CurrentStage += 1;
+            idea.UpdatedDate = DateTime.Now;
+            if (validatedSavingCost.HasValue)
+            {
+                idea.SavingCostVaidated = validatedSavingCost.Value;
+            }
+
+            // TODO: Add a record to WorkflowHistory
+
+            // TODO: Implement logic to find the next approver.
+            // For now, let's assume this is the final approval.
+            idea.CurrentStatus = "Completed";
+            idea.CompletedDate = DateTime.Now;
+
+            // TODO: Send notification to the initiator that the idea has been approved.
+
+            await _ideaRepository.UpdateAsync(idea);
+        }
+
+        public async Task ProcessRejectionAsync(long ideaId, string username, string reason)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            var idea = await _ideaRepository.GetByIdAsync(ideaId);
+
+            if (user == null || idea == null)
+            {
+                _logger.LogError("User or Idea not found when processing rejection for IdeaId {IdeaId}", ideaId);
+                return; // Or throw an exception
+            }
+
+            idea.IsRejected = true;
+            idea.RejectedReason = reason;
+            idea.CurrentStatus = "Rejected";
+            idea.UpdatedDate = DateTime.Now;
+            idea.CompletedDate = DateTime.Now; // Rejection also completes the workflow for this idea.
+
+            // TODO: Add a record to WorkflowHistory
+
+            // TODO: Send notification to the initiator about the rejection.
+
+            await _ideaRepository.UpdateAsync(idea);
         }
     }
 }

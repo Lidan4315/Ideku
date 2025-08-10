@@ -210,6 +210,7 @@ body.modern-page {
     margin-left: 280px;
     min-height: 100vh;
     transition: all 0.3s ease;
+    overflow-x: auto;
 }
 
 .content-wrapper {
