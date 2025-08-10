@@ -43,7 +43,7 @@
                 @if (User.Identity.IsAuthenticated)
                 {
                     <li>
-                        <a asp-controller="Validation" asp-action="List" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Validation" ? "active" : "")">
+                        <a asp-controller="Approval" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Approval" ? "active" : "")">
                             <i class="bi bi-check-square-fill"></i>
                             <span>Need Approval</span>
                         </a>

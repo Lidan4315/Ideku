@@ -1,0 +1,166 @@
+@model Ideku.ViewModels.Approval.ApprovalListViewModel
+@{
+    ViewData["Title"] = "Pending Approvals";
+}
+
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title text-gradient">
+            <i class="bi bi-check2-circle me-2"></i>Need Approval
+        </h2>
+        <p class="text-muted">List of ideas waiting for your review and approval.</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (Model.IdeasForApproval.Any())
+            {
+                <div class="table-responsive-custom">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Idea ID</th>
+                                <th style="min-width: 250px;">Idea Title</th>
+                                <th style="min-width: 150px;">Initiator</th>
+                                <th style="min-width: 200px;">Division</th>
+                                <th style="min-width: 200px;">Department</th>
+                                <th>Category</th>
+                                <th>Stage</th>
+                                <th>Activity Status</th>
+                                <th>Saving Cost</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var idea in Model.IdeasForApproval)
+                            {
+                                <tr style="cursor: pointer;" onclick="window.location='@Url.Action("Review", "Approval", new { id = idea.Id })'">
+                                    <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
+                                    <td>
+                                        <div class="truncate-title" title="@idea.IdeaName">
+                                            @idea.IdeaName
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.InitiatorUser?.Name</strong>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.TargetDivision?.NameDivision</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@idea.TargetDepartment?.NameDepartment</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">@idea.Category?.CategoryName</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
+                                    </td>
+                                    <td>
+                                        @if (idea.IsRejected)
+                                        {
+                                            <span class="text-danger">S@(idea.CurrentStage) Rejected</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Waiting Approve</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">@idea.SavingCost.ToString("C")</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var statusClass = idea.CurrentStatus switch
+                                            {
+                                                "Submitted" => "bg-primary",
+                                                "Under Review" => "bg-warning text-dark",
+                                                "Approved" => "bg-success",
+                                                "Rejected" => "bg-danger",
+                                                "Completed" => "bg-primary",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @statusClass">@idea.CurrentStatus</span>
+                                    </td>
+                                    <td>
+                                        <div>@idea.SubmittedDate.ToString("MMM dd")</div>
+                                        <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="@Url.Action("Review", "Approval", new { id = idea.Id })" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">
+                                            Review
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-5">
+                    <i class="bi bi-check-all fs-1 text-success"></i>
+                    <h4 class="mt-3">All Clear!</h4>
+                    <p class="text-muted">You have no pending approvals at the moment.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 2rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .page-title {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 1rem;
+    }
+    
+    .table thead th {
+        background: #f8fafc;
+        border: none;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .text-gradient {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .table-responsive-custom {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive-custom > .table > thead > tr > th,
+    .table-responsive-custom > .table > tbody > tr > td {
+        white-space: nowrap;
+    }
+
+    .truncate-title {
+        max-width: 250px; /* Adjust as needed */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
