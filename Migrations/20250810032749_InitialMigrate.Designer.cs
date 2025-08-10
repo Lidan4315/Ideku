@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250809061533_InitialMigrate")]
+    [Migration("20250810032749_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -55,7 +55,7 @@ namespace Ideku.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Category");
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Department", b =>
@@ -118,7 +118,7 @@ namespace Ideku.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Division");
+                    b.ToTable("Divisions");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Employee", b =>
@@ -209,7 +209,7 @@ namespace Ideku.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Event");
+                    b.ToTable("Events");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Idea", b =>

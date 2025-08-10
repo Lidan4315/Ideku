@@ -12,7 +12,7 @@ namespace Ideku.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Category",
+                name: "Categories",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -24,11 +24,11 @@ namespace Ideku.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Category", x => x.Id);
+                    table.PrimaryKey("PK_Categories", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Division",
+                name: "Divisions",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "char(3)", fixedLength: true, maxLength: 3, nullable: false),
@@ -38,11 +38,11 @@ namespace Ideku.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Division", x => x.Id);
+                    table.PrimaryKey("PK_Divisions", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Event",
+                name: "Events",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -54,7 +54,7 @@ namespace Ideku.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Event", x => x.Id);
+                    table.PrimaryKey("PK_Events", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -87,9 +87,9 @@ namespace Ideku.Migrations
                 {
                     table.PrimaryKey("PK_Departments", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Departments_Division_DivisiId",
+                        name: "FK_Departments_Divisions_DivisiId",
                         column: x => x.DivisiId,
-                        principalTable: "Division",
+                        principalTable: "Divisions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -117,9 +117,9 @@ namespace Ideku.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_EMPLIST_Division_DIVISION",
+                        name: "FK_EMPLIST_Divisions_DIVISION",
                         column: x => x.DIVISION,
-                        principalTable: "Division",
+                        principalTable: "Divisions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -186,9 +186,9 @@ namespace Ideku.Migrations
                 {
                     table.PrimaryKey("PK_Ideas", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Ideas_Category_CategoryId",
+                        name: "FK_Ideas_Categories_CategoryId",
                         column: x => x.CategoryId,
-                        principalTable: "Category",
+                        principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -198,15 +198,15 @@ namespace Ideku.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Ideas_Division_ToDivisionId",
+                        name: "FK_Ideas_Divisions_ToDivisionId",
                         column: x => x.ToDivisionId,
-                        principalTable: "Division",
+                        principalTable: "Divisions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Ideas_Event_EventId",
+                        name: "FK_Ideas_Events_EventId",
                         column: x => x.EventId,
-                        principalTable: "Event",
+                        principalTable: "Events",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
@@ -370,10 +370,10 @@ namespace Ideku.Migrations
                 name: "Ideas");
 
             migrationBuilder.DropTable(
-                name: "Category");
+                name: "Categories");
 
             migrationBuilder.DropTable(
-                name: "Event");
+                name: "Events");
 
             migrationBuilder.DropTable(
                 name: "Users");
@@ -388,7 +388,7 @@ namespace Ideku.Migrations
                 name: "Departments");
 
             migrationBuilder.DropTable(
-                name: "Division");
+                name: "Divisions");
         }
     }
 }
