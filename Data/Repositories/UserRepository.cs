@@ -28,5 +28,13 @@ namespace Ideku.Data.Repositories
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
+
+        public async Task<User?> GetUserByRoleAsync(string roleName)
+        {
+            return await _context.Users
+                .Include(u => u.Employee)
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Role.RoleName == roleName);
+        }
     }
 }

@@ -37,6 +37,8 @@
                                     <span asp-validation-for="BadgeNumber" class="text-danger"></span>
                                 </div>
                             </div>
+                        </div>
+                        <div class="row" id="employeeInfoContainer" style="display: none;">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Employee Name</label>
@@ -50,6 +52,18 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Division</label>
+                                    <input asp-for="Division" class="form-control" readonly />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Department</label>
+                                    <input asp-for="Department" class="form-control" readonly />
+                                </div>
+                            </div>
+                            <div class="col-md-12">
                                 <div class="mb-3">
                                     <label class="form-label">Email</label>
                                     <input asp-for="Email" class="form-control" readonly />
@@ -193,14 +207,35 @@
     
     <script>
         $(document).ready(function() {
-            // Badge Number Auto-populate Employee Info
-            $('#badgeNumberInput').on('blur', function() {
-                var badgeNumber = $(this).val().trim();
+            // Debounce timer for badge number input
+            let debounceTimer;
+
+            // Badge Number Auto-populate Employee Info (Real-time with Debounce)
+            $('#badgeNumberInput').on('input', function() {
+                clearTimeout(debounceTimer);
                 
-                if (badgeNumber) {
-                    // Show loading
+                var badgeNumber = $(this).val().trim();
+                var infoContainer = $('#employeeInfoContainer');
+
+                if (!badgeNumber) {
+                    // If input is empty, hide immediately
+                    infoContainer.slideUp();
+                    $('#EmployeeName').val('');
+                    $('#Position').val('');
+                    $('#Division').val('');
+                    $('#Department').val('');
+                    $('#Email').val('');
+                    $('#EmployeeId').val('');
+                    return;
+                }
+
+                debounceTimer = setTimeout(function() {
+                    // Show loading and container
+                    infoContainer.slideDown();
                     $('#EmployeeName').val('Loading...');
                     $('#Position').val('Loading...');
+                    $('#Division').val('Loading...');
+                    $('#Department').val('Loading...');
                     $('#Email').val('Loading...');
                     
                     // AJAX call to get employee info
@@ -209,44 +244,29 @@
                             if (response.success) {
                                 $('#EmployeeName').val(response.data.name);
                                 $('#Position').val(response.data.position);
+                                $('#Division').val(response.data.division);
+                                $('#Department').val(response.data.department);
                                 $('#Email').val(response.data.email);
                                 $('#EmployeeId').val(response.data.employeeId);
                             } else {
-                                // Clear fields if employee not found
-                                $('#EmployeeName').val('');
-                                $('#Position').val('');
-                                $('#Email').val('');
+                                // Keep container visible but show "Not Found"
+                                $('#EmployeeName').val('Not Found');
+                                $('#Position').val('Not Found');
+                                $('#Division').val('Not Found');
+                                $('#Department').val('Not Found');
+                                $('#Email').val('Not Found');
                                 $('#EmployeeId').val('');
-                                
-                                // Show error
-                                Swal.fire({
-                                    icon: 'warning',
-                                    title: 'Employee Not Found',
-                                    text: 'Please check the badge number and try again.',
-                                    confirmButtonText: 'OK'
-                                });
                             }
                         })
                         .fail(function() {
-                            $('#EmployeeName').val('');
-                            $('#Position').val('');
-                            $('#Email').val('');
+                            $('#EmployeeName').val('Error');
+                            $('#Position').val('Error');
+                            $('#Division').val('Error');
+                            $('#Department').val('Error');
+                            $('#Email').val('Error');
                             $('#EmployeeId').val('');
-                            
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Failed to fetch employee information.',
-                                confirmButtonText: 'Try Again'
-                            });
                         });
-                } else {
-                    // Clear fields if badge number is empty
-                    $('#EmployeeName').val('');
-                    $('#Position').val('');
-                    $('#Email').val('');
-                    $('#EmployeeId').val('');
-                }
+                }, 500); // Wait for 500ms after user stops typing
             });
 
             // Saving Cost Formatting with Thousand Separator

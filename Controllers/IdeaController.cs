@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Ideku.Services.Idea;
 using Ideku.ViewModels;
+using Ideku.Services.Workflow;
+using Ideku.Models;
 
 namespace Ideku.Controllers
 {
@@ -9,10 +11,12 @@ namespace Ideku.Controllers
     public class IdeaController : Controller
     {
         private readonly IIdeaService _ideaService;
+        private readonly IWorkflowService _workflowService;
 
-        public IdeaController(IIdeaService ideaService)
+        public IdeaController(IIdeaService ideaService, IWorkflowService workflowService)
         {
             _ideaService = ideaService;
+            _workflowService = workflowService;
         }
 
         // GET: Idea/Create
@@ -49,12 +53,15 @@ namespace Ideku.Controllers
             {
                 var result = await _ideaService.CreateIdeaAsync(model, model.AttachmentFiles);
                 
-                if (result.Success)
+                if (result.Success && result.CreatedIdea != null)
                 {
+                    // Initiate the workflow (which will handle the notifications)
+                    await _workflowService.InitiateWorkflowAsync(result.CreatedIdea);
+
                     return Json(new { 
                         success = true, 
                         message = result.Message, 
-                        ideaCode = result.IdeaCode 
+                        ideaCode = result.CreatedIdea.IdeaCode 
                     });
                 }
                 else

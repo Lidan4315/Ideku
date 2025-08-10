@@ -58,7 +58,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<(bool Success, string Message, string? IdeaCode)> CreateIdeaAsync(CreateIdeaViewModel model, List<IFormFile>? files)
+        public async Task<(bool Success, string Message, Models.Entities.Idea? CreatedIdea)> CreateIdeaAsync(CreateIdeaViewModel model, List<IFormFile>? files)
         {
             try
             {
@@ -130,7 +130,8 @@ namespace Ideku.Services.Idea
 
                 await _workflowRepository.CreateAsync(workflowHistory);
 
-                return (true, $"Idea '{model.IdeaName}' has been successfully submitted!", ideaCode);
+                createdIdea.IdeaCode = ideaCode; // Update the object with the final code
+                return (true, $"Idea '{model.IdeaName}' has been successfully submitted!", createdIdea);
             }
             catch (Exception ex)
             {
@@ -171,8 +172,8 @@ namespace Ideku.Services.Idea
                 name = employee.NAME,
                 position = employee.POSITION_TITLE,
                 email = employee.EMAIL,
-                division = employee.DIVISION,
-                department = employee.DEPARTEMENT
+                division = employee.DivisionNavigation?.NameDivision,
+                department = employee.DepartmentNavigation?.NameDepartment
             };
         }
 
