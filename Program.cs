@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Ideku.Data.Context;
+using Ideku.Data.Repositories;
 using Ideku.Services.Auth;
 using Ideku.Services.Email;
 using Ideku.Services.Notification;
+using Ideku.Services.Idea;
 using Ideku.Models;
 using Ideku.Models.Entities;
 
@@ -41,6 +43,14 @@ builder.Services.Configure<EmailSettings>(
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
+builder.Services.AddScoped<IIdeaService, IdeaService>();
+
+// Register Repositories
+builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();
+builder.Services.AddScoped<ILookupRepository, LookupRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 
 var app = builder.Build();
 
@@ -194,8 +204,6 @@ static void SeedDatabase(IServiceProvider services)
     {
         new Event { EventName = "Hackathon", IsActive = true },
         new Event { EventName = "CI Academy", IsActive = true },
-        new Event { EventName = "Cost Reduction (CR)", IsActive = true },
-        new Event { EventName = "Digitalization", IsActive = true },
     };
     context.Events.AddRange(Events);
     context.SaveChanges();

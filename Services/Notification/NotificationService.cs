@@ -19,7 +19,7 @@ namespace Ideku.Services.Notification
             _logger = logger;
         }
 
-        public async Task NotifyIdeaSubmitted(Idea idea)
+        public async Task NotifyIdeaSubmitted(Models.Entities.Idea idea)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace Ideku.Services.Notification
             }
         }
 
-        public async Task NotifyIdeaApproved(Idea idea, User approver)
+        public async Task NotifyIdeaApproved(Models.Entities.Idea idea, User approver)
         {
             try
             {
@@ -74,7 +74,7 @@ namespace Ideku.Services.Notification
             }
         }
 
-        public async Task NotifyIdeaRejected(Idea idea, User rejector, string reason)
+        public async Task NotifyIdeaRejected(Models.Entities.Idea idea, User rejector, string reason)
         {
             try
             {
@@ -96,7 +96,7 @@ namespace Ideku.Services.Notification
             }
         }
 
-        public async Task NotifyIdeaCompleted(Idea idea)
+        public async Task NotifyIdeaCompleted(Models.Entities.Idea idea)
         {
             try
             {
@@ -140,7 +140,7 @@ namespace Ideku.Services.Notification
             }
         }
 
-        private async Task<List<User>> GetApproversForIdea(Idea idea)
+        private async Task<List<User>> GetApproversForIdea(Models.Entities.Idea idea)
         {
             // Simple logic: get users with specific roles in target division/department
             // You can customize this based on your approval workflow
@@ -152,7 +152,7 @@ namespace Ideku.Services.Notification
                 .ToListAsync();
         }
 
-        private string GenerateIdeaSubmittedEmailBody(Idea idea, User approver)
+        private string GenerateIdeaSubmittedEmailBody(Models.Entities.Idea idea, User approver)
         {
             return $@"
             <h2>New Idea Submission</h2>
@@ -173,7 +173,7 @@ namespace Ideku.Services.Notification
             <p>Best regards,<br>Ideku System</p>";
         }
 
-        private string GenerateIdeaApprovedEmailBody(Idea idea, User approver)
+        private string GenerateIdeaApprovedEmailBody(Models.Entities.Idea idea, User approver)
         {
             return $@"
             <h2>Idea Approved</h2>
@@ -189,7 +189,7 @@ namespace Ideku.Services.Notification
             <p>Best regards,<br>Ideku System</p>";
         }
 
-        private string GenerateIdeaRejectedEmailBody(Idea idea, User rejector, string reason)
+        private string GenerateIdeaRejectedEmailBody(Models.Entities.Idea idea, User rejector, string reason)
         {
             return $@"
             <h2>Idea Rejected</h2>
@@ -205,7 +205,7 @@ namespace Ideku.Services.Notification
             <p>Best regards,<br>Ideku System</p>";
         }
 
-        private string GenerateIdeaCompletedEmailBody(Idea idea)
+        private string GenerateIdeaCompletedEmailBody(Models.Entities.Idea idea)
         {
             return $@"
             <h2>Idea Implementation Completed</h2>

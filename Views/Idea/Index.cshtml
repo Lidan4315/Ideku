@@ -1,0 +1,325 @@
+@model IEnumerable<Ideku.Models.Entities.Idea>
+@{
+    ViewData["Title"] = "My Ideas";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header mb-4">
+                <h2 class="page-title text-gradient">
+                    <i class="bi bi-list-task me-2"></i>My Ideas
+                </h2>
+                <p class="text-muted">Track and manage your submitted ideas</p>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Saving Cost</th>
+                                        <th>Saving Cost Validated</th>
+                                        <th>Stage</th>
+                                        <th>Status</th>
+                                        <th>Progress</th>
+                                        <th>Submission Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var idea in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-light text-dark fw-bold">@idea.IdeaCode</span>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold text-dark">@idea.IdeaName</div>
+                                                <small class="text-muted">@idea.TargetDivision.NameDivision</small>
+                                            </td>
+                                            <td>
+                                                <span class="text-success fw-bold">@idea.SavingCost.ToString("N0")</span>
+                                            </td>
+                                            <td>
+                                                @if (idea.SavingCostVaidated.HasValue)
+                                                {
+                                                    <span class="text-primary fw-bold">@idea.SavingCostVaidated.Value.ToString("N0")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var statusClass = idea.CurrentStatus switch
+                                                    {
+                                                        "Submitted" => "bg-info",
+                                                        "Under Review" => "bg-warning text-dark",
+                                                        "Approved" => "bg-success",
+                                                        "Rejected" => "bg-danger",
+                                                        "Completed" => "bg-primary",
+                                                        _ => "bg-secondary"
+                                                    };
+                                                }
+                                                <span class="badge @statusClass">@idea.CurrentStatus</span>
+                                            </td>
+                                            <td>
+                                                @{
+                                                    // Calculate progress percentage based on stage (dummy calculation)
+                                                    var progressPercent = idea.CurrentStage switch
+                                                    {
+                                                        0 => 10,
+                                                        1 => 25,
+                                                        2 => 50,
+                                                        3 => 75,
+                                                        4 => 90,
+                                                        5 => 100,
+                                                        _ => 50
+                                                    };
+                                                    
+                                                    var progressClass = progressPercent switch
+                                                    {
+                                                        <= 25 => "bg-danger",
+                                                        <= 50 => "bg-warning",
+                                                        <= 75 => "bg-info",
+                                                        _ => "bg-success"
+                                                    };
+                                                }
+                                                <div class="progress-container">
+                                                    <div class="progress" style="height: 8px; width: 80px;">
+                                                        <div class="progress-bar @progressClass" 
+                                                             role="progressbar" 
+                                                             style="width: @(progressPercent)%" 
+                                                             aria-valuenow="@progressPercent" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                        </div>
+                                                    </div>
+                                                    <small class="text-muted ms-2">@(progressPercent)%</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="text-dark fw-semibold">@idea.SubmittedDate.ToString("MMM dd, yyyy")</div>
+                                                <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" title="View Details">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" title="Edit" 
+                                                            @(idea.CurrentStatus == "Submitted" ? "" : "disabled")>
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-info btn-sm" title="History">
+                                                        <i class="bi bi-clock-history"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-lightbulb display-1 text-muted mb-3"></i>
+                                <h4 class="text-muted">No Ideas Yet</h4>
+                                <p class="text-muted mb-4">You haven't submitted any ideas yet. Start sharing your innovative thoughts!</p>
+                                <a asp-action="Create" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-2"></i>Submit Your First Idea
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.Any())
+            {
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-primary">@Model.Count()</h3>
+                                    <p class="text-muted mb-0">Total Ideas</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-warning">@Model.Count(i => i.CurrentStatus == "Under Review")</h3>
+                                    <p class="text-muted mb-0">Under Review</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-success">@Model.Count(i => i.CurrentStatus == "Approved")</h3>
+                                    <p class="text-muted mb-0">Approved</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-info">@Model.Sum(i => i.SavingCost).ToString("C", new System.Globalization.CultureInfo("en-US"))</h3>
+                                    <p class="text-muted mb-0">Total Saving</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 2rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .page-title {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 1rem;
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table thead th {
+        background: #f8fafc;
+        border: none;
+        font-weight: 600;
+        color: #374151;
+        padding: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .table tbody td {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    .progress-container {
+        display: flex;
+        align-items: center;
+    }
+    
+    .progress {
+        border-radius: 10px;
+        background-color: #e9ecef;
+    }
+    
+    .progress-bar {
+        border-radius: 10px;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+    
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        border-radius: 0.375rem;
+    }
+    
+    .empty-state {
+        padding: 3rem 1rem;
+    }
+    
+    .stat-item {
+        padding: 1rem;
+    }
+    
+    .stat-item h3 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .text-gradient {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+    }
+    
+    @@media (max-width: 768px) {
+        .page-header {
+            padding: 1.5rem;
+        }
+        
+        .table-responsive {
+            border-radius: 0.5rem;
+        }
+        
+        .progress-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .progress {
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize tooltips for action buttons
+            $('[data-bs-toggle="tooltip"]').tooltip();
+            
+            // Add click handlers for action buttons (placeholder)
+            $('.btn-outline-primary').click(function() {
+                // View details functionality
+                console.log('View details clicked');
+            });
+            
+            $('.btn-outline-secondary').click(function() {
+                // Edit functionality  
+                console.log('Edit clicked');
+            });
+            
+            $('.btn-outline-info').click(function() {
+                // History functionality
+                console.log('History clicked');
+            });
+        });
+    </script>
+}
