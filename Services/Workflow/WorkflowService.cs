@@ -13,14 +13,16 @@ namespace Ideku.Services.Workflow
         private readonly IEmailService _emailService;
         private readonly IUserRepository _userRepository;
         private readonly IIdeaRepository _ideaRepository;
+        private readonly IWorkflowRepository _workflowRepository;
         private readonly ILogger<WorkflowService> _logger;
         private readonly EmailSettings _emailSettings;
 
-        public WorkflowService(IEmailService emailService, IUserRepository userRepository, IIdeaRepository ideaRepository, ILogger<WorkflowService> logger, IOptions<EmailSettings> emailSettings)
+        public WorkflowService(IEmailService emailService, IUserRepository userRepository, IIdeaRepository ideaRepository, IWorkflowRepository workflowRepository, ILogger<WorkflowService> logger, IOptions<EmailSettings> emailSettings)
         {
             _emailService = emailService;
             _userRepository = userRepository;
             _ideaRepository = ideaRepository;
+            _workflowRepository = workflowRepository;
             _logger = logger;
             _emailSettings = emailSettings.Value;
         }
@@ -205,6 +207,8 @@ namespace Ideku.Services.Workflow
 
             // TODO: Add robust authorization check here. For now, we assume the check passed in the controller.
 
+            var previousStage = idea.CurrentStage;
+            
             idea.CurrentStatus = "Approved"; // This will need to be more dynamic based on the workflow stage
             idea.CurrentStage += 1;
             idea.UpdatedDate = DateTime.Now;
@@ -213,7 +217,20 @@ namespace Ideku.Services.Workflow
                 idea.SavingCostVaidated = validatedSavingCost.Value;
             }
 
-            // TODO: Add a record to WorkflowHistory
+            // Add a record to WorkflowHistory
+            var workflowHistory = new Models.Entities.WorkflowHistory
+            {
+                IdeaId = ideaId,
+                ActorUserId = user.Id,
+                FromStage = previousStage,
+                ToStage = idea.CurrentStage,
+                Action = "Approved",
+                Comments = comments,
+                Timestamp = DateTime.Now
+            };
+
+            // Save to WorkflowRepository
+            await _workflowRepository.CreateAsync(workflowHistory);
 
             // TODO: Implement logic to find the next approver.
             // For now, let's assume this is the final approval.
@@ -242,7 +259,20 @@ namespace Ideku.Services.Workflow
             idea.UpdatedDate = DateTime.Now;
             idea.CompletedDate = DateTime.Now; // Rejection also completes the workflow for this idea.
 
-            // TODO: Add a record to WorkflowHistory
+            // Add a record to WorkflowHistory for rejection
+            var workflowHistory = new Models.Entities.WorkflowHistory
+            {
+                IdeaId = ideaId,
+                ActorUserId = user.Id,
+                FromStage = idea.CurrentStage,
+                ToStage = null, // Rejection doesn't move to next stage
+                Action = "Rejected",
+                Comments = reason,
+                Timestamp = DateTime.Now
+            };
+
+            // Save to WorkflowRepository
+            await _workflowRepository.CreateAsync(workflowHistory);
 
             // TODO: Send notification to the initiator about the rejection.
 
