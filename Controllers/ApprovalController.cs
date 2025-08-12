@@ -100,6 +100,11 @@ namespace Ideku.Controllers
                 return Challenge();
             }
 
+            // Remove validation errors for properties not needed for rejection
+            ModelState.Remove("Idea");
+            ModelState.Remove("ValidatedSavingCost");
+            ModelState.Remove("ApprovalComments");
+            
             // We only need to validate the rejection reason
             if (string.IsNullOrWhiteSpace(viewModel.RejectionReason))
             {
@@ -109,6 +114,7 @@ namespace Ideku.Controllers
             if (ModelState.IsValid)
             {
                 await _workflowService.ProcessRejectionAsync((long)id, username, viewModel.RejectionReason ?? "No reason provided");
+                TempData["SuccessMessage"] = "Idea has been successfully rejected!";
                 return RedirectToAction(nameof(Index));
             }
 
