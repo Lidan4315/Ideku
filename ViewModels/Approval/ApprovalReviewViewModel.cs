@@ -16,7 +16,6 @@ namespace Ideku.ViewModels.Approval
         [StringLength(1000)]
         public string? ApprovalComments { get; set; }
 
-        [Required(ErrorMessage = "Rejection reason is required.")]
         [Display(Name = "Rejection Reason")]
         [StringLength(1000)]
         public string? RejectionReason { get; set; }

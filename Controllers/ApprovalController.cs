@@ -69,9 +69,14 @@ namespace Ideku.Controllers
                 return Challenge();
             }
 
+            // Remove validation errors for properties not needed for approval
+            ModelState.Remove("Idea");
+            ModelState.Remove("RejectionReason");
+
             if (ModelState.IsValid)
             {
-                await _workflowService.ProcessApprovalAsync(id, username, viewModel.ApprovalComments, viewModel.ValidatedSavingCost);
+                await _workflowService.ProcessApprovalAsync((long)id, username, viewModel.ApprovalComments, viewModel.ValidatedSavingCost);
+                TempData["SuccessMessage"] = "Idea has been successfully approved!";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -103,7 +108,7 @@ namespace Ideku.Controllers
 
             if (ModelState.IsValid)
             {
-                await _workflowService.ProcessRejectionAsync(id, username, viewModel.RejectionReason);
+                await _workflowService.ProcessRejectionAsync((long)id, username, viewModel.RejectionReason ?? "No reason provided");
                 return RedirectToAction(nameof(Index));
             }
 

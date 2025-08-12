@@ -5,7 +5,19 @@
 }
 
 <div class="container-fluid">
-    <h3 class="text-dark mb-4">Idea Details</h3>
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="page-title text-gradient">
+                <i class="bi bi-file-earmark-text me-2"></i>Review Idea
+            </h2>
+            <p class="text-muted mb-0">Review the details of the idea and make an approval decision.</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Index", "Approval")" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
 
     <!-- Idea Details Section -->
     <div class="card shadow mb-4">
@@ -13,42 +25,85 @@
             <h6 class="m-0 font-weight-bold text-primary">@Model.Idea.IdeaName</h6>
         </div>
         <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group-view">
+                        <label>Idea ID</label>
+                        <p>@Model.Idea.IdeaCode</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group-view">
+                        <label>Current Status</label>
+                        <p><span class="badge bg-warning text-dark">@Model.Idea.CurrentStatus</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group-view">
+                        <label>Submitted by</label>
+                        <p>@Model.Idea.InitiatorUser.Name (@Model.Idea.InitiatorUser.EmployeeId)</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group-view">
+                        <label>Submitted Date</label>
+                        <p>@Model.Idea.SubmittedDate.ToString("dd MMMM yyyy HH:mm")</p>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group-view">
+                        <label>Division</label>
+                        <p>@Model.Idea.TargetDivision.NameDivision</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group-view">
+                        <label>Department</label>
+                        <p>@Model.Idea.TargetDepartment.NameDepartment</p>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group-view">
+                        <label>Category</label>
+                        <p>@Model.Idea.Category.CategoryName</p>
+                    </div>
+                </div>
+                @if (Model.Idea.Event != null)
+                {
+                    <div class="col-md-6">
+                        <div class="form-group-view">
+                            <label>Event</label>
+                            <p>@Model.Idea.Event.EventName</p>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="form-group-view mb-3">
+                <label>Problem/Issue Background</label>
+                <div class="form-control-plaintext">@Model.Idea.IdeaIssueBackground</div>
+            </div>
+            <div class="form-group-view mb-3">
+                <label>Proposed Solution</label>
+                <div class="form-control-plaintext">@Model.Idea.IdeaSolution</div>
+            </div>
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Idea ID:</strong> @Model.Idea.IdeaCode</p>
-                    <p><strong>Submitted by:</strong> @Model.Idea.InitiatorUser.Name (@Model.Idea.InitiatorUser.EmployeeId)</p>
-                    <p><strong>Division:</strong> @Model.Idea.TargetDivision.NameDivision</p>
-                    <p><strong>Category:</strong> @Model.Idea.Category.CategoryName</p>
+                    <div class="form-group-view">
+                        <label>Financial Impact</label>
+                        <p>@Model.Idea.SavingCost.ToString("C")</p>
+                    </div>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Current Status:</strong> <span class="badge bg-warning text-dark">@Model.Idea.CurrentStatus</span></p>
-                    <p><strong>Submitted Date:</strong> @Model.Idea.SubmittedDate.ToString("dd MMMM yyyy HH:mm")</p>
-                    <p><strong>Department:</strong> @Model.Idea.TargetDepartment.NameDepartment</p>
-                    @if (Model.Idea.Event != null)
-                    {
-                        <p><strong>Event:</strong> @Model.Idea.Event.EventName</p>
-                    }
-                </div>
-            </div>
-            <hr />
-            <div>
-                <h5>Problem/Issue Background</h5>
-                <p>@Model.Idea.IdeaIssueBackground</p>
-            </div>
-            <hr />
-            <div>
-                <h5>Proposed Solution</h5>
-                <p>@Model.Idea.IdeaSolution</p>
-            </div>
-            <hr />
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Financial Impact</h5>
-                    <p>@Model.Idea.SavingCost.ToString("C")</p>
-                </div>
-                <div class="col-md-6">
-                    <h5>Attachments</h5>
-                    <a href="/uploads/@Model.Idea.AttachmentFiles" target="_blank">@Model.Idea.AttachmentFiles</a>
+                    <div class="form-group-view">
+                        <label>Attachments</label>
+                        <p><a href="/uploads/@Model.Idea.AttachmentFiles" target="_blank">@Model.Idea.AttachmentFiles</a></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,7 +129,7 @@
                         <textarea asp-for="ApprovalComments" class="form-control" rows="3" placeholder="Enter approval comments"></textarea>
                         <span asp-validation-for="ApprovalComments" class="text-danger"></span>
                     </div>
-                    <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Approve Idea</button>
+                    <button type="submit" class="btn btn-success" id="approveBtn"><i class="fas fa-check"></i> Approve Idea</button>
                 </div>
             </form>
             <hr />
@@ -87,9 +142,171 @@
                         <textarea asp-for="RejectionReason" class="form-control" rows="3" placeholder="Please provide a clear reason for rejection"></textarea>
                         <span asp-validation-for="RejectionReason" class="text-danger"></span>
                     </div>
-                    <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Reject Idea</button>
+                    <button type="submit" class="btn btn-danger" id="rejectBtn"><i class="fas fa-times"></i> Reject Idea</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 2rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .page-title {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 1rem;
+    }
+    
+    .text-gradient {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .form-group-view {
+        margin-bottom: 1rem;
+    }
+
+    .form-group-view label {
+        display: block;
+        font-weight: 600;
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-group-view p,
+    .form-group-view .form-control-plaintext {
+        background-color: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        margin: 0;
+        font-size: 1rem;
+        color: #1f2937;
+    }
+    
+    .form-control-plaintext {
+        white-space: pre-wrap;
+        min-height: 100px;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle Approve form
+        const approveForm = document.querySelector('form[action*="Approve"]');
+        if (approveForm) {
+            approveForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                Swal.fire({
+                    title: 'Confirm Approval',
+                    text: 'Are you sure you want to approve this idea?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Approve!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Submit form by creating a new form submission
+                        const formData = new FormData(approveForm);
+                        fetch(approveForm.action, {
+                            method: 'POST',
+                            body: formData
+                        }).then(response => {
+                            if (response.redirected) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: 'Idea has been approved successfully!',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.location.href = response.url;
+                                });
+                            }
+                        }).catch(error => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: 'An error occurred while processing approval.'
+                            });
+                        });
+                    }
+                });
+            });
+        }
+        
+        // Handle Reject form
+        const rejectForm = document.querySelector('form[action*="Reject"]');
+        if (rejectForm) {
+            rejectForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const rejectionReason = document.querySelector('textarea[name="RejectionReason"]').value;
+                if (!rejectionReason.trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning!',
+                        text: 'Please provide a rejection reason first.'
+                    });
+                    return;
+                }
+                
+                Swal.fire({
+                    title: 'Confirm Rejection',
+                    text: 'Are you sure you want to reject this idea?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Reject!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Submit form by creating a new form submission
+                        const formData = new FormData(rejectForm);
+                        fetch(rejectForm.action, {
+                            method: 'POST',
+                            body: formData
+                        }).then(response => {
+                            if (response.redirected) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: 'Idea has been rejected successfully!',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.location.href = response.url;
+                                });
+                            }
+                        }).catch(error => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: 'An error occurred while processing rejection.'
+                            });
+                        });
+                    }
+                });
+            });
+        }
+    });
+</script>
