@@ -63,7 +63,8 @@
                                                 @{
                                                     var statusClass = idea.CurrentStatus switch
                                                     {
-                                                        "Submitted" => "bg-info",
+                                                        "Waiting Approval S1" => "bg-warning text-dark",
+                                                        "Waiting Approval S2" => "bg-info text-dark",
                                                         "Under Review" => "bg-warning text-dark",
                                                         "Approved" => "bg-success",
                                                         "Rejected" => "bg-danger",
@@ -118,7 +119,7 @@
                                                         <i class="bi bi-eye"></i>
                                                     </button>
                                                     <button type="button" class="btn btn-outline-secondary btn-sm" title="Edit" 
-                                                            @(idea.CurrentStatus == "Submitted" ? "" : "disabled")>
+                                                            @(idea.CurrentStatus == "Waiting Approval S1" ? "" : "disabled")>
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
                                                     <button type="button" class="btn btn-outline-info btn-sm" title="History">

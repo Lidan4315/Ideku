@@ -102,7 +102,7 @@ namespace Ideku.Services.Idea
                     AttachmentFiles = string.Join(";", attachmentPaths),
                     IdeaCode = "TMP", // Temporary code
                     Workflow = "Draft", // Initial workflow status
-                    CurrentStatus = "Submitted",
+                    CurrentStatus = "Waiting Approval S1",
                     CurrentStage = 0, // Initial stage for new submission
                     SubmittedDate = DateTime.Now
                 };

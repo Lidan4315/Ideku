@@ -11,6 +11,24 @@
         <p class="text-muted">List of ideas waiting for your review and approval.</p>
     </div>
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="card">
         <div class="card-body">
             @if (Model.IdeasForApproval.Any())
@@ -25,6 +43,7 @@
                                 <th style="min-width: 200px;">Division</th>
                                 <th style="min-width: 200px;">Department</th>
                                 <th>Category</th>
+                                <th>Event</th>
                                 <th>Stage</th>
                                 <th>Activity Status</th>
                                 <th>Saving Cost</th>
@@ -53,7 +72,29 @@
                                         <small class="text-muted">@idea.TargetDepartment?.NameDepartment</small>
                                     </td>
                                     <td>
-                                        <span class="badge bg-info text-dark">@idea.Category?.CategoryName</span>
+                                        @{
+                                            var categoryClass = idea.Category?.CategoryName switch
+                                            {
+                                                "Cost Reduction (CR)" => "bg-success",
+                                                "Digitalization" => "bg-primary",
+                                                "General Transformation" => "bg-info text-dark",
+                                                "Increase Revenue" => "bg-warning text-dark",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @categoryClass">@idea.Category?.CategoryName</span>
+                                    </td>
+                                    <td>
+                                        @if (idea.Event != null)
+                                        {
+                                            var eventClass = idea.Event.EventName switch
+                                            {
+                                                "CI Academy" => "bg-purple text-white",
+                                                "Hackathon" => "bg-orange text-white",
+                                                _ => "bg-light text-dark"
+                                            };
+                                            <span class="badge @eventClass">@idea.Event.EventName</span>
+                                        }
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
@@ -75,7 +116,8 @@
                                         @{
                                             var statusClass = idea.CurrentStatus switch
                                             {
-                                                "Submitted" => "bg-primary",
+                                                "Waiting Approval S1" => "bg-warning text-dark",
+                                                "Waiting Approval S2" => "bg-info text-dark",
                                                 "Under Review" => "bg-warning text-dark",
                                                 "Approved" => "bg-success",
                                                 "Rejected" => "bg-danger",
@@ -163,4 +205,13 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+
+    .bg-purple {
+        background-color: #8b5cf6 !important;
+    }
+
+    .bg-orange {
+        background-color: #f97316 !important;
+    }
 </style>
+

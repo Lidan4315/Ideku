@@ -79,8 +79,9 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDivision)
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
+                .Include(i => i.Event)
                 .Where(i => i.CurrentStage == stage && i.CurrentStatus == status)
-                .OrderBy(i => i.SubmittedDate)
+                .OrderByDescending(i => i.SubmittedDate)
                 .ToListAsync();
         }
 
@@ -92,8 +93,9 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDivision)
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
+                .Include(i => i.Event)
                 .Where(i => i.CurrentStatus == status)
-                .OrderBy(i => i.SubmittedDate)
+                .OrderByDescending(i => i.SubmittedDate)
                 .ToListAsync();
         }
 

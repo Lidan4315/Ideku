@@ -139,12 +139,12 @@ namespace Ideku.Services.Workflow
             if (user.Role.RoleName == "Superuser")
             {
                 // A Superuser can see all pending ideas at any stage
-                return await _ideaRepository.GetIdeasByStatusAsync("Submitted");
+                return await _ideaRepository.GetIdeasByStatusAsync("Waiting Approval S1");
             }
             else if (user.Role.RoleName == "Workstream Leader")
             {
                 // A Workstream Leader should approve ideas at stage 0 (just submitted)
-                return await _ideaRepository.GetIdeasByStageAndStatusAsync(0, "Submitted");
+                return await _ideaRepository.GetIdeasByStageAndStatusAsync(0, "Waiting Approval S1");
             }
 
             // Return empty list if the user is not a designated approver in this simple logic
@@ -175,7 +175,7 @@ namespace Ideku.Services.Workflow
             {
                 canReview = true; // Superuser can review anything
             }
-            else if (user.Role.RoleName == "Workstream Leader" && idea.CurrentStage == 0 && idea.CurrentStatus == "Submitted")
+            else if (user.Role.RoleName == "Workstream Leader" && idea.CurrentStage == 0 && idea.CurrentStatus == "Waiting Approval S1")
             {
                 canReview = true;
             }
@@ -202,16 +202,24 @@ namespace Ideku.Services.Workflow
             if (user == null || idea == null)
             {
                 _logger.LogError("User or Idea not found when processing approval for IdeaId {IdeaId}", ideaId);
-                return; // Or throw an exception
+                return;
             }
 
-            // TODO: Add robust authorization check here. For now, we assume the check passed in the controller.
+            // Authorization check: Only Workstream Leader or Superuser can approve S0->S1
+            if (idea.CurrentStage == 0 && user.Role.RoleName != "Workstream Leader" && user.Role.RoleName != "Superuser")
+            {
+                _logger.LogWarning("User {Username} with role {RoleName} is not authorized to approve idea {IdeaId} at stage {Stage}", 
+                    username, user.Role.RoleName, ideaId, idea.CurrentStage);
+                return;
+            }
 
             var previousStage = idea.CurrentStage;
             
-            idea.CurrentStatus = "Approved"; // This will need to be more dynamic based on the workflow stage
-            idea.CurrentStage += 1;
+            // Update from S0 to S1
+            idea.CurrentStage = 1;
+            idea.CurrentStatus = "Waiting Approval S2";
             idea.UpdatedDate = DateTime.Now;
+            
             if (validatedSavingCost.HasValue)
             {
                 idea.SavingCostVaidated = validatedSavingCost.Value;
@@ -229,17 +237,13 @@ namespace Ideku.Services.Workflow
                 Timestamp = DateTime.Now
             };
 
-            // Save to WorkflowRepository
+            // Save to WorkflowRepository and update idea
             await _workflowRepository.CreateAsync(workflowHistory);
-
-            // TODO: Implement logic to find the next approver.
-            // For now, let's assume this is the final approval.
-            idea.CurrentStatus = "Completed";
-            idea.CompletedDate = DateTime.Now;
-
-            // TODO: Send notification to the initiator that the idea has been approved.
-
             await _ideaRepository.UpdateAsync(idea);
+
+            // Log successful approval
+            _logger.LogInformation("Idea {IdeaId} successfully approved from S{FromStage} to S{ToStage} by {Username}", 
+                ideaId, previousStage, idea.CurrentStage, username);
         }
 
         public async Task ProcessRejectionAsync(long ideaId, string username, string reason)
