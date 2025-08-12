@@ -45,7 +45,6 @@
                                 <th>Category</th>
                                 <th>Event</th>
                                 <th>Stage</th>
-                                <th>Activity Status</th>
                                 <th>Saving Cost</th>
                                 <th>Status</th>
                                 <th>Submitted</th>
@@ -98,16 +97,6 @@
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
-                                    </td>
-                                    <td>
-                                        @if (idea.IsRejected)
-                                        {
-                                            <span class="text-danger">S@(idea.CurrentStage) Rejected</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Waiting Approve</span>
-                                        }
                                     </td>
                                     <td>
                                         <span class="fw-bold text-success">@idea.SavingCost.ToString("C")</span>
