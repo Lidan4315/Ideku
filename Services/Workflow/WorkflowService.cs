@@ -259,7 +259,7 @@ namespace Ideku.Services.Workflow
 
             idea.IsRejected = true;
             idea.RejectedReason = reason;
-            idea.CurrentStatus = "Rejected";
+            idea.CurrentStatus = $"Rejected S{idea.CurrentStage}";
             idea.UpdatedDate = DateTime.Now;
             idea.CompletedDate = DateTime.Now; // Rejection also completes the workflow for this idea.
 
