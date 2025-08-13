@@ -125,29 +125,32 @@ namespace Ideku.Services.Workflow
                 return new List<Models.Entities.Idea>();
             }
 
-            // For now, this logic is simple: find ideas waiting for the specific user's role.
-            // This assumes a simple, linear workflow.
-            // A more complex system might check a dedicated "PendingApprover" table.
-            
-            // We need the IdeaRepository for this. Let's assume it's injected.
-            // The actual query logic will depend on the Idea and Role entities.
-            // For this example, let's find ideas where the status is "Submitted"
-            // and the user's role matches a hypothetical "RequiredRoleForNextStage".
-            // This is a placeholder for the real business logic.
-            
-            // A simple implementation:
+            // Get all ideas that this user can see based on their role and approval status
             if (user.Role.RoleName == "Superuser")
             {
-                // A Superuser can see all pending ideas at any stage
-                return await _ideaRepository.GetIdeasByStatusAsync("Waiting Approval S1");
+                // Superuser can see all ideas regardless of stage or status
+                return await _ideaRepository.GetAllIdeasForApprovalAsync();
             }
             else if (user.Role.RoleName == "Workstream Leader")
             {
-                // A Workstream Leader should approve ideas at stage 0 (just submitted)
-                return await _ideaRepository.GetIdeasByStageAndStatusAsync(0, "Waiting Approval S1");
+                // Workstream Leader can see:
+                // 1. Ideas waiting for their approval (stage 0 -> S1)
+                // 2. Ideas they have processed (approved/rejected)
+                // 3. Ideas that have moved beyond their stage
+                
+                var allIdeas = await _ideaRepository.GetAllIdeasForApprovalAsync();
+                
+                // Filter to show ideas relevant to Workstream Leader:
+                // - Ideas at stage 0 waiting for S1 approval (their responsibility)
+                // - Ideas that were processed at stage 0 (their history)
+                return allIdeas.Where(idea => 
+                    (idea.CurrentStage == 0 && idea.CurrentStatus == "Waiting Approval S1") || // Current responsibility
+                    (idea.CurrentStage >= 1) || // Ideas that have passed their stage
+                    (idea.CurrentStatus.StartsWith("Rejected S0")) // Ideas they rejected
+                ).ToList();
             }
 
-            // Return empty list if the user is not a designated approver in this simple logic
+            // Return empty list if the user is not a designated approver
             return new List<Models.Entities.Idea>();
         }
 
@@ -170,24 +173,26 @@ namespace Ideku.Services.Workflow
             // Simple authorization logic:
             // Does the user's role match the required role for the idea's current stage?
             // This is a placeholder for more complex workflow logic.
-            bool canReview = false;
+            bool canView = false;
             if (user.Role.RoleName == "Superuser")
             {
-                canReview = true; // Superuser can review anything
+                canView = true; // Superuser can view anything
             }
-            else if (user.Role.RoleName == "Workstream Leader" && idea.CurrentStage == 0 && idea.CurrentStatus == "Waiting Approval S1")
+            else if (user.Role.RoleName == "Workstream Leader")
             {
-                canReview = true;
+                // Workstream Leader can view:
+                // 1. Ideas they can currently approve (stage 0, waiting S1)
+                // 2. Ideas that have moved beyond their stage (history/context)
+                // 3. Ideas they have rejected
+                canView = (idea.CurrentStage == 0 && idea.CurrentStatus == "Waiting Approval S1") || // Can review
+                         (idea.CurrentStage >= 1) || // Can view history
+                         (idea.CurrentStatus.StartsWith("Rejected S0")); // Can view their rejections
             }
-            // Add other roles and stages here, e.g.:
-            // else if (user.Role.RoleName == "Some Other Role" && idea.CurrentStage == 1 && idea.Status == "Pending Stage 2 Approval")
-            // {
-            //     canReview = true;
-            // }
+            // Add other roles and stages here as needed
 
-            if (!canReview)
+            if (!canView)
             {
-                _logger.LogWarning("User {Username} is not authorized to review idea {IdeaId} at its current stage and status.", username, ideaId);
+                _logger.LogWarning("User {Username} is not authorized to view idea {IdeaId} at its current stage and status.", username, ideaId);
                 return null;
             }
 

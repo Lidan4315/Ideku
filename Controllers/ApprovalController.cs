@@ -1,3 +1,4 @@
+using Ideku.Data.Repositories;
 using Ideku.Services.Workflow;
 using Ideku.ViewModels.Approval;
 using Microsoft.AspNetCore.Authorization;
@@ -10,10 +11,14 @@ namespace Ideku.Controllers
     public class ApprovalController : Controller
     {
         private readonly IWorkflowService _workflowService;
+        private readonly IUserRepository _userRepository;
+        private readonly IWorkflowRepository _workflowRepository;
 
-        public ApprovalController(IWorkflowService workflowService)
+        public ApprovalController(IWorkflowService workflowService, IUserRepository userRepository, IWorkflowRepository workflowRepository)
         {
             _workflowService = workflowService;
+            _userRepository = userRepository;
+            _workflowRepository = workflowRepository;
         }
 
         // GET: /Approval or /Approval/Index
@@ -26,11 +31,15 @@ namespace Ideku.Controllers
             }
 
             var ideas = await _workflowService.GetPendingApprovalsForUserAsync(username);
+            var user = await _userRepository.GetByUsernameAsync(username);
 
             var viewModel = new ApprovalListViewModel
             {
                 IdeasForApproval = ideas
             };
+
+            // Pass user role to view for button logic
+            ViewBag.UserRole = user?.Role?.RoleName ?? "";
 
             return View(viewModel);
         }
@@ -50,11 +59,34 @@ namespace Ideku.Controllers
                 return NotFound(); // Or a custom access denied page
             }
 
+            // Determine if user can actually approve/reject this idea
+            var user = await _userRepository.GetByUsernameAsync(username);
+            bool canTakeAction = false;
+            
+            if (user?.Role?.RoleName == "Superuser" && idea.CurrentStatus.StartsWith("Waiting Approval"))
+            {
+                canTakeAction = true;
+            }
+            else if (user?.Role?.RoleName == "Workstream Leader" && 
+                     idea.CurrentStage == 0 && 
+                     idea.CurrentStatus == "Waiting Approval S1")
+            {
+                canTakeAction = true;
+            }
+
+            // Get workflow history for this idea
+            var workflowHistory = await _workflowRepository.GetByIdeaIdAsync(idea.Id);
+
             var viewModel = new ApprovalReviewViewModel
             {
                 Idea = idea
                 // Populate other properties as needed
             };
+
+            // Pass action capability and workflow history to view
+            ViewBag.CanTakeAction = canTakeAction;
+            ViewBag.UserRole = user?.Role?.RoleName ?? "";
+            ViewBag.WorkflowHistory = workflowHistory;
 
             return View(viewModel);
         }
