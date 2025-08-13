@@ -7,6 +7,7 @@ using Ideku.Services.Email;
 using Ideku.Services.Notification;
 using Ideku.Services.Idea;
 using Ideku.Services.Workflow;
+using Ideku.Services.Level;
 using Ideku.Models;
 using Ideku.Models.Entities;
 
@@ -55,6 +56,7 @@ builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddScoped<ILevelService, LevelService>();
 
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();
@@ -62,6 +64,7 @@ builder.Services.AddScoped<ILookupRepository, LookupRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+builder.Services.AddScoped<ILevelRepository, LevelRepository>();
 
 var app = builder.Build();
 

@@ -21,6 +21,13 @@ namespace Ideku.Data.Context
         public DbSet<Idea> Ideas { get; set; }
         public DbSet<WorkflowHistory> WorkflowHistories { get; set; }
         public DbSet<Milestone> Milestones { get; set; }
+        
+        // Dynamic Workflow System DbSets
+        public DbSet<Workflow> Workflows { get; set; }
+        public DbSet<Level> Levels { get; set; }
+        public DbSet<LevelApprover> LevelApprovers { get; set; }
+        public DbSet<WorkflowStage> WorkflowStages { get; set; }
+        public DbSet<WorkflowCondition> WorkflowConditions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -54,6 +61,58 @@ namespace Ideku.Data.Context
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Username)
                 .IsUnique();
+
+            // =================== DYNAMIC WORKFLOW INDEXES ===================
+
+            // Workflow indexes
+            modelBuilder.Entity<Workflow>()
+                .HasIndex(w => w.IsActive)
+                .HasDatabaseName("IX_Workflows_IsActive");
+
+            // Level indexes
+            modelBuilder.Entity<Level>()
+                .HasIndex(l => l.IsActive)
+                .HasDatabaseName("IX_Levels_IsActive");
+
+            // WorkflowStage indexes for performance
+            modelBuilder.Entity<WorkflowStage>()
+                .HasIndex(ws => ws.WorkflowId)
+                .HasDatabaseName("IX_WorkflowStages_WorkflowId");
+
+            modelBuilder.Entity<WorkflowStage>()
+                .HasIndex(ws => ws.LevelId)
+                .HasDatabaseName("IX_WorkflowStages_LevelId");
+
+            modelBuilder.Entity<WorkflowStage>()
+                .HasIndex(ws => new { ws.WorkflowId, ws.Stage })
+                .IsUnique()
+                .HasDatabaseName("IX_WorkflowStages_WorkflowId_Stage");
+
+            // WorkflowCondition indexes
+            modelBuilder.Entity<WorkflowCondition>()
+                .HasIndex(wc => wc.WorkflowId)
+                .HasDatabaseName("IX_WorkflowConditions_WorkflowId");
+
+            modelBuilder.Entity<WorkflowCondition>()
+                .HasIndex(wc => new { wc.ConditionType, wc.IsActive })
+                .HasDatabaseName("IX_WorkflowConditions_ConditionType_IsActive");
+
+            // LevelApprover indexes
+            modelBuilder.Entity<LevelApprover>()
+                .HasIndex(la => la.LevelId)
+                .HasDatabaseName("IX_LevelApprovers_LevelId");
+
+            modelBuilder.Entity<LevelApprover>()
+                .HasIndex(la => la.RoleId)
+                .HasDatabaseName("IX_LevelApprovers_RoleId");
+
+            modelBuilder.Entity<LevelApprover>()
+                .HasIndex(la => new { la.LevelId, la.ApprovalLevel })
+                .HasDatabaseName("IX_LevelApprovers_LevelId_ApprovalLevel");
+
+            modelBuilder.Entity<LevelApprover>()
+                .HasIndex(la => new { la.LevelId, la.IsPrimary })
+                .HasDatabaseName("IX_LevelApprovers_LevelId_IsPrimary");
 
             // =================== RELATIONSHIPS ===================
 
@@ -167,6 +226,44 @@ namespace Ideku.Data.Context
                 .WithMany(u => u.CreatedMilestones)
                 .HasForeignKey(m => m.CreatorUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // =================== DYNAMIC WORKFLOW RELATIONSHIPS ===================
+
+            // WorkflowStage-Workflow relationship
+            modelBuilder.Entity<WorkflowStage>()
+                .HasOne(ws => ws.Workflow)
+                .WithMany(w => w.WorkflowStages)
+                .HasForeignKey(ws => ws.WorkflowId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // WorkflowStage-Level relationship
+            modelBuilder.Entity<WorkflowStage>()
+                .HasOne(ws => ws.Level)
+                .WithMany(l => l.WorkflowStages)
+                .HasForeignKey(ws => ws.LevelId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // WorkflowCondition-Workflow relationship
+            modelBuilder.Entity<WorkflowCondition>()
+                .HasOne(wc => wc.Workflow)
+                .WithMany(w => w.WorkflowConditions)
+                .HasForeignKey(wc => wc.WorkflowId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // LevelApprover-Level relationship
+            modelBuilder.Entity<LevelApprover>()
+                .HasOne(la => la.Level)
+                .WithMany(l => l.LevelApprovers)
+                .HasForeignKey(la => la.LevelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // LevelApprover-Role relationship
+            modelBuilder.Entity<LevelApprover>()
+                .HasOne(la => la.Role)
+                .WithMany()
+                .HasForeignKey(la => la.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
         }
     }
 }

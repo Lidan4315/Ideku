@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250812045131_InitialMigrate")]
+    [Migration("20250813011736_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -336,6 +336,97 @@ namespace Ideku.Migrations
                     b.ToTable("Ideas");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.Level", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<string>("Desc")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("Desc");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsActive");
+
+                    b.Property<string>("LevelName")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("Level");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_Levels_IsActive");
+
+                    b.ToTable("Levels");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.LevelApprover", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApprovalLevel")
+                        .HasColumnType("int")
+                        .HasColumnName("ApprovalLevel");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsPrimary");
+
+                    b.Property<int>("LevelId")
+                        .HasColumnType("int")
+                        .HasColumnName("LevelId");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int")
+                        .HasColumnName("RoleId");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LevelId")
+                        .HasDatabaseName("IX_LevelApprovers_LevelId");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("IX_LevelApprovers_RoleId");
+
+                    b.HasIndex("LevelId", "ApprovalLevel")
+                        .HasDatabaseName("IX_LevelApprovers_LevelId_ApprovalLevel");
+
+                    b.HasIndex("LevelId", "IsPrimary")
+                        .HasDatabaseName("IX_LevelApprovers_LevelId_IsPrimary");
+
+                    b.ToTable("LevelApprovers");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
                 {
                     b.Property<long>("Id")
@@ -474,6 +565,101 @@ namespace Ideku.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.Workflow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<string>("Desc")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("Desc");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsActive");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.Property<string>("WorkflowName")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("WorkflowName");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_Workflows_IsActive");
+
+                    b.ToTable("Workflows");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.WorkflowCondition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConditionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ConditionType");
+
+                    b.Property<string>("ConditionValue")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("ConditionValue");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsActive");
+
+                    b.Property<string>("Operator")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("Operator");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.Property<int>("WorkflowId")
+                        .HasColumnType("int")
+                        .HasColumnName("WorkflowId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkflowId")
+                        .HasDatabaseName("IX_WorkflowConditions_WorkflowId");
+
+                    b.HasIndex("ConditionType", "IsActive")
+                        .HasDatabaseName("IX_WorkflowConditions_ConditionType_IsActive");
+
+                    b.ToTable("WorkflowConditions");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.WorkflowHistory", b =>
                 {
                     b.Property<long>("Id")
@@ -521,6 +707,58 @@ namespace Ideku.Migrations
                     b.HasIndex("IdeaId");
 
                     b.ToTable("WorkflowHistory");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.WorkflowStage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsMandatory");
+
+                    b.Property<bool>("IsParallel")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsParallel");
+
+                    b.Property<int>("LevelId")
+                        .HasColumnType("int")
+                        .HasColumnName("LevelId");
+
+                    b.Property<int>("Stage")
+                        .HasColumnType("int")
+                        .HasColumnName("Stage");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.Property<int>("WorkflowId")
+                        .HasColumnType("int")
+                        .HasColumnName("WorkflowId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LevelId")
+                        .HasDatabaseName("IX_WorkflowStages_LevelId");
+
+                    b.HasIndex("WorkflowId")
+                        .HasDatabaseName("IX_WorkflowStages_WorkflowId");
+
+                    b.HasIndex("WorkflowId", "Stage")
+                        .IsUnique()
+                        .HasDatabaseName("IX_WorkflowStages_WorkflowId_Stage");
+
+                    b.ToTable("WorkflowStages");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Department", b =>
@@ -595,6 +833,25 @@ namespace Ideku.Migrations
                     b.Navigation("TargetDivision");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.LevelApprover", b =>
+                {
+                    b.HasOne("Ideku.Models.Entities.Level", "Level")
+                        .WithMany("LevelApprovers")
+                        .HasForeignKey("LevelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ideku.Models.Entities.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Level");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
                 {
                     b.HasOne("Ideku.Models.Entities.User", "CreatorUser")
@@ -633,6 +890,17 @@ namespace Ideku.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.WorkflowCondition", b =>
+                {
+                    b.HasOne("Ideku.Models.Entities.Workflow", "Workflow")
+                        .WithMany("WorkflowConditions")
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Workflow");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.WorkflowHistory", b =>
                 {
                     b.HasOne("Ideku.Models.Entities.User", "ActorUser")
@@ -650,6 +918,25 @@ namespace Ideku.Migrations
                     b.Navigation("ActorUser");
 
                     b.Navigation("Idea");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.WorkflowStage", b =>
+                {
+                    b.HasOne("Ideku.Models.Entities.Level", "Level")
+                        .WithMany("WorkflowStages")
+                        .HasForeignKey("LevelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Ideku.Models.Entities.Workflow", "Workflow")
+                        .WithMany("WorkflowStages")
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Level");
+
+                    b.Navigation("Workflow");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Category", b =>
@@ -690,6 +977,13 @@ namespace Ideku.Migrations
                     b.Navigation("WorkflowHistories");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.Level", b =>
+                {
+                    b.Navigation("LevelApprovers");
+
+                    b.Navigation("WorkflowStages");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.Role", b =>
                 {
                     b.Navigation("Users");
@@ -702,6 +996,13 @@ namespace Ideku.Migrations
                     b.Navigation("InitiatedIdeas");
 
                     b.Navigation("WorkflowActions");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.Workflow", b =>
+                {
+                    b.Navigation("WorkflowConditions");
+
+                    b.Navigation("WorkflowStages");
                 });
 #pragma warning restore 612, 618
         }

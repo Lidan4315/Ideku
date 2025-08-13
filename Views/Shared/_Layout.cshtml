@@ -56,12 +56,12 @@
                     </li>
                 }
                 
-                @if (User.Identity.IsAuthenticated && User.IsInRole("SuperAdmin"))
+                @if (User.Identity.IsAuthenticated && (User.IsInRole("Superuser") || User.IsInRole("Admin")))
                 {
                     <li>
-                        <a asp-controller="Admin" asp-action="Dashboard" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Admin" ? "active" : "")">
-                            <i class="bi bi-gear-fill"></i>
-                            <span>Admin Panel</span>
+                        <a asp-controller="Settings" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Settings" ? "active" : "")">
+                            <i class="bi bi-sliders"></i>
+                            <span>Settings</span>
                         </a>
                     </li>
                 }
@@ -105,6 +105,20 @@
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- Global JavaScript Functions -->
+    <script>
+        function showComingSoon(featureName) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Coming Soon!',
+                text: `${featureName} feature is under development and will be available in future updates.`,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
+    </script>
+    
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

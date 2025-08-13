@@ -1,0 +1,482 @@
+@model Ideku.Models.Entities.Level
+@{
+    ViewData["Title"] = "Level Details";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <a href="@Url.Action("Index", "Level")" class="btn btn-outline-secondary me-3" title="Back to Level List">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <h2 class="page-title text-gradient mb-0">
+                                <i class="bi bi-diagram-3 me-2"></i>Level Details
+                            </h2>
+                        </div>
+                        <p class="text-muted">Detailed information about level configuration</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("Edit", "Level", new { id = Model.Id })" class="btn btn-primary">
+                            <i class="bi bi-pencil me-2"></i>Edit Level
+                        </a>
+                        <button type="button" class="btn btn-outline-danger" onclick="confirmDelete(@Model.Id, '@Model.Desc')">
+                            <i class="bi bi-trash me-2"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level Information Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Level Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-group mb-4">
+                                <label class="info-label">Level ID</label>
+                                <div class="info-value">
+                                    <span class="badge bg-light text-dark fs-6 px-3 py-2">@Model.Id</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-group mb-4">
+                                <label class="info-label">Level Name</label>
+                                <div class="info-value">
+                                    <span class="badge bg-primary fs-6 px-3 py-2">@Model.LevelName</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-group mb-4">
+                                <label class="info-label">Status</label>
+                                <div class="info-value">
+                                    @{
+                                        var statusClass = Model.IsActive ? "bg-success" : "bg-danger";
+                                        var statusText = Model.IsActive ? "Active" : "Inactive";
+                                        var statusIcon = Model.IsActive ? "bi-check-circle" : "bi-x-circle";
+                                    }
+                                    <span class="badge @statusClass fs-6 px-3 py-2">
+                                        <i class="@statusIcon me-2"></i>@statusText
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-group mb-4">
+                                <label class="info-label">Created Date</label>
+                                <div class="info-value">
+                                    <div class="text-dark fw-semibold">@Model.CreatedAt.ToString("MMMM dd, yyyy")</div>
+                                    <small class="text-muted">@Model.CreatedAt.ToString("HH:mm:ss")</small>
+                                </div>
+                            </div>
+                            
+                            <div class="info-group mb-4">
+                                <label class="info-label">Last Updated</label>
+                                <div class="info-value">
+                                    @if (Model.UpdatedAt.HasValue)
+                                    {
+                                        <div class="text-dark fw-semibold">@Model.UpdatedAt.Value.ToString("MMMM dd, yyyy")</div>
+                                        <small class="text-muted">@Model.UpdatedAt.Value.ToString("HH:mm:ss")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Never updated</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="info-group">
+                                <label class="info-label">Description</label>
+                                <div class="info-value">
+                                    <div class="description-box">
+                                        @Model.Desc
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Level Approvers -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-people me-2"></i>Level Approvers
+                        </h5>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addApproverModal">
+                            <i class="bi bi-plus-circle me-1"></i>Add Approver
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.LevelApprovers.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var approver in Model.LevelApprovers.OrderBy(a => a.ApprovalLevel))
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">@approver.Role.RoleName</div>
+                                        <small class="text-muted">
+                                            @if (!string.IsNullOrEmpty(approver.Role.Desc))
+                                            {
+                                                @approver.Role.Desc
+                                                <span class="mx-1">•</span>
+                                            }
+                                            Hierarchy Level: @approver.ApprovalLevel
+                                        </small>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div>
+                                            @if (approver.IsPrimary)
+                                            {
+                                                <span class="badge bg-primary rounded-pill me-1">Primary</span>
+                                            }
+                                            <span class="badge bg-light text-dark rounded-pill">Level @approver.ApprovalLevel</span>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                onclick="confirmDeleteApprover(@approver.Id, '@approver.Role.RoleName')" 
+                                                title="Remove Approver">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-people display-6 text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No approvers assigned to this level</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Approver Modal -->
+<div class="modal fade" id="addApproverModal" tabindex="-1" aria-labelledby="addApproverModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addApproverModalLabel">
+                    <i class="bi bi-person-plus me-2"></i>Add Level Approver
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addApproverForm">
+                <div class="modal-body">
+                    <input type="hidden" id="levelId" name="levelId" value="@Model.Id" />
+                    
+                    <div class="mb-3">
+                        <label for="roleId" class="form-label">Role <span class="text-danger">*</span></label>
+                        <select class="form-select" id="roleId" name="roleId" required>
+                            <option value="">Select a role...</option>
+                            @foreach (var role in ViewBag.Roles as IEnumerable<Ideku.Models.Entities.Role>)
+                            {
+                                <option value="@role.Id">@role.RoleName - @role.Desc</option>
+                            }
+                        </select>
+                        <div class="form-text">Choose the role that will act as an approver for this level</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="approvalLevel" class="form-label">Approval Hierarchy <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="approvalLevel" name="approvalLevel" required 
+                               min="1" max="10" placeholder="e.g. 1, 2, 3">
+                        <div class="form-text">Enter the hierarchy level (1 = highest, 10 = lowest)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isPrimary" name="isPrimary" value="true">
+                            <label class="form-check-label" for="isPrimary">
+                                Primary Approver
+                            </label>
+                        </div>
+                        <div class="form-text">Check if this is the primary approver for this level</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Add Approver
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 2rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .page-title {
+        font-weight: 700;
+    }
+    
+    .text-gradient {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 1rem;
+    }
+    
+    .card-header {
+        background: #f8fafc;
+        border-bottom: 1px solid #e5e7eb;
+        border-radius: 1rem 1rem 0 0 !important;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .info-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .info-value {
+        font-size: 1rem;
+        color: #111827;
+    }
+    
+    .description-box {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #374151;
+    }
+    
+    .badge {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+    
+    
+    .list-group-item {
+        border: none;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 1rem 0;
+    }
+    
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+    
+    .btn {
+        border-radius: 0.5rem;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+    }
+    
+    .btn-outline-secondary {
+        border-color: #d1d5db;
+        color: #6b7280;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #f3f4f6;
+        border-color: #9ca3af;
+        color: #374151;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Handle add approver form submission
+            $('#addApproverForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var formData = {
+                    levelId: $('#levelId').val(),
+                    roleId: $('#roleId').val(),
+                    isPrimary: $('#isPrimary').is(':checked'),
+                    approvalLevel: $('#approvalLevel').val()
+                };
+                
+                // Validate form
+                if (!formData.roleId || !formData.approvalLevel) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please fill in all required fields.',
+                        confirmButtonColor: '#dc2626'
+                    });
+                    return;
+                }
+                
+                // Show loading state
+                var submitBtn = $(this).find('button[type="submit"]');
+                var originalText = submitBtn.html();
+                submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Adding...').prop('disabled', true);
+                
+                $.ajax({
+                    url: '@Url.Action("AddApprover", "Level")',
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'Approver added successfully.',
+                                confirmButtonColor: '#3b82f6'
+                            }).then(() => {
+                                // Close modal and reload page
+                                $('#addApproverModal').modal('hide');
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.message || 'Failed to add approver.',
+                                confirmButtonColor: '#dc2626'
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'An error occurred while adding the approver.',
+                            confirmButtonColor: '#dc2626'
+                        });
+                    },
+                    complete: function() {
+                        // Restore button state
+                        submitBtn.html(originalText).prop('disabled', false);
+                    }
+                });
+            });
+
+            // Reset form when modal is hidden
+            $('#addApproverModal').on('hidden.bs.modal', function () {
+                $('#addApproverForm')[0].reset();
+            });
+        });
+
+        function confirmDeleteApprover(approverId, roleName) {
+            Swal.fire({
+                title: 'Remove Approver?',
+                text: `You are about to remove "${roleName}" as an approver for this level. This action cannot be undone!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, remove it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Removing...',
+                        text: 'Please wait while we remove the approver.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    $.ajax({
+                        url: '@Url.Action("DeleteApprover", "Level")',
+                        type: 'POST',
+                        data: { levelApproverId: approverId },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Deleted!',
+                                    text: 'Approver has been removed successfully.',
+                                    confirmButtonColor: '#3b82f6'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: response.message || 'Failed to remove approver.',
+                                    confirmButtonColor: '#dc2626'
+                                });
+                            }
+                        },
+                        error: function() {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: 'An error occurred while removing the approver.',
+                                confirmButtonColor: '#dc2626'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function confirmDelete(levelId, levelDesc) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to delete level "${levelDesc}". This action cannot be undone!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Perform delete action
+                    window.location.href = '@Url.Action("Delete", "Level")/' + levelId;
+                }
+            });
+        }
+    </script>
+}

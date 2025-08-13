@@ -58,6 +58,23 @@ namespace Ideku.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Levels",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Level = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    Desc = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Levels", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
                 {
@@ -71,6 +88,23 @@ namespace Ideku.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Roles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Workflows",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    WorkflowName = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Desc = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Workflows", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -92,6 +126,92 @@ namespace Ideku.Migrations
                         principalTable: "Divisions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "LevelApprovers",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    LevelId = table.Column<int>(type: "int", nullable: false),
+                    RoleId = table.Column<int>(type: "int", nullable: false),
+                    IsPrimary = table.Column<bool>(type: "bit", nullable: false),
+                    ApprovalLevel = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LevelApprovers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LevelApprovers_Levels_LevelId",
+                        column: x => x.LevelId,
+                        principalTable: "Levels",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_LevelApprovers_Roles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "Roles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowConditions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    WorkflowId = table.Column<int>(type: "int", nullable: false),
+                    ConditionType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Operator = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    ConditionValue = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowConditions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkflowConditions_Workflows_WorkflowId",
+                        column: x => x.WorkflowId,
+                        principalTable: "Workflows",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowStages",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    WorkflowId = table.Column<int>(type: "int", nullable: false),
+                    LevelId = table.Column<int>(type: "int", nullable: false),
+                    Stage = table.Column<int>(type: "int", nullable: false),
+                    IsMandatory = table.Column<bool>(type: "bit", nullable: false),
+                    IsParallel = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowStages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkflowStages_Levels_LevelId",
+                        column: x => x.LevelId,
+                        principalTable: "Levels",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WorkflowStages_Workflows_WorkflowId",
+                        column: x => x.WorkflowId,
+                        principalTable: "Workflows",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -320,6 +440,31 @@ namespace Ideku.Migrations
                 column: "ToDivisionId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_LevelApprovers_LevelId",
+                table: "LevelApprovers",
+                column: "LevelId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LevelApprovers_LevelId_ApprovalLevel",
+                table: "LevelApprovers",
+                columns: new[] { "LevelId", "ApprovalLevel" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LevelApprovers_LevelId_IsPrimary",
+                table: "LevelApprovers",
+                columns: new[] { "LevelId", "IsPrimary" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LevelApprovers_RoleId",
+                table: "LevelApprovers",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Levels_IsActive",
+                table: "Levels",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Milestones_CreatorUserId",
                 table: "Milestones",
                 column: "CreatorUserId");
@@ -347,6 +492,16 @@ namespace Ideku.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_WorkflowConditions_ConditionType_IsActive",
+                table: "WorkflowConditions",
+                columns: new[] { "ConditionType", "IsActive" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowConditions_WorkflowId",
+                table: "WorkflowConditions",
+                column: "WorkflowId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_WorkflowHistory_ActorUserId",
                 table: "WorkflowHistory",
                 column: "ActorUserId");
@@ -355,19 +510,55 @@ namespace Ideku.Migrations
                 name: "IX_WorkflowHistory_IdeaId",
                 table: "WorkflowHistory",
                 column: "IdeaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Workflows_IsActive",
+                table: "Workflows",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStages_LevelId",
+                table: "WorkflowStages",
+                column: "LevelId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStages_WorkflowId",
+                table: "WorkflowStages",
+                column: "WorkflowId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStages_WorkflowId_Stage",
+                table: "WorkflowStages",
+                columns: new[] { "WorkflowId", "Stage" },
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "LevelApprovers");
+
+            migrationBuilder.DropTable(
                 name: "Milestones");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowConditions");
 
             migrationBuilder.DropTable(
                 name: "WorkflowHistory");
 
             migrationBuilder.DropTable(
+                name: "WorkflowStages");
+
+            migrationBuilder.DropTable(
                 name: "Ideas");
+
+            migrationBuilder.DropTable(
+                name: "Levels");
+
+            migrationBuilder.DropTable(
+                name: "Workflows");
 
             migrationBuilder.DropTable(
                 name: "Categories");

@@ -1,0 +1,338 @@
+@{
+    ViewData["Title"] = "Workflow Management";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Settings" asp-action="Index">
+                            <i class="bi bi-sliders me-1"></i>Settings
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Workflow Management</li>
+                </ol>
+            </nav>
+
+            <!-- Page Header -->
+            <div class="page-header mb-4">
+                <h2 class="page-title text-gradient">
+                    <i class="bi bi-diagram-3 me-2"></i>Workflow Management
+                </h2>
+                <p class="text-muted">Configure dynamic workflows, stages, and approval processes for idea submissions</p>
+            </div>
+
+            <!-- Management Cards -->
+            <div class="row g-4">
+                <!-- Workflows Card -->
+                <div class="col-xl-4 col-lg-6 col-md-6">
+                    <div class="management-card" onclick="navigateTo('/Settings/Workflows')">
+                        <div class="card-icon workflows-icon">
+                            <i class="bi bi-diagram-2"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Workflows</h3>
+                            <p class="card-description">
+                                Create and manage workflow templates with conditions and stages
+                            </p>
+                            <div class="card-stats">
+                                <span class="stat-item">
+                                    <i class="bi bi-collection"></i>
+                                    <span>0 Workflows</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Levels Card -->
+                <div class="col-xl-4 col-lg-6 col-md-6">
+                    <div class="management-card" onclick="navigateTo('/Level')">
+                        <div class="card-icon stages-icon">
+                            <i class="bi bi-list-ol"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Levels</h3>
+                            <p class="card-description">
+                                Define approval levels and their configurations
+                            </p>
+                            <div class="card-stats">
+                                <span class="stat-item">
+                                    <i class="bi bi-layers"></i>
+                                    <span>0 Levels</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conditions Card -->
+                <div class="col-xl-4 col-lg-6 col-md-6">
+                    <div class="management-card" onclick="navigateTo('/Settings/Conditions')">
+                        <div class="card-icon conditions-icon">
+                            <i class="bi bi-filter-circle"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Conditions</h3>
+                            <p class="card-description">
+                                Set up workflow conditions based on cost, category, and more
+                            </p>
+                            <div class="card-stats">
+                                <span class="stat-item">
+                                    <i class="bi bi-funnel"></i>
+                                    <span>0 Conditions</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="quick-actions-card">
+                        <h4 class="quick-actions-title">
+                            <i class="bi bi-lightning me-2"></i>Quick Actions
+                        </h4>
+                        <div class="row g-3">
+                            <div class="col-lg-3 col-md-6">
+                                <button class="btn btn-outline-primary w-100" onclick="showComingSoon('Create New Workflow')">
+                                    <i class="bi bi-plus-circle me-2"></i>Create New Workflow
+                                </button>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <button class="btn btn-outline-secondary w-100" onclick="showComingSoon('Import Workflow')">
+                                    <i class="bi bi-upload me-2"></i>Import Workflow
+                                </button>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <button class="btn btn-outline-success w-100" onclick="showComingSoon('Test Workflow')">
+                                    <i class="bi bi-play-circle me-2"></i>Test Workflow
+                                </button>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <button class="btn btn-outline-info w-100" onclick="showComingSoon('View Reports')">
+                                    <i class="bi bi-graph-up me-2"></i>View Reports
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function navigateTo(url) {
+            window.location.href = url;
+        }
+
+        function showComingSoon(featureName) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Coming Soon!',
+                text: `${featureName} feature is under development and will be available in future updates.`,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
+    </script>
+}
+
+<style>
+    .breadcrumb {
+        background: none;
+        padding: 0;
+        margin-bottom: 1rem;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        color: #6b7280;
+    }
+
+    .breadcrumb-item a {
+        color: #3b82f6;
+        text-decoration: none;
+    }
+
+    .breadcrumb-item.active {
+        color: #6b7280;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 2rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .page-title {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #1e40af, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .management-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        height: 100%;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .management-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .management-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15);
+        border-color: #3b82f6;
+    }
+
+    .management-card:hover::before {
+        opacity: 1;
+    }
+
+    .card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+
+    .workflows-icon {
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1d4ed8;
+    }
+
+    .stages-icon {
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        color: #059669;
+    }
+
+    .conditions-icon {
+        background: linear-gradient(135deg, #fef3c7, #fed7aa);
+        color: #d97706;
+    }
+
+    .card-content {
+        flex: 1;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-description {
+        color: #6b7280;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+
+    .card-stats {
+        margin-bottom: 1rem;
+    }
+
+    .stat-item {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.875rem;
+        color: #4b5563;
+    }
+
+    .stat-item i {
+        margin-right: 0.375rem;
+        color: #6b7280;
+    }
+
+    .card-action {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        color: #9ca3af;
+        transition: color 0.3s ease;
+    }
+
+    .management-card:hover .card-action {
+        color: #3b82f6;
+    }
+
+    .quick-actions-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+    }
+
+    .quick-actions-title {
+        color: #1f2937;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn {
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: 1px solid;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    @@media (max-width: 768px) {
+        .management-card {
+            padding: 1.25rem;
+        }
+        
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+    }
+</style>
