@@ -99,6 +99,19 @@ namespace Ideku.Data.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Idea>> GetAllIdeasForApprovalAsync()
+        {
+            return await _context.Ideas
+                .Include(i => i.InitiatorUser)
+                    .ThenInclude(u => u.Employee)
+                .Include(i => i.TargetDivision)
+                .Include(i => i.TargetDepartment)
+                .Include(i => i.Category)
+                .Include(i => i.Event)
+                .OrderByDescending(i => i.SubmittedDate)
+                .ToListAsync();
+        }
+
         public async Task UpdateAsync(Idea idea)
         {
             _context.Ideas.Update(idea);

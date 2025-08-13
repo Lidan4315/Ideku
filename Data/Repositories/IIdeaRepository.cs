@@ -13,6 +13,7 @@ namespace Ideku.Data.Repositories
         Task UpdateIdeaCodeAsync(long ideaId, string ideaCode);
         Task<IEnumerable<Idea>> GetIdeasByStageAndStatusAsync(int stage, string status);
         Task<IEnumerable<Idea>> GetIdeasByStatusAsync(string status);
+        Task<IEnumerable<Idea>> GetAllIdeasForApprovalAsync();
         Task UpdateAsync(Idea idea);
     }
 }

@@ -110,43 +110,152 @@
     </div>
 
     <!-- Validation Decision Section -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Validation Decision</h6>
+    @if (ViewBag.CanTakeAction == true)
+    {
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Validation Decision</h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Approve" asp-route-id="@Model.Idea.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="approve-section mb-4">
+                        <h5><i class="fas fa-check-circle text-success"></i> Approve Idea</h5>
+                        <div class="form-group mb-3">
+                            <label asp-for="ValidatedSavingCost" class="form-label"></label>
+                            <input asp-for="ValidatedSavingCost" class="form-control" placeholder="Enter validated amount" />
+                            <span asp-validation-for="ValidatedSavingCost" class="text-danger"></span>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label asp-for="ApprovalComments" class="form-label"></label>
+                            <textarea asp-for="ApprovalComments" class="form-control" rows="3" placeholder="Enter approval comments"></textarea>
+                            <span asp-validation-for="ApprovalComments" class="text-danger"></span>
+                        </div>
+                        <button type="submit" class="btn btn-success" id="approveBtn"><i class="fas fa-check"></i> Approve Idea</button>
+                    </div>
+                </form>
+                <hr />
+                <form asp-action="Reject" asp-route-id="@Model.Idea.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="reject-section">
+                        <h5><i class="fas fa-times-circle text-danger"></i> Reject Idea</h5>
+                        <div class="form-group mb-3">
+                            <label asp-for="RejectionReason" class="form-label"></label>
+                            <textarea asp-for="RejectionReason" class="form-control" rows="3" placeholder="Please provide a clear reason for rejection"></textarea>
+                            <span asp-validation-for="RejectionReason" class="text-danger"></span>
+                        </div>
+                        <button type="submit" class="btn btn-danger" id="rejectBtn"><i class="fas fa-times"></i> Reject Idea</button>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="card-body">
-            <form asp-action="Approve" asp-route-id="@Model.Idea.Id" method="post">
-                @Html.AntiForgeryToken()
-                <div class="approve-section mb-4">
-                    <h5><i class="fas fa-check-circle text-success"></i> Approve Idea</h5>
-                    <div class="form-group mb-3">
-                        <label asp-for="ValidatedSavingCost" class="form-label"></label>
-                        <input asp-for="ValidatedSavingCost" class="form-control" placeholder="Enter validated amount" />
-                        <span asp-validation-for="ValidatedSavingCost" class="text-danger"></span>
+    }
+    else
+    {
+        <!-- Approval Timeline -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-clock-history me-2"></i>Approval Timeline
+                </h6>
+            </div>
+            <div class="card-body">
+                <!-- Current Stage -->
+                <div class="timeline-item mb-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="timeline-icon bg-primary">
+                                    <i class="bi bi-hourglass-split text-white"></i>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    <strong>Stage</strong>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="timeline-content">
+                                <h6 class="mb-2">
+                                    <span class="badge bg-primary me-2">Stage S@(Model.Idea.CurrentStage)</span>
+                                    <strong>In Progress</strong>
+                                </h6>
+                                <div class="alert alert-info mb-0" role="alert">
+                                    <i class="bi bi-eye me-2"></i>
+                                    <strong>Read-Only Access:</strong> This idea is no longer in your approval stage.
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group mb-3">
-                        <label asp-for="ApprovalComments" class="form-label"></label>
-                        <textarea asp-for="ApprovalComments" class="form-control" rows="3" placeholder="Enter approval comments"></textarea>
-                        <span asp-validation-for="ApprovalComments" class="text-danger"></span>
-                    </div>
-                    <button type="submit" class="btn btn-success" id="approveBtn"><i class="fas fa-check"></i> Approve Idea</button>
                 </div>
-            </form>
-            <hr />
-            <form asp-action="Reject" asp-route-id="@Model.Idea.Id" method="post">
-                @Html.AntiForgeryToken()
-                <div class="reject-section">
-                    <h5><i class="fas fa-times-circle text-danger"></i> Reject Idea</h5>
-                    <div class="form-group mb-3">
-                        <label asp-for="RejectionReason" class="form-label"></label>
-                        <textarea asp-for="RejectionReason" class="form-control" rows="3" placeholder="Please provide a clear reason for rejection"></textarea>
-                        <span asp-validation-for="RejectionReason" class="text-danger"></span>
-                    </div>
-                    <button type="submit" class="btn btn-danger" id="rejectBtn"><i class="fas fa-times"></i> Reject Idea</button>
-                </div>
-            </form>
+
+                <!-- Latest History -->
+                @if (ViewBag.WorkflowHistory != null)
+                {
+                    var workflowHistory = ViewBag.WorkflowHistory as IEnumerable<Ideku.Models.Entities.WorkflowHistory>;
+                    if (workflowHistory != null && workflowHistory.Any())
+                    {
+                        var latestHistory = workflowHistory.First(); // Get only the most recent entry
+                        <div class="timeline-item mb-4">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        @if (latestHistory.Action == "Approved")
+                                        {
+                                            <div class="timeline-icon bg-success">
+                                                <i class="bi bi-check-circle text-white"></i>
+                                            </div>
+                                        }
+                                        else if (latestHistory.Action == "Rejected")
+                                        {
+                                            <div class="timeline-icon bg-danger">
+                                                <i class="bi bi-x-circle text-white"></i>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="timeline-icon bg-info">
+                                                <i class="bi bi-info-circle text-white"></i>
+                                            </div>
+                                        }
+                                        <small class="text-muted d-block mt-2">
+                                            @latestHistory.Timestamp.ToString("MMM dd, yyyy")<br>
+                                            @latestHistory.Timestamp.ToString("HH:mm")
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="timeline-content">
+                                        <h6 class="mb-2">
+                                            <span class="badge bg-secondary me-2">Stage @latestHistory.FromStage → @(latestHistory.ToStage?.ToString() ?? "End")</span>
+                                            <strong>@latestHistory.Action</strong>
+                                        </h6>
+                                        <p class="mb-2">
+                                            <i class="bi bi-person-circle me-1"></i>
+                                            <strong>By:</strong> @(latestHistory.ActorUser?.Name ?? "System")
+                                        </p>
+                                        @if (!string.IsNullOrEmpty(latestHistory.Comments))
+                                        {
+                                            <div class="bg-light p-3 rounded mb-2">
+                                                <small class="text-muted">Comments:</small>
+                                                <p class="mb-0">@latestHistory.Comments</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted">
+                            <i class="bi bi-clock me-2"></i>
+                            <em>No approval history available yet.</em>
+                        </div>
+                    }
+                }
+            </div>
         </div>
-    </div>
+    }
 </div>
 
 <style>
@@ -201,6 +310,57 @@
     .form-control-plaintext {
         white-space: pre-wrap;
         min-height: 100px;
+    }
+
+    /* Timeline Styles */
+    .timeline {
+        position: relative;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-left: 0;
+    }
+
+    .timeline-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .timeline-content {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        border-left: 4px solid #007bff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .timeline-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50px;
+        transform: translateX(-50%);
+        width: 2px;
+        height: calc(100% - 50px);
+        background: linear-gradient(to bottom, #dee2e6, transparent);
+        z-index: -1;
+    }
+
+    @@media (max-width: 768px) {
+        .timeline-item::after {
+            display: none;
+        }
+        
+        .timeline-content {
+            margin-top: 1rem;
+        }
     }
 </style>
 

@@ -105,13 +105,11 @@
                                         @{
                                             var statusClass = idea.CurrentStatus switch
                                             {
-                                                "Waiting Approval S1" => "bg-warning text-dark",
-                                                "Waiting Approval S2" => "bg-info text-dark",
+                                                var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
+                                                var s when s.StartsWith("Rejected S") => "bg-danger",
                                                 "Under Review" => "bg-warning text-dark",
                                                 "Approved" => "bg-success",
                                                 "Rejected" => "bg-danger",
-                                                "Rejected S0" => "bg-danger",
-                                                "Rejected S1" => "bg-danger",
                                                 "Completed" => "bg-primary",
                                                 _ => "bg-secondary"
                                             };
@@ -123,8 +121,30 @@
                                         <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
                                     </td>
                                     <td class="text-end">
-                                        <a href="@Url.Action("Review", "Approval", new { id = idea.Id })" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">
-                                            Review
+                                        @{
+                                            // Determine if user can take action on this idea
+                                            string buttonText = "View";
+                                            string buttonClass = "btn btn-sm btn-outline-secondary";
+
+                                            // Logic for Workstream Leader: can only review S0 waiting for S1
+                                            if (ViewBag.UserRole == "Workstream Leader" && 
+                                                idea.CurrentStage == 0 && 
+                                                idea.CurrentStatus == "Waiting Approval S1")
+                                            {
+                                                buttonText = "Review";
+                                                buttonClass = "btn btn-sm btn-outline-primary";
+                                            }
+                                            // Superuser can review anything that's waiting for approval
+                                            else if (ViewBag.UserRole == "Superuser" && 
+                                                     idea.CurrentStatus.StartsWith("Waiting Approval"))
+                                            {
+                                                buttonText = "Review";
+                                                buttonClass = "btn btn-sm btn-outline-primary";
+                                            }
+                                        }
+                                        
+                                        <a href="@Url.Action("Review", "Approval", new { id = idea.Id })" class="@buttonClass" onclick="event.stopPropagation();">
+                                            @buttonText
                                         </a>
                                     </td>
                                 </tr>
