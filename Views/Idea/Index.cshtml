@@ -63,9 +63,8 @@
                                                 @{
                                                     var statusClass = idea.CurrentStatus switch
                                                     {
-                                                        "Waiting Approval S1" => "bg-warning text-dark",
-                                                        "Waiting Approval S2" => "bg-info text-dark",
-                                                        "Under Review" => "bg-warning text-dark",
+                                                        var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
+                                                        var s when s.StartsWith("Rejected S") => "bg-danger",
                                                         "Approved" => "bg-success",
                                                         "Rejected" => "bg-danger",
                                                         "Completed" => "bg-primary",
@@ -162,14 +161,14 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="stat-item">
-                                    <h3 class="text-warning">@Model.Count(i => i.CurrentStatus == "Under Review")</h3>
-                                    <p class="text-muted mb-0">Under Review</p>
+                                    <h3 class="text-warning">@Model.Count(i => i.CurrentStatus.StartsWith("Waiting Approval"))</h3>
+                                    <p class="text-muted mb-0">In Progress</p>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="stat-item">
-                                    <h3 class="text-success">@Model.Count(i => i.CurrentStatus == "Approved")</h3>
-                                    <p class="text-muted mb-0">Approved</p>
+                                    <h3 class="text-success">@Model.Count(i => i.CurrentStatus == "Completed")</h3>
+                                    <p class="text-muted mb-0">Completed</p>
                                 </div>
                             </div>
                             <div class="col-md-3">
