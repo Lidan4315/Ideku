@@ -70,7 +70,7 @@ namespace Ideku.Services.Idea
                 }
 
                 // Get or create User for the employee (idea initiator)
-                var initiatorUser = await _userRepository.GetByUsernameAsync(model.BadgeNumber);
+                var initiatorUser = await _userRepository.GetByEmployeeIdAsync(model.BadgeNumber);
                 long initiatorUserId;
                 
                 if (initiatorUser == null)
