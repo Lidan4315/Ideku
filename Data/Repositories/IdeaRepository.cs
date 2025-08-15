@@ -24,6 +24,7 @@ namespace Ideku.Data.Repositories
         {
             return await _context.Ideas
                 .Include(i => i.InitiatorUser)
+                    .ThenInclude(u => u.Employee)
                 .Include(i => i.TargetDivision)
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
