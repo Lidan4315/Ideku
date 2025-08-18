@@ -13,16 +13,24 @@ namespace Ideku.Controllers
         private readonly IWorkflowService _workflowService;
         private readonly IUserRepository _userRepository;
         private readonly IWorkflowRepository _workflowRepository;
+        private readonly ILookupRepository _lookupRepository;
 
-        public ApprovalController(IWorkflowService workflowService, IUserRepository userRepository, IWorkflowRepository workflowRepository)
+        public ApprovalController(IWorkflowService workflowService, IUserRepository userRepository, IWorkflowRepository workflowRepository, ILookupRepository lookupRepository)
         {
             _workflowService = workflowService;
             _userRepository = userRepository;
             _workflowRepository = workflowRepository;
+            _lookupRepository = lookupRepository;
         }
 
         // GET: /Approval or /Approval/Index
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? searchTerm = null,
+            string? selectedDivision = null,
+            string? selectedDepartment = null,
+            int? selectedCategory = null,
+            int? selectedStage = null,
+            string? selectedStatus = null)
         {
             var username = User.Identity?.Name;
             if (string.IsNullOrEmpty(username))
@@ -33,15 +41,169 @@ namespace Ideku.Controllers
             var ideas = await _workflowService.GetPendingApprovalsForUserAsync(username);
             var user = await _userRepository.GetByUsernameAsync(username);
 
+            // Apply filters
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                ideas = ideas.Where(i => 
+                    i.IdeaCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    i.IdeaName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (i.InitiatorUser?.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                ideas = ideas.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDepartment))
+            {
+                ideas = ideas.Where(i => i.ToDepartmentId == selectedDepartment);
+            }
+
+            if (selectedCategory.HasValue)
+            {
+                ideas = ideas.Where(i => i.CategoryId == selectedCategory.Value);
+            }
+
+            if (selectedStage.HasValue)
+            {
+                ideas = ideas.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                ideas = ideas.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            // Get lookup data for dropdowns
+            var divisions = await _lookupRepository.GetDivisionsAsync();
+            var categories = await _lookupRepository.GetCategoriesAsync();
+
+            var ideaList = ideas.ToList();
+            
             var viewModel = new ApprovalListViewModel
             {
-                IdeasForApproval = ideas
+                IdeasForApproval = ideaList,
+                SearchTerm = searchTerm,
+                SelectedDivision = selectedDivision,
+                SelectedDepartment = selectedDepartment,
+                SelectedCategory = selectedCategory,
+                SelectedStage = selectedStage,
+                SelectedStatus = selectedStatus
             };
 
-            // Pass user role to view for button logic
+            // Pass lookup data to view
+            ViewBag.Divisions = divisions;
+            ViewBag.Categories = categories;
             ViewBag.UserRole = user?.Role?.RoleName ?? "";
 
             return View(viewModel);
+        }
+
+        // AJAX endpoint for real-time filtering
+        [HttpGet]
+        public async Task<IActionResult> FilterIdeas(
+            string? searchTerm = null,
+            string? selectedDivision = null,
+            string? selectedDepartment = null,
+            int? selectedCategory = null,
+            int? selectedStage = null,
+            string? selectedStatus = null)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+
+            var ideas = await _workflowService.GetPendingApprovalsForUserAsync(username);
+
+            // Apply filters (same logic as Index method)
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                ideas = ideas.Where(i => 
+                    i.IdeaCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    i.IdeaName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (i.InitiatorUser?.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                ideas = ideas.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDepartment))
+            {
+                ideas = ideas.Where(i => i.ToDepartmentId == selectedDepartment);
+            }
+
+            if (selectedCategory.HasValue)
+            {
+                ideas = ideas.Where(i => i.CategoryId == selectedCategory.Value);
+            }
+
+            if (selectedStage.HasValue)
+            {
+                ideas = ideas.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                ideas = ideas.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            var ideaList = ideas.ToList();
+            
+            // Return JSON with filtered ideas and count
+            return Json(new { 
+                success = true, 
+                ideas = ideaList.Select(i => new {
+                    ideaCode = i.IdeaCode,
+                    ideaName = i.IdeaName,
+                    initiatorName = i.InitiatorUser?.Name,
+                    divisionName = i.TargetDivision?.NameDivision,
+                    departmentName = i.TargetDepartment?.NameDepartment,
+                    categoryName = i.Category?.CategoryName,
+                    eventName = i.Event?.EventName,
+                    currentStage = i.CurrentStage,
+                    savingCost = i.SavingCost,
+                    currentStatus = i.CurrentStatus,
+                    submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    reviewUrl = Url.Action("Review", new { id = i.Id })
+                }),
+                totalCount = ideaList.Count
+            });
+        }
+
+
+        // AJAX endpoint for cascading dropdown - Get departments by division
+        [HttpGet]
+        public async Task<JsonResult> GetDepartmentsByDivision(string divisionId)
+        {
+            if (string.IsNullOrWhiteSpace(divisionId))
+            {
+                return Json(new { success = true, departments = new List<object>() });
+            }
+
+            try
+            {
+                // Use real data from LookupRepository
+                var departmentSelectList = await _lookupRepository.GetDepartmentsByDivisionAsync(divisionId);
+                
+                // Convert SelectListItem to simple object for JSON
+                var departments = departmentSelectList
+                    .Where(d => !string.IsNullOrEmpty(d.Value)) // Filter out empty options
+                    .Select(d => new { id = d.Value, name = d.Text })
+                    .ToList();
+
+                return Json(new { success = true, departments });
+            }
+            catch (Exception)
+            {
+                return Json(new { success = false, message = "Error loading departments" });
+            }
         }
 
         // GET: /Approval/Review/{id}

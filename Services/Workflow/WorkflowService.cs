@@ -441,6 +441,7 @@ namespace Ideku.Services.Workflow
         }}
     </style>
 </head>
+batu
 <body>
     <div class='container'>
         <div class='header'>
@@ -448,7 +449,7 @@ namespace Ideku.Services.Workflow
         </div>
         
         <div class='content'>
-            <p>ta {idea.InitiatorUser?.Name},</p>
+            <p>Hello {idea.InitiatorUser?.Name},</p>
             
             <p>Thank you for submitting your idea. After careful review, your idea has been rejected.</p>
             
