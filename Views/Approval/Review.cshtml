@@ -122,13 +122,20 @@
                     <div class="approve-section mb-4">
                         <h5><i class="fas fa-check-circle text-success"></i> Approve Idea</h5>
                         <div class="form-group mb-3">
-                            <label asp-for="ValidatedSavingCost" class="form-label"></label>
-                            <input asp-for="ValidatedSavingCost" class="form-control" placeholder="Enter validated amount" />
+                            <label asp-for="ValidatedSavingCost" class="form-label">
+                                Validated Saving Cost (USD) <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ValidatedSavingCost" class="form-control" 
+                                   type="number" step="0.01" min="0" 
+                                   placeholder="Enter validated cost savings amount in USD" />
                             <span asp-validation-for="ValidatedSavingCost" class="text-danger"></span>
                         </div>
                         <div class="form-group mb-3">
-                            <label asp-for="ApprovalComments" class="form-label"></label>
-                            <textarea asp-for="ApprovalComments" class="form-control" rows="3" placeholder="Enter approval comments"></textarea>
+                            <label asp-for="ApprovalComments" class="form-label">
+                                Approval Comments <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="ApprovalComments" class="form-control" rows="3" 
+                                      placeholder="Please provide detailed approval comments"></textarea>
                             <span asp-validation-for="ApprovalComments" class="text-danger"></span>
                         </div>
                         <button type="submit" class="btn btn-success" id="approveBtn"><i class="fas fa-check"></i> Approve Idea</button>
@@ -140,7 +147,9 @@
                     <div class="reject-section">
                         <h5><i class="fas fa-times-circle text-danger"></i> Reject Idea</h5>
                         <div class="form-group mb-3">
-                            <label asp-for="RejectionReason" class="form-label"></label>
+                            <label asp-for="RejectionReason" class="form-label">
+                                Rejection Reason <span class="text-danger">*</span>
+                            </label>
                             <textarea asp-for="RejectionReason" class="form-control" rows="3" placeholder="Please provide a clear reason for rejection"></textarea>
                             <span asp-validation-for="RejectionReason" class="text-danger"></span>
                         </div>
@@ -373,6 +382,37 @@
             approveForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                // Client-side validation
+                const validatedSavingCost = document.querySelector('input[name="ValidatedSavingCost"]').value;
+                const approvalComments = document.querySelector('textarea[name="ApprovalComments"]').value;
+                
+                if (!validatedSavingCost.trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning!',
+                        text: 'Validated saving cost is required'
+                    });
+                    return;
+                }
+                
+                if (parseFloat(validatedSavingCost) < 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning!',
+                        text: 'Validated saving cost must be a positive number'
+                    });
+                    return;
+                }
+                
+                if (!approvalComments.trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning!',
+                        text: 'Approval comments are required'
+                    });
+                    return;
+                }
+                
                 Swal.fire({
                     title: 'Confirm Approval',
                     text: 'Are you sure you want to approve this idea?',
@@ -384,12 +424,22 @@
                     cancelButtonText: 'Cancel'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Show loading state
+                        const approveBtn = document.getElementById('approveBtn');
+                        const originalBtnContent = approveBtn.innerHTML;
+                        approveBtn.disabled = true;
+                        approveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+                        
                         // Submit form by creating a new form submission
                         const formData = new FormData(approveForm);
                         fetch(approveForm.action, {
                             method: 'POST',
                             body: formData
                         }).then(response => {
+                            // Reset button state
+                            approveBtn.disabled = false;
+                            approveBtn.innerHTML = originalBtnContent;
+                            
                             if (response.redirected) {
                                 Swal.fire({
                                     icon: 'success',
@@ -402,6 +452,10 @@
                                 });
                             }
                         }).catch(error => {
+                            // Reset button state on error
+                            approveBtn.disabled = false;
+                            approveBtn.innerHTML = originalBtnContent;
+                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
@@ -424,7 +478,7 @@
                     Swal.fire({
                         icon: 'warning',
                         title: 'Warning!',
-                        text: 'Please provide a rejection reason first.'
+                        text: 'Rejection reason is required'
                     });
                     return;
                 }
@@ -440,12 +494,22 @@
                     cancelButtonText: 'Cancel'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Show loading state
+                        const rejectBtn = document.getElementById('rejectBtn');
+                        const originalBtnContent = rejectBtn.innerHTML;
+                        rejectBtn.disabled = true;
+                        rejectBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+                        
                         // Submit form by creating a new form submission
                         const formData = new FormData(rejectForm);
                         fetch(rejectForm.action, {
                             method: 'POST',
                             body: formData
                         }).then(response => {
+                            // Reset button state
+                            rejectBtn.disabled = false;
+                            rejectBtn.innerHTML = originalBtnContent;
+                            
                             if (response.redirected) {
                                 Swal.fire({
                                     icon: 'success',
@@ -458,6 +522,10 @@
                                 });
                             }
                         }).catch(error => {
+                            // Reset button state on error
+                            rejectBtn.disabled = false;
+                            rejectBtn.innerHTML = originalBtnContent;
+                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',

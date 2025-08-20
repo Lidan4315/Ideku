@@ -294,9 +294,8 @@ namespace Ideku.Controllers
                 return Challenge();
             }
 
-            // Remove validation errors for properties not needed for approval
-            ModelState.Remove("Idea");
-            ModelState.Remove("RejectionReason");
+            // Clean up ModelState for approval validation
+            CleanupModelStateForApprove();
 
             if (ModelState.IsValid)
             {
@@ -325,16 +324,8 @@ namespace Ideku.Controllers
                 return Challenge();
             }
 
-            // Remove validation errors for properties not needed for rejection
-            ModelState.Remove("Idea");
-            ModelState.Remove("ValidatedSavingCost");
-            ModelState.Remove("ApprovalComments");
-            
-            // We only need to validate the rejection reason
-            if (string.IsNullOrWhiteSpace(viewModel.RejectionReason))
-            {
-                ModelState.AddModelError("RejectionReason", "Rejection reason is required.");
-            }
+            // Clean up ModelState for rejection validation
+            CleanupModelStateForReject();
 
             if (ModelState.IsValid)
             {
@@ -351,6 +342,25 @@ namespace Ideku.Controllers
             }
             viewModel.Idea = idea;
             return View("Review", viewModel);
+        }
+
+        /// <summary>
+        /// Helper method to clean up ModelState for rejection validation
+        /// </summary>
+        private void CleanupModelStateForReject()
+        {
+            ModelState.Remove("Idea");
+            ModelState.Remove("ValidatedSavingCost");
+            ModelState.Remove("ApprovalComments");
+        }
+
+        /// <summary>
+        /// Helper method to clean up ModelState for approval validation  
+        /// </summary>
+        private void CleanupModelStateForApprove()
+        {
+            ModelState.Remove("Idea");
+            ModelState.Remove("RejectionReason");
         }
     }
 }
