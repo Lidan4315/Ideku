@@ -1,8 +1,12 @@
 using Ideku.Data.Repositories;
 using Ideku.Services.Workflow;
 using Ideku.ViewModels.Approval;
+using Ideku.Extensions;
+using Ideku.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Ideku.Controllers
@@ -25,6 +29,8 @@ namespace Ideku.Controllers
 
         // GET: /Approval or /Approval/Index
         public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 10,
             string? searchTerm = null,
             string? selectedDivision = null,
             string? selectedDepartment = null,
@@ -38,53 +44,61 @@ namespace Ideku.Controllers
                 return Challenge(); // Or redirect to login
             }
 
-            var ideas = await _workflowService.GetPendingApprovalsForUserAsync(username);
+            // Validate and normalize pagination parameters
+            pageSize = PaginationHelper.ValidatePageSize(pageSize);
+            page = Math.Max(1, page);
+
+            // Get user info for ViewBag
             var user = await _userRepository.GetByUsernameAsync(username);
 
-            // Apply filters
+            // Get base queryable with role-based filtering already applied
+            var ideasQuery = await _workflowService.GetPendingApprovalsQueryAsync(username);
+
+            // Apply additional filters
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                ideas = ideas.Where(i => 
+                ideasQuery = ideasQuery.Where(i => 
                     i.IdeaCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                     i.IdeaName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (i.InitiatorUser?.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+                    (i.InitiatorUser != null && i.InitiatorUser.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                 );
             }
 
             if (!string.IsNullOrWhiteSpace(selectedDivision))
             {
-                ideas = ideas.Where(i => i.ToDivisionId == selectedDivision);
+                ideasQuery = ideasQuery.Where(i => i.ToDivisionId == selectedDivision);
             }
 
             if (!string.IsNullOrWhiteSpace(selectedDepartment))
             {
-                ideas = ideas.Where(i => i.ToDepartmentId == selectedDepartment);
+                ideasQuery = ideasQuery.Where(i => i.ToDepartmentId == selectedDepartment);
             }
 
             if (selectedCategory.HasValue)
             {
-                ideas = ideas.Where(i => i.CategoryId == selectedCategory.Value);
+                ideasQuery = ideasQuery.Where(i => i.CategoryId == selectedCategory.Value);
             }
 
             if (selectedStage.HasValue)
             {
-                ideas = ideas.Where(i => i.CurrentStage == selectedStage.Value);
+                ideasQuery = ideasQuery.Where(i => i.CurrentStage == selectedStage.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(selectedStatus))
             {
-                ideas = ideas.Where(i => i.CurrentStatus == selectedStatus);
+                ideasQuery = ideasQuery.Where(i => i.CurrentStatus == selectedStatus);
             }
+
+            // Apply pagination - this executes the database queries
+            var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
 
             // Get lookup data for dropdowns
             var divisions = await _lookupRepository.GetDivisionsAsync();
             var categories = await _lookupRepository.GetCategoriesAsync();
-
-            var ideaList = ideas.ToList();
             
             var viewModel = new ApprovalListViewModel
             {
-                IdeasForApproval = ideaList,
+                PagedIdeas = pagedResult,
                 SearchTerm = searchTerm,
                 SelectedDivision = selectedDivision,
                 SelectedDepartment = selectedDepartment,
@@ -101,9 +115,11 @@ namespace Ideku.Controllers
             return View(viewModel);
         }
 
-        // AJAX endpoint for real-time filtering
+        // AJAX endpoint for real-time filtering with pagination support
         [HttpGet]
         public async Task<IActionResult> FilterIdeas(
+            int page = 1,
+            int pageSize = 10,
             string? searchTerm = null,
             string? selectedDivision = null,
             string? selectedDepartment = null,
@@ -117,49 +133,55 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = "Unauthorized" });
             }
 
-            var ideas = await _workflowService.GetPendingApprovalsForUserAsync(username);
+            // Validate pagination parameters
+            pageSize = PaginationHelper.ValidatePageSize(pageSize);
+            page = Math.Max(1, page);
+
+            // Get base queryable with role-based filtering
+            var ideasQuery = await _workflowService.GetPendingApprovalsQueryAsync(username);
 
             // Apply filters (same logic as Index method)
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                ideas = ideas.Where(i => 
+                ideasQuery = ideasQuery.Where(i => 
                     i.IdeaCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                     i.IdeaName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (i.InitiatorUser?.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+                    (i.InitiatorUser != null && i.InitiatorUser.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                 );
             }
 
             if (!string.IsNullOrWhiteSpace(selectedDivision))
             {
-                ideas = ideas.Where(i => i.ToDivisionId == selectedDivision);
+                ideasQuery = ideasQuery.Where(i => i.ToDivisionId == selectedDivision);
             }
 
             if (!string.IsNullOrWhiteSpace(selectedDepartment))
             {
-                ideas = ideas.Where(i => i.ToDepartmentId == selectedDepartment);
+                ideasQuery = ideasQuery.Where(i => i.ToDepartmentId == selectedDepartment);
             }
 
             if (selectedCategory.HasValue)
             {
-                ideas = ideas.Where(i => i.CategoryId == selectedCategory.Value);
+                ideasQuery = ideasQuery.Where(i => i.CategoryId == selectedCategory.Value);
             }
 
             if (selectedStage.HasValue)
             {
-                ideas = ideas.Where(i => i.CurrentStage == selectedStage.Value);
+                ideasQuery = ideasQuery.Where(i => i.CurrentStage == selectedStage.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(selectedStatus))
             {
-                ideas = ideas.Where(i => i.CurrentStatus == selectedStatus);
+                ideasQuery = ideasQuery.Where(i => i.CurrentStatus == selectedStatus);
             }
 
-            var ideaList = ideas.ToList();
+            // Apply pagination
+            var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
             
-            // Return JSON with filtered ideas and count
+            // Return JSON with paginated results
             return Json(new { 
                 success = true, 
-                ideas = ideaList.Select(i => new {
+                ideas = pagedResult.Items.Select(i => new {
                     ideaCode = i.IdeaCode,
                     ideaName = i.IdeaName,
                     initiatorName = i.InitiatorUser?.Name,
@@ -173,7 +195,16 @@ namespace Ideku.Controllers
                     submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
                     reviewUrl = Url.Action("Review", new { id = i.Id })
                 }),
-                totalCount = ideaList.Count
+                pagination = new {
+                    currentPage = pagedResult.Page,
+                    pageSize = pagedResult.PageSize,
+                    totalCount = pagedResult.TotalCount,
+                    totalPages = pagedResult.TotalPages,
+                    hasPrevious = pagedResult.HasPrevious,
+                    hasNext = pagedResult.HasNext,
+                    firstItemIndex = pagedResult.FirstItemIndex,
+                    lastItemIndex = pagedResult.LastItemIndex
+                }
             });
         }
 

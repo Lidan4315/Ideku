@@ -229,6 +229,12 @@
                     <p class="text-muted">You have no pending approvals at the moment.</p>
                 </div>
             }
+            
+            <!-- Pagination Controls -->
+            @if (Model.ShowPagination)
+            {
+                @await Html.PartialAsync("_PaginationPartial", Model.PagedIdeas)
+            }
         </div>
     </div>
 </div>
@@ -344,10 +350,6 @@
 </style>
 
 <script>
-/**
- * Approval Filter System
- * Real-time AJAX filtering with cascading dropdowns
- */
 document.addEventListener('DOMContentLoaded', function() {
     // DOM element references
     const searchInput = document.getElementById('searchTerm');
@@ -367,6 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (initialDivision && initialDivision !== '') {
         loadDepartmentsForDivision(initialDivision, initialDepartment);
     }
+
 
     // Debounced search input
     searchInput.addEventListener('input', function() {
@@ -477,14 +480,16 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     updateTable(data.ideas);
-                    updateResultCount(data.totalCount);
+                    updatePagination(data.pagination);
                 } else {
                     tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">Error loading data</td></tr>';
+                    hidePagination();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">Error loading data</td></tr>';
+                hidePagination();
             });
     }
 
@@ -576,8 +581,41 @@ document.addEventListener('DOMContentLoaded', function() {
         tableBody.innerHTML = rows;
     }
 
-    function updateResultCount(count) {
-        // Result count tracking (can be extended for UI display)
+    function updatePagination(paginationData) {
+        const paginationContainer = document.querySelector('.pagination-container-single-row');
+        
+        if (!paginationData || paginationData.totalPages <= 1) {
+            if (paginationContainer) {
+                paginationContainer.style.display = 'none';
+            }
+            return;
+        }
+        
+        if (paginationContainer) {
+            paginationContainer.style.display = 'flex';
+            
+            // Update pagination info
+            const paginationInfo = paginationContainer.querySelector('.pagination-info span');
+            if (paginationInfo) {
+                paginationInfo.innerHTML = `Showing <strong>${paginationData.firstItemIndex}-${paginationData.lastItemIndex}</strong> of <strong>${paginationData.totalCount}</strong> items`;
+            }
+            
+            // Update page size selector
+            const pageSizeSelect = paginationContainer.querySelector('.page-size-selector select');
+            if (pageSizeSelect) {
+                pageSizeSelect.value = paginationData.pageSize;
+            }
+            
+            // For full pagination update, reload the page with new parameters
+            // This ensures URL consistency and proper navigation
+        }
+    }
+    
+    function hidePagination() {
+        const paginationContainer = document.querySelector('.pagination-container-single-row');
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
     }
 });
 </script>
