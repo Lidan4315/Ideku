@@ -350,15 +350,458 @@
 </style>
 
 <script>
+// ========================================================
+// AJAX FILTERING & PAGINATION SYSTEM
+// ========================================================
+// Features:
+// - Real-time filtering without page reload
+// - Dynamic pagination based on filtered results  
+// - Cascading dropdown (Division -> Department)
+// - Browser history management
+// ========================================================
+
+/**
+ * Enhanced load filtered results with pagination support and URL management
+ */
+function loadFilteredResults(page = 1, pageSize = 10) {
+    const filters = getCurrentFilters();
+    
+    // Build parameters including pagination
+    const params = new URLSearchParams();
+    
+    // Add pagination
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    
+    // Add filters only if they have values
+    if (filters.searchTerm && filters.searchTerm.trim()) {
+        params.append('searchTerm', filters.searchTerm.trim());
+    }
+    if (filters.selectedDivision) {
+        params.append('selectedDivision', filters.selectedDivision);
+    }
+    if (filters.selectedDepartment) {
+        params.append('selectedDepartment', filters.selectedDepartment);
+    }
+    if (filters.selectedCategory) {
+        params.append('selectedCategory', filters.selectedCategory);
+    }
+    if (filters.selectedStage) {
+        params.append('selectedStage', filters.selectedStage);
+    }
+    if (filters.selectedStatus) {
+        params.append('selectedStatus', filters.selectedStatus);
+    }
+
+    // Show loading state
+    showLoadingState();
+
+    // Build URL for browser history
+    const newUrl = `/Approval?${params.toString()}`;
+    
+    // Update browser URL without reload (for bookmarking)
+    if (page !== 1 || hasActiveFilters()) {
+        history.pushState({ page, filters }, null, newUrl);
+    }
+
+    // Execute AJAX request
+    const requestUrl = `/Approval/FilterIdeas?${params.toString()}`;
+    
+    fetch(requestUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                updateTable(data.ideas);
+                updateAjaxPagination(data.pagination, filters);
+                hideLoadingState();
+            } else {
+                showErrorState(data.message || 'Error loading data');
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Filter Error:', error);
+            showErrorState(`Error: ${error.message}`);
+        });
+}
+
+/**
+ * Get current filter values from form elements
+ */
+function getCurrentFilters() {
+    return {
+        searchTerm: document.getElementById('searchTerm')?.value?.trim() || '',
+        selectedDivision: document.getElementById('selectedDivision')?.value || '',
+        selectedDepartment: document.getElementById('selectedDepartment')?.value || '',
+        selectedCategory: document.getElementById('selectedCategory')?.value || '',
+        selectedStage: document.getElementById('selectedStage')?.value || '',
+        selectedStatus: document.getElementById('selectedStatus')?.value || ''
+    };
+}
+
+/**
+ * Check if any filters are currently active
+ */
+function hasActiveFilters() {
+    const filters = getCurrentFilters();
+    return Object.values(filters).some(value => value && value.toString().trim() !== '');
+}
+
+/**
+ * Get current page size from pagination
+ */
+function getCurrentPageSize() {
+    return parseInt(document.querySelector('.pagination select')?.value) || 10;
+}
+
+/**
+ * Show loading state with modern spinner
+ */
+function showLoadingState() {
+    const tableBody = document.querySelector('#ideas-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="11" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted">Loading filtered results...</div>
+                </td>
+            </tr>`;
+    }
+}
+
+/**
+ * Show error state with retry option  
+ */
+function showErrorState(message) {
+    const tableBody = document.querySelector('#ideas-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="11" class="text-center py-4">
+                    <div class="text-danger mb-2">
+                        <i class="bi bi-exclamation-triangle"></i> ${message}
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadFilteredResults()">
+                        <i class="bi bi-arrow-clockwise"></i> Retry
+                    </button>
+                </td>
+            </tr>`;
+    }
+    
+    // Hide pagination on error
+    const paginationContainer = document.querySelector('.pagination-container-single-row');
+    if (paginationContainer) {
+        paginationContainer.style.display = 'none';
+    }
+}
+
+function hideLoadingState() {
+    // Loading state will be replaced by updateTable()
+}
+
+// ========================================================
+// GLOBAL VARIABLES & UTILITY FUNCTIONS
+// ========================================================
+
+// DOM element references
+let searchInput, divisionSelect, departmentSelect, categorySelect, stageSelect, statusSelect, tableBody;
+
+// Helper functions for styling and formatting
+function getCategoryClass(categoryName) {
+    switch (categoryName) {
+        case 'Cost Reduction (CR)': return 'bg-success';
+        case 'Digitalization': return 'bg-primary';
+        case 'General Transformation': return 'bg-info text-dark';
+        case 'Increase Revenue': return 'bg-warning text-dark';
+        default: return 'bg-secondary';
+    }
+}
+
+function getEventClass(eventName) {
+    switch (eventName) {
+        case 'CI Academy': return 'bg-purple text-white';
+        case 'Hackathon': return 'bg-orange text-white';
+        default: return 'bg-light text-dark';
+    }
+}
+
+function getStatusClass(status) {
+    if (status.startsWith('Waiting Approval')) return 'bg-warning text-dark';
+    if (status.startsWith('Rejected S')) return 'bg-danger';
+    if (status === 'Approved') return 'bg-success';
+    if (status === 'Rejected') return 'bg-danger';
+    if (status === 'Completed') return 'bg-primary';
+    return 'bg-secondary';
+}
+
+function formatCurrency(amount) {
+    if (!amount || amount === 0) return '';
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+
+function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    const dateStr = date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+    const timeStr = date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+    return { dateStr, timeStr };
+}
+
+function createTableRow(idea) {
+    const { dateStr, timeStr } = formatDateTime(idea.submittedDate);
+    
+    return `
+        <tr style="cursor: pointer;" onclick="window.location='${idea.reviewUrl}'">
+            <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
+            <td>
+                <div class="truncate-title" title="${idea.ideaName}">
+                    ${idea.ideaName}
+                </div>
+            </td>
+            <td><strong>${idea.initiatorName || ''}</strong></td>
+            <td><strong>${idea.divisionName || ''}</strong></td>
+            <td><small class="text-muted">${idea.departmentName || ''}</small></td>
+            <td>
+                ${idea.categoryName ? `<span class="badge ${getCategoryClass(idea.categoryName)}">${idea.categoryName}</span>` : ''}
+            </td>
+            <td>
+                ${idea.eventName ? `<span class="badge ${getEventClass(idea.eventName)}">${idea.eventName}</span>` : ''}
+            </td>
+            <td><span class="badge bg-secondary">S${idea.currentStage}</span></td>
+            <td>
+                ${idea.savingCost ? `<span class="fw-bold text-success">${formatCurrency(idea.savingCost)}</span>` : ''}
+            </td>
+            <td><span class="badge ${getStatusClass(idea.currentStatus)}">${idea.currentStatus}</span></td>
+            <td>
+                <div>${dateStr}</div>
+                <small class="text-muted">${timeStr}</small>
+            </td>
+        </tr>
+    `;
+}
+
+// ========================================================
+// TABLE & PAGINATION UPDATE FUNCTIONS
+// ========================================================
+
+function updateTable(ideas) {
+    if (!tableBody) {
+        console.error('Table body element not found');
+        return;
+    }
+    
+    if (ideas.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No ideas found matching your filters</td></tr>';
+        return;
+    }
+
+    const rows = ideas.map(createTableRow).join('');
+    tableBody.innerHTML = rows;
+}
+
+/**
+ * Update AJAX pagination with filter awareness
+ */
+function updateAjaxPagination(paginationData, filters = {}) {
+    const paginationContainer = document.querySelector('.pagination-container-single-row');
+    
+    if (!paginationData || paginationData.totalPages <= 1) {
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
+        return;
+    }
+
+    if (paginationContainer) {
+        paginationContainer.style.display = 'flex';
+        
+        // Update pagination info
+        const paginationInfo = paginationContainer.querySelector('.pagination-info span');
+        if (paginationInfo) {
+            paginationInfo.innerHTML = `
+                Showing <strong>${paginationData.firstItemIndex}-${paginationData.lastItemIndex}</strong> 
+                of <strong>${paginationData.totalCount}</strong> items
+            `;
+        }
+
+        // Regenerate pagination HTML based on filtered data
+        regeneratePaginationHTML(paginationData, filters);
+        
+        // Update pagination links with AJAX handlers
+        updatePaginationLinks(paginationData, filters);
+    }
+}
+
+/**
+ * Regenerate pagination HTML based on filtered data
+ */
+function regeneratePaginationHTML(paginationData, filters = {}) {
+    const paginationNav = document.querySelector('.pagination-navigation ul.pagination');
+    if (!paginationNav) {
+        return;
+    }
+    
+    // Calculate visible pages (show max 5 pages)
+    const currentPage = paginationData.currentPage;
+    const totalPages = paginationData.totalPages;
+    const maxVisible = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
+    // Adjust start if we're near the end
+    if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    // Build filter parameters for URLs
+    const filterParams = new URLSearchParams();
+    if (filters.searchTerm) filterParams.append('searchTerm', filters.searchTerm);
+    if (filters.selectedDivision) filterParams.append('selectedDivision', filters.selectedDivision);
+    if (filters.selectedDepartment) filterParams.append('selectedDepartment', filters.selectedDepartment);
+    if (filters.selectedCategory) filterParams.append('selectedCategory', filters.selectedCategory);
+    if (filters.selectedStage) filterParams.append('selectedStage', filters.selectedStage);
+    if (filters.selectedStatus) filterParams.append('selectedStatus', filters.selectedStatus);
+    filterParams.append('pageSize', paginationData.pageSize);
+    
+    // Generate pagination HTML
+    let paginationHTML = '';
+    
+    // First button
+    paginationHTML += `
+        <li class="page-item first-last-btn ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="/Approval?${filterParams}&page=1" title="First Page">
+                <i class="bi bi-chevron-double-left"></i>
+            </a>
+        </li>
+    `;
+    
+    // Previous button
+    paginationHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="/Approval?${filterParams}&page=${currentPage - 1}" title="Previous">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+    `;
+    
+    // Page numbers
+    for (let page = startPage; page <= endPage; page++) {
+        const isActive = page === currentPage;
+        paginationHTML += `
+            <li class="page-item page-number desktop-page ${isActive ? 'active' : ''}">
+                <a class="page-link ${isActive ? 'current-page' : ''}" href="/Approval?${filterParams}&page=${page}" title="Go to page ${page}">${page}</a>
+            </li>
+        `;
+    }
+    
+    // Mobile current page
+    paginationHTML += `
+        <li class="page-item page-number mobile-page">
+            <span class="page-link" style="background-color: white; border-color: #dee2e6; color: #495057;" aria-current="page">${currentPage}</span>
+        </li>
+    `;
+    
+    // Next button
+    paginationHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="/Approval?${filterParams}&page=${currentPage + 1}" title="Next">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    `;
+    
+    // Last button
+    paginationHTML += `
+        <li class="page-item first-last-btn ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="/Approval?${filterParams}&page=${totalPages}" title="Last Page">
+                <i class="bi bi-chevron-double-right"></i>
+            </a>
+        </li>
+    `;
+    
+    // Update pagination HTML
+    paginationNav.innerHTML = paginationHTML;
+}
+
+// ========================================================
+// PAGINATION EVENT HANDLERS
+// ========================================================
+
+// setupInitialPaginationHandlers function removed - pagination works normally without filters
+
+/**
+ * Update pagination links with AJAX event handlers
+ */
+function updatePaginationLinks(paginationData, filters) {
+    const paginationLinks = document.querySelectorAll('.pagination a');
+    
+    // Remove existing event listeners and add new AJAX handlers
+    paginationLinks.forEach(link => {
+        // Clone node to remove all event listeners
+        const newLink = link.cloneNode(true);
+        link.parentNode.replaceChild(newLink, link);
+        
+        // Add AJAX click handler
+        newLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Extract page number from href
+            const url = new URL(this.href, window.location.origin);
+            const page = parseInt(url.searchParams.get('page')) || 1;
+            const pageSize = parseInt(url.searchParams.get('pageSize')) || getCurrentPageSize();
+            
+            // Load page via AJAX with current filters
+            loadFilteredResults(page, pageSize);
+        });
+    });
+
+    // Also handle page size selector
+    const pageSizeSelect = document.querySelector('.pagination select');
+    if (pageSizeSelect) {
+        // Remove existing onchange and add AJAX handler
+        pageSizeSelect.removeAttribute('onchange');
+        
+        pageSizeSelect.addEventListener('change', function() {
+            const newPageSize = parseInt(this.value);
+            loadFilteredResults(1, newPageSize); // Reset to page 1 with new page size
+        });
+    }
+}
+
+// ========================================================
+// INITIALIZATION & EVENT SETUP
+// ========================================================
+
 document.addEventListener('DOMContentLoaded', function() {
-    // DOM element references
-    const searchInput = document.getElementById('searchTerm');
-    const divisionSelect = document.getElementById('selectedDivision');
-    const departmentSelect = document.getElementById('selectedDepartment');
-    const categorySelect = document.getElementById('selectedCategory');
-    const stageSelect = document.getElementById('selectedStage');
-    const statusSelect = document.getElementById('selectedStatus');
-    const tableBody = document.getElementById('ideas-table-body');
+    // Initialize DOM element references
+    searchInput = document.getElementById('searchTerm');
+    divisionSelect = document.getElementById('selectedDivision');
+    departmentSelect = document.getElementById('selectedDepartment');
+    categorySelect = document.getElementById('selectedCategory');
+    stageSelect = document.getElementById('selectedStage');
+    statusSelect = document.getElementById('selectedStatus');
+    tableBody = document.getElementById('ideas-table-body');
     
     let debounceTimeout;
 
@@ -370,14 +813,33 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDepartmentsForDivision(initialDivision, initialDepartment);
     }
 
+    // Pagination works normally without filters - AJAX only activated after filtering
 
-    // Debounced search input
+
+    // Prevent form submission - use AJAX only
+    const filterForm = document.querySelector('form[method="get"]');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent traditional form submission
+            applyFilters(); // Use AJAX instead
+        });
+    }
+
+    // Handle Enter key in search input
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Prevent form submission
+            applyFilters(); // Use AJAX instead
+        }
+    });
+
+    // Debounced search input with AJAX
     searchInput.addEventListener('input', function() {
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => applyFilters(), 300);
     });
 
-    // Dropdown change events
+    // Dropdown change events with AJAX
     [departmentSelect, categorySelect, stageSelect, statusSelect].forEach(select => {
         select.addEventListener('change', applyFilters);
     });
@@ -422,7 +884,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Special handling for Division dropdown (cascading)
+    // Special handling for Division dropdown (cascading) 
     divisionSelect.addEventListener('change', function() {
         const divisionId = this.value;
         
@@ -431,7 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
         departmentSelect.value = '';
         
         if (!divisionId) {
-            // If "All Divisions" selected, just apply filters
+            // If "All Divisions" selected, apply filters
             applyFilters();
             return;
         }
@@ -439,7 +901,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDepartmentsForDivision(divisionId);
         
         // Apply filters after department dropdown is updated
-        setTimeout(() => applyFilters(), 500); // Small delay to ensure departments are loaded
+        setTimeout(() => applyFilters(), 500);
     });
 
     function applyFilters() {
@@ -463,160 +925,37 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const params = new URLSearchParams({
-            searchTerm,
-            selectedDivision,
-            selectedDepartment,
-            selectedCategory,
-            selectedStage,
-            selectedStatus
-        });
-
-        // Show loading
-        tableBody.innerHTML = '<tr><td colspan="11" class="text-center">Loading...</td></tr>';
-
-        fetch(`/Approval/FilterIdeas?${params}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateTable(data.ideas);
-                    updatePagination(data.pagination);
-                } else {
-                    tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">Error loading data</td></tr>';
-                    hidePagination();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">Error loading data</td></tr>';
-                hidePagination();
-            });
+        // Call the enhanced load function with current filters
+        loadFilteredResults(1, getCurrentPageSize());
     }
 
-    // Helper functions for consistent styling
-    function getCategoryClass(categoryName) {
-        switch (categoryName) {
-            case 'Cost Reduction (CR)': return 'bg-success';
-            case 'Digitalization': return 'bg-primary';
-            case 'General Transformation': return 'bg-info text-dark';
-            case 'Increase Revenue': return 'bg-warning text-dark';
-            default: return 'bg-secondary';
-        }
-    }
+    // Functions have been moved to global scope above
 
-    function getEventClass(eventName) {
-        switch (eventName) {
-            case 'CI Academy': return 'bg-purple text-white';
-            case 'Hackathon': return 'bg-orange text-white';
-            default: return 'bg-light text-dark';
-        }
-    }
-
-    function getStatusClass(status) {
-        if (status.startsWith('Waiting Approval')) return 'bg-warning text-dark';
-        if (status.startsWith('Rejected S')) return 'bg-danger';
-        if (status === 'Approved') return 'bg-success';
-        if (status === 'Rejected') return 'bg-danger';
-        if (status === 'Completed') return 'bg-primary';
-        return 'bg-secondary';
-    }
-
-    function formatCurrency(amount) {
-        if (!amount || amount === 0) return '';
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
-    }
-
-    function formatDateTime(dateString) {
-        const date = new Date(dateString);
-        const dateStr = date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-        const timeStr = date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
-        return { dateStr, timeStr };
-    }
-
-    function createTableRow(idea) {
-        const { dateStr, timeStr } = formatDateTime(idea.submittedDate);
-        
-        return `
-            <tr style="cursor: pointer;" onclick="window.location='${idea.reviewUrl}'">
-                <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
-                <td>
-                    <div class="truncate-title" title="${idea.ideaName}">
-                        ${idea.ideaName}
-                    </div>
-                </td>
-                <td><strong>${idea.initiatorName || ''}</strong></td>
-                <td><strong>${idea.divisionName || ''}</strong></td>
-                <td><small class="text-muted">${idea.departmentName || ''}</small></td>
-                <td>
-                    ${idea.categoryName ? `<span class="badge ${getCategoryClass(idea.categoryName)}">${idea.categoryName}</span>` : ''}
-                </td>
-                <td>
-                    ${idea.eventName ? `<span class="badge ${getEventClass(idea.eventName)}">${idea.eventName}</span>` : ''}
-                </td>
-                <td><span class="badge bg-secondary">S${idea.currentStage}</span></td>
-                <td>
-                    ${idea.savingCost ? `<span class="fw-bold text-success">${formatCurrency(idea.savingCost)}</span>` : ''}
-                </td>
-                <td><span class="badge ${getStatusClass(idea.currentStatus)}">${idea.currentStatus}</span></td>
-                <td>
-                    <div>${dateStr}</div>
-                    <small class="text-muted">${timeStr}</small>
-                </td>
-            </tr>
-        `;
-    }
-
-    function updateTable(ideas) {
-        if (ideas.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No ideas found matching your filters</td></tr>';
-            return;
-        }
-
-        const rows = ideas.map(createTableRow).join('');
-        tableBody.innerHTML = rows;
-    }
-
-    function updatePagination(paginationData) {
-        const paginationContainer = document.querySelector('.pagination-container-single-row');
-        
-        if (!paginationData || paginationData.totalPages <= 1) {
-            if (paginationContainer) {
-                paginationContainer.style.display = 'none';
-            }
-            return;
-        }
-        
-        if (paginationContainer) {
-            paginationContainer.style.display = 'flex';
+    // Browser history management for back/forward navigation
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.filters) {
+            // Restore filter values from history state
+            const filters = event.state.filters;
             
-            // Update pagination info
-            const paginationInfo = paginationContainer.querySelector('.pagination-info span');
-            if (paginationInfo) {
-                paginationInfo.innerHTML = `Showing <strong>${paginationData.firstItemIndex}-${paginationData.lastItemIndex}</strong> of <strong>${paginationData.totalCount}</strong> items`;
+            document.getElementById('searchTerm').value = filters.searchTerm || '';
+            document.getElementById('selectedDivision').value = filters.selectedDivision || '';
+            document.getElementById('selectedDepartment').value = filters.selectedDepartment || '';
+            document.getElementById('selectedCategory').value = filters.selectedCategory || '';
+            document.getElementById('selectedStage').value = filters.selectedStage || '';
+            document.getElementById('selectedStatus').value = filters.selectedStatus || '';
+            
+            // Reload departments if division is selected
+            if (filters.selectedDivision) {
+                loadDepartmentsForDivision(filters.selectedDivision, filters.selectedDepartment);
             }
             
-            // Update page size selector
-            const pageSizeSelect = paginationContainer.querySelector('.page-size-selector select');
-            if (pageSizeSelect) {
-                pageSizeSelect.value = paginationData.pageSize;
-            }
-            
-            // For full pagination update, reload the page with new parameters
-            // This ensures URL consistency and proper navigation
+            // Load results for the restored state
+            loadFilteredResults(event.state.page || 1, getCurrentPageSize());
+        } else {
+            // No state, reload original page
+            window.location.reload();
         }
-    }
-    
-    function hidePagination() {
-        const paginationContainer = document.querySelector('.pagination-container-single-row');
-        if (paginationContainer) {
-            paginationContainer.style.display = 'none';
-        }
-    }
+    });
 });
 </script>
 

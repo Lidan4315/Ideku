@@ -17,6 +17,7 @@
     }
     routeData["pageSize"] = Model.PageSize.ToString();
 
+
     <div class="pagination-container-single-row">
         <div class="pagination-info">
             <i class="bi bi-info-circle text-primary me-1"></i>
@@ -132,13 +133,28 @@
         </div>
     </div>
 
-    <!-- JavaScript for page size change -->
+    <!-- JavaScript for unified page size change -->
     <script>
         function changePageSize(newPageSize) {
-            const currentUrl = new URL(window.location);
-            currentUrl.searchParams.set('pageSize', newPageSize);
-            currentUrl.searchParams.set('page', '1'); // Reset to page 1 when changing page size
-            window.location.href = currentUrl.toString();
+            // Check if we're in AJAX mode (has active filters)
+            if (typeof hasActiveFilters === 'function' && hasActiveFilters()) {
+                // Use AJAX method
+                if (typeof loadFilteredResults === 'function') {
+                    loadFilteredResults(1, newPageSize);
+                } else {
+                    // Fallback to URL method
+                    const currentUrl = new URL(window.location);
+                    currentUrl.searchParams.set('pageSize', newPageSize);
+                    currentUrl.searchParams.set('page', '1');
+                    window.location.href = currentUrl.toString();
+                }
+            } else {
+                // Use traditional URL method
+                const currentUrl = new URL(window.location);
+                currentUrl.searchParams.set('pageSize', newPageSize);
+                currentUrl.searchParams.set('page', '1');
+                window.location.href = currentUrl.toString();
+            }
         }
     </script>
 }

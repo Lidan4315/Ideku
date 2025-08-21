@@ -58,9 +58,9 @@ namespace Ideku.Controllers
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 ideasQuery = ideasQuery.Where(i => 
-                    i.IdeaCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    i.IdeaName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (i.InitiatorUser != null && i.InitiatorUser.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                    i.IdeaCode.Contains(searchTerm) ||
+                    i.IdeaName.Contains(searchTerm) ||
+                    (i.InitiatorUser != null && i.InitiatorUser.Name.Contains(searchTerm))
                 );
             }
 
@@ -144,9 +144,9 @@ namespace Ideku.Controllers
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 ideasQuery = ideasQuery.Where(i => 
-                    i.IdeaCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    i.IdeaName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (i.InitiatorUser != null && i.InitiatorUser.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                    i.IdeaCode.Contains(searchTerm) ||
+                    i.IdeaName.Contains(searchTerm) ||
+                    (i.InitiatorUser != null && i.InitiatorUser.Name.Contains(searchTerm))
                 );
             }
 
