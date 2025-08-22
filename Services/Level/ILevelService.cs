@@ -7,6 +7,7 @@ namespace Ideku.Services.Level
         Task<IEnumerable<Models.Entities.Level>> GetAllLevelsAsync();
         Task<Models.Entities.Level?> GetLevelByIdAsync(int id);
         Task<Models.Entities.Level> AddLevelAsync(Models.Entities.Level level);
+        Task<bool> UpdateLevelAsync(Models.Entities.Level level);
         Task<bool> DeleteLevelAsync(int id);
         Task<IEnumerable<Role>> GetAllRolesAsync();
         Task<LevelApprover> AddLevelApproverAsync(LevelApprover levelApprover);

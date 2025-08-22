@@ -1,0 +1,219 @@
+@model Ideku.ViewModels.LevelManagement.LevelIndexViewModel
+@{
+    ViewData["Title"] = "Level Management";
+}
+
+@section Styles {
+    <link href="~/css/pages/level-management.css" rel="stylesheet" />
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-secondary me-3" title="Back to Settings">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <h2 class="page-title text-gradient mb-0">
+                                <i class="bi bi-diagram-3 me-2"></i>Level Management
+                            </h2>
+                        </div>
+                        <p class="text-muted">Manage workflow levels and their configurations</p>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLevelModal">
+                            <i class="bi bi-plus-circle me-2"></i>Add Level
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    @if (Model.Levels.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Level Name</th>
+                                        <th>Status</th>
+                                        <th>Created Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var level in Model.Levels)
+                                    {
+                                        <tr class="clickable-row" data-href="@Url.Action("Details", "LevelManagement", new { id = level.Id })">
+                                            <td>
+                                                <span class="badge bg-light text-dark fw-bold">@level.Id</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@level.LevelName</span>
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var statusClass = level.IsActive ? "bg-success" : "bg-danger";
+                                                    var statusText = level.IsActive ? "Active" : "Inactive";
+                                                }
+                                                <span class="badge @statusClass">@statusText</span>
+                                            </td>
+                                            <td>
+                                                <div class="text-dark fw-semibold">@level.CreatedAt.ToString("MMM dd, yyyy")</div>
+                                                <small class="text-muted">@level.CreatedAt.ToString("HH:mm")</small>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-outline-danger btn-sm delete-level-btn" 
+                                                        data-level-id="@level.Id" 
+                                                        data-level-name="@level.LevelName"
+                                                        title="Delete Level">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-diagram-3 display-1 text-muted mb-3"></i>
+                                <h4 class="text-muted">No Levels Configured</h4>
+                                <p class="text-muted mb-4">You haven't created any workflow levels yet. Start by adding your first level!</p>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLevelModal">
+                                    <i class="bi bi-plus-circle me-2"></i>Add Your First Level
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.Levels.Any())
+            {
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <h3 class="text-primary">@Model.Levels.Count()</h3>
+                                    <p class="text-muted mb-0">Total Levels</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <h3 class="text-success">@Model.Levels.Count(l => l.IsActive)</h3>
+                                    <p class="text-muted mb-0">Active</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <h3 class="text-danger">@Model.Levels.Count(l => !l.IsActive)</h3>
+                                    <p class="text-muted mb-0">Inactive</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add Level Modal -->
+<div class="modal fade" id="addLevelModal" tabindex="-1" aria-labelledby="addLevelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addLevelModalLabel">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Level
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addLevelForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="levelName" class="form-label">Level Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">LV</span>
+                            <input type="text" class="form-control" id="levelName" name="levelName" required 
+                                   placeholder="e.g. 01, 02, MANAGER, etc." style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-text">Enter level identifier (will be prefixed with LV and converted to uppercase)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Approvers <span class="text-danger">*</span></label>
+                        <div id="approversContainer">
+                            <div class="row approver-row mb-2">
+                                <div class="col-md-6">
+                                    <select class="form-select" name="roleIds[]" required>
+                                        <option value="">Select Role</option>
+                                        @foreach (var role in Model.RoleList)
+                                        {
+                                            <option value="@role.Value">@role.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control" name="approvalLevels[]" placeholder="Level" min="1" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" name="isPrimaries[]" value="1">
+                                        <label class="form-check-label">Primary</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeApprover(this)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addApprover()">
+                            <i class="bi bi-plus-circle me-1"></i>Add Another Approver
+                        </button>
+                        <div class="form-text">Add at least one approver for this level</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                            <label class="form-check-label" for="isActive">
+                                Active Level
+                            </label>
+                        </div>
+                        <div class="form-text">Inactive levels will not be available for new workflows</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Save Level
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        // Set up URLs for level management
+        window.levelManagementUrls = {
+            create: '@Url.Action("Create", "LevelManagement")',
+            delete: '@Url.Action("Delete", "LevelManagement")'
+        };
+    </script>
+    <script src="~/js/pages/level-management.js"></script>
+}

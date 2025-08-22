@@ -1,0 +1,256 @@
+@model IEnumerable<Ideku.Models.Entities.Workflow>
+
+@{
+    ViewData["Title"] = "Workflow Management";
+}
+
+@section Styles {
+    <link href="~/css/pages/workflow-management.css" rel="stylesheet" />
+    <style>
+        .clickable-row {
+            cursor: pointer;
+        }
+        .clickable-row:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-secondary me-3" title="Back to Settings">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <h2 class="page-title text-gradient mb-0">
+                                <i class="bi bi-diagram-3 me-2"></i>Workflow Management
+                            </h2>
+                        </div>
+                        <p class="text-muted">Manage workflow configurations and approval stages</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkflowModal">
+                            <i class="bi bi-plus-circle me-1"></i>Add New Workflow
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Messages -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Workflows Card -->
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%">ID</th>
+                                        <th style="width: 20%">Workflow Name</th>
+                                        <th style="width: 35%">Description</th>
+                                        <th style="width: 10%">Status</th>
+                                        <th style="width: 10%">Stages</th>
+                                        <th style="width: 10%">Conditions</th>
+                                        <th style="width: 10%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{int counter = 1;}
+                                    @foreach (var workflow in Model)
+                                    {
+                                        <tr class="clickable-row" data-href="@Url.Action("Details", "WorkflowManagement", new { id = workflow.Id })">
+                                            <td>
+                                                <span class="badge bg-light text-dark fw-bold">@workflow.Id</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@workflow.WorkflowName</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted">@(workflow.Desc ?? "No description")</span>
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var statusClass = workflow.IsActive ? "bg-success" : "bg-danger";
+                                                    var statusText = workflow.IsActive ? "Active" : "Inactive";
+                                                }
+                                                <span class="badge @statusClass">@statusText</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@workflow.WorkflowStages.Count() stages</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">@workflow.WorkflowConditions.Count() conditions</span>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-outline-danger btn-sm delete-workflow-btn" 
+                                                        data-workflow-id="@workflow.Id" 
+                                                        data-workflow-name="@workflow.WorkflowName"
+                                                        title="Delete Workflow">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        counter++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-diagram-3 text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mt-3">No Workflows Found</h5>
+                            <p class="text-muted">Click "Add New Workflow" to create your first workflow.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Workflow Modal -->
+<div class="modal fade" id="addWorkflowModal" tabindex="-1" aria-labelledby="addWorkflowModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="addWorkflowForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addWorkflowModalLabel">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Workflow
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="workflowName" class="form-label">Workflow Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">WF_</span>
+                            <input type="text" class="form-control" id="workflowName" name="workflowName" maxlength="17" required 
+                                   placeholder="e.g. STANDARD, EMERGENCY, etc." style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-text">Enter workflow identifier (will be prefixed with WF_ and converted to uppercase)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="desc" class="form-label">Description</label>
+                        <textarea class="form-control" id="desc" name="desc" rows="3" maxlength="200" placeholder="Enter workflow description (optional)"></textarea>
+                        <div class="form-text">Maximum 200 characters</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                            <label class="form-check-label" for="isActive">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Add Workflow
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Workflow Modal -->
+<div class="modal fade" id="editWorkflowModal" tabindex="-1" aria-labelledby="editWorkflowModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editWorkflowForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editWorkflowModalLabel">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Workflow
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editWorkflowId" name="id">
+                    <div class="mb-3">
+                        <label for="editWorkflowName" class="form-label">Workflow Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">WF_</span>
+                            <input type="text" class="form-control" id="editWorkflowName" name="workflowName" maxlength="17" required 
+                                   placeholder="e.g. STANDARD, EMERGENCY, etc." style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-text">Enter workflow identifier (will be prefixed with WF_ and converted to uppercase)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDesc" class="form-label">Description</label>
+                        <textarea class="form-control" id="editDesc" name="desc" rows="3" maxlength="200" placeholder="Enter workflow description (optional)"></textarea>
+                        <div class="form-text">Maximum 200 characters</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editIsActive" name="isActive">
+                            <label class="form-check-label" for="editIsActive">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Update Workflow
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Set up URLs for workflow management
+        window.workflowManagementUrls = {
+            create: '/WorkflowManagement/Create',
+            edit: '/WorkflowManagement/Edit',
+            delete: '/WorkflowManagement/Delete'
+        };
+        
+        // Open edit modal function
+        function openEditModal(id, workflowName, desc, isActive) {
+            // Fill form with existing data
+            document.getElementById('editWorkflowId').value = id;
+            
+            // Remove WF_ prefix for display
+            var displayName = workflowName.startsWith('WF_') ? workflowName.substring(3) : workflowName;
+            document.getElementById('editWorkflowName').value = displayName;
+            
+            document.getElementById('editDesc').value = desc || '';
+            document.getElementById('editIsActive').checked = isActive;
+            
+            // Show modal
+            var editModal = new bootstrap.Modal(document.getElementById('editWorkflowModal'));
+            editModal.show();
+        }
+    </script>
+    <script src="~/js/pages/workflow-management.js"></script>
+}
+

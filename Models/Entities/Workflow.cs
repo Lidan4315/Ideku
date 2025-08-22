@@ -15,10 +15,9 @@ namespace Ideku.Models.Entities
         [StringLength(20)]
         public string WorkflowName { get; set; } = string.Empty;
 
-        [Required]
         [Column("Desc")]
         [StringLength(200)]
-        public string Desc { get; set; } = string.Empty;
+        public string? Desc { get; set; }
 
         [Required]
         [Column("IsActive")]

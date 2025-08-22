@@ -2,19 +2,40 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Ideku.Data.Context;
 using Ideku.Data.Repositories;
+using Ideku.Data.Repositories.WorkflowManagement;
 using Ideku.Services.Auth;
 using Ideku.Services.Email;
 using Ideku.Services.Notification;
 using Ideku.Services.Idea;
 using Ideku.Services.Workflow;
+using Ideku.Services.WorkflowManagement;
 using Ideku.Services.Level;
 using Ideku.Models;
 using Ideku.Models.Entities;
+using WebOptimizer;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Add WebOptimizer for bundling and minification
+builder.Services.AddWebOptimizer(pipeline =>
+{
+    // Bundle and minify CSS files
+    pipeline.AddCssBundle("/bundles/app.css", 
+        "css/site.css", 
+        "css/pages/*.css", 
+        "css/components/*.css")
+        .UseContentRoot();
+    
+    // Bundle and minify JavaScript files
+    pipeline.AddJavaScriptBundle("/bundles/app.js", 
+        "js/site.js", 
+        "js/pages/*.js", 
+        "js/common/*.js")
+        .UseContentRoot();
+});
 
 // Add session and TempData support
 builder.Services.AddSession(options =>
@@ -57,6 +78,7 @@ builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<ILevelService, LevelService>();
+builder.Services.AddScoped<IWorkflowManagementService, WorkflowManagementService>();
 
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();
@@ -65,6 +87,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<ILevelRepository, LevelRepository>();
+builder.Services.AddScoped<IWorkflowManagementRepository, WorkflowManagementRepository>();
 
 var app = builder.Build();
 
@@ -78,6 +101,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseWebOptimizer();
 
 app.UseRouting();
 app.UseSession();

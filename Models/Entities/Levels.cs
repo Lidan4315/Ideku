@@ -15,10 +15,6 @@ namespace Ideku.Models.Entities
         [StringLength(10)]
         public string LevelName { get; set; } = string.Empty;
 
-        [Required]
-        [Column("Desc")]
-        [StringLength(200)]
-        public string Desc { get; set; } = string.Empty;
 
         [Required]
         [Column("IsActive")]

@@ -6,9 +6,20 @@
     <title>@ViewData["Title"] - Ideku</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <!-- SweetAlert2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    
+    @if (Context.Request.Host.Host == "localhost" || Context.RequestServices.GetService<IWebHostEnvironment>()?.IsDevelopment() == true)
+    {
+        <!-- Development: Individual CSS files -->
+        <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+        @await RenderSectionAsync("Styles", required: false)
+    }
+    else
+    {
+        <!-- Production: Bundled and minified CSS -->
+        <link rel="stylesheet" href="~/bundles/app.css" asp-append-version="true" />
+    }
 </head>
 <body class="modern-page">
     <div class="page-container">
@@ -104,21 +115,31 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
     
-    <!-- Global JavaScript Functions -->
-    <script>
-        function showComingSoon(featureName) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Coming Soon!',
-                text: `${featureName} feature is under development and will be available in future updates.`,
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
-    </script>
-    
-    @await RenderSectionAsync("Scripts", required: false)
+    @if (Context.Request.Host.Host == "localhost" || Context.RequestServices.GetService<IWebHostEnvironment>()?.IsDevelopment() == true)
+    {
+        <!-- Development: Individual JS files -->
+        <script src="~/js/site.js" asp-append-version="true"></script>
+        
+        <!-- Global JavaScript Functions -->
+        <script>
+            function showComingSoon(featureName) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Coming Soon!',
+                    text: `${featureName} feature is under development and will be available in future updates.`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3b82f6'
+                });
+            }
+        </script>
+        
+        @await RenderSectionAsync("Scripts", required: false)
+    }
+    else
+    {
+        <!-- Production: Bundled and minified JS -->
+        <script src="~/bundles/app.js" asp-append-version="true"></script>
+    }
 </body>
 </html>

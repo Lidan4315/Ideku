@@ -27,6 +27,12 @@ namespace Ideku.Services.Level
             return await _levelRepository.AddAsync(level);
         }
 
+        public async Task<bool> UpdateLevelAsync(Models.Entities.Level level)
+        {
+            var updatedLevel = await _levelRepository.UpdateAsync(level);
+            return updatedLevel != null;
+        }
+
         public async Task<bool> DeleteLevelAsync(int id)
         {
             return await _levelRepository.DeleteAsync(id);
