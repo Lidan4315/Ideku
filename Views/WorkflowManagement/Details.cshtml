@@ -1,0 +1,465 @@
+@model Ideku.ViewModels.WorkflowManagement.WorkflowDetailsViewModel
+
+@{
+    ViewData["Title"] = "Workflow Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link href="~/css/pages/workflow-management.css" rel="stylesheet" />
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <a href="@Url.Action("Index", "WorkflowManagement")" class="btn btn-outline-secondary me-3" title="Back to Workflow List">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <h2 class="page-title text-gradient mb-0">
+                                <i class="bi bi-diagram-3 me-2"></i>Workflow Details
+                            </h2>
+                        </div>
+                        <p class="text-muted">View and manage workflow stages and conditions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Info Card -->
+    <div class="row">
+        <div class="col-xl-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-diagram-3 me-2 text-primary"></i>@Model.Workflow.WorkflowName
+                        </h4>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditWorkflowModal(@Model.Workflow.Id, '@Model.Workflow.WorkflowName', '@Model.Workflow.Desc', @Model.Workflow.IsActive.ToString().ToLower())">
+                                <i class="bi bi-pencil me-1"></i>Edit
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteWorkflow(@Model.Workflow.Id, '@Model.Workflow.WorkflowName')">
+                                <i class="bi bi-trash me-1"></i>Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-medium">Description:</td>
+                                    <td>@Model.Workflow.Desc</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Status:</td>
+                                    <td>
+                                        @if (Model.Workflow.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Inactive</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Stages:</td>
+                                    <td><span class="badge bg-info">@Model.Workflow.WorkflowStages.Count()</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Conditions:</td>
+                                    <td><span class="badge bg-warning text-dark">@Model.Workflow.WorkflowConditions.Count()</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Created:</td>
+                                    <td>@Model.Workflow.CreatedAt.ToString("dd MMM yyyy")</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workflow Stages -->
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-list-ol me-2 text-success"></i>Workflow Stages
+                    </h4>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addStageModal">
+                        <i class="bi bi-plus-lg me-1"></i>Add Stage
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (Model.Workflow.WorkflowStages.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Stage #</th>
+                                        <th>Level</th>
+                                        <th>Mandatory</th>
+                                        <th>Parallel</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var stage in Model.Workflow.WorkflowStages.OrderBy(s => s.Stage))
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-primary">@stage.Stage</span></td>
+                                            <td>@stage.Level.LevelName</td>
+                                            <td>
+                                                @if (stage.IsMandatory)
+                                                {
+                                                    <span class="badge bg-danger">Yes</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">No</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (stage.IsParallel)
+                                                {
+                                                    <span class="badge bg-info">Yes</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">No</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="deleteStage(@stage.Id)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-list-ol display-4 text-muted"></i>
+                            <h5 class="text-muted mt-3">No Stages Added</h5>
+                            <p class="text-muted">Start by adding stages to define the workflow approval process.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Workflow Conditions -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-funnel me-2 text-warning"></i>Workflow Conditions
+                    </h4>
+                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#addConditionModal">
+                        <i class="bi bi-plus-lg me-1"></i>Add Condition
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (Model.Workflow.WorkflowConditions.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Operator</th>
+                                        <th>Value</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var condition in Model.Workflow.WorkflowConditions)
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-info">@condition.ConditionType</span></td>
+                                            <td><span class="badge bg-secondary">@condition.Operator</span></td>
+                                            <td>@condition.ConditionValue</td>
+                                            <td>
+                                                @if (condition.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Inactive</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="deleteCondition(@condition.Id)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-funnel display-4 text-muted"></i>
+                            <h5 class="text-muted mt-3">No Conditions Added</h5>
+                            <p class="text-muted">Add conditions to specify when this workflow should be applied.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Workflow Modal -->
+<div class="modal fade" id="editWorkflowModal" tabindex="-1" aria-labelledby="editWorkflowModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editWorkflowForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editWorkflowModalLabel">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Workflow
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editWorkflowId" name="id">
+                    <div class="mb-3">
+                        <label for="editWorkflowName" class="form-label">Workflow Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">WF_</span>
+                            <input type="text" class="form-control" id="editWorkflowName" name="workflowName" maxlength="17" required 
+                                   placeholder="e.g. STANDARD, EMERGENCY, etc." style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-text">Enter workflow identifier (will be prefixed with WF_ and converted to uppercase)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDesc" class="form-label">Description</label>
+                        <textarea class="form-control" id="editDesc" name="desc" rows="3" maxlength="200" placeholder="Enter workflow description (optional)"></textarea>
+                        <div class="form-text">Maximum 200 characters</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editIsActive" name="isActive">
+                            <label class="form-check-label" for="editIsActive">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Update Workflow
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Stage Modal -->
+<div class="modal fade" id="addStageModal" tabindex="-1" aria-labelledby="addStageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStageModalLabel">Add Workflow Stage</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addStageForm">
+                <div class="modal-body">
+                    <input type="hidden" id="workflowId" value="@Model.Workflow.Id" />
+                    
+                    <div class="mb-3">
+                        <label for="levelId" class="form-label">Level <span class="text-danger">*</span></label>
+                        <select class="form-select" id="levelId" required>
+                            <option value="">Select Level</option>
+                            @foreach (var level in Model.LevelList)
+                            {
+                                <option value="@level.Value">@level.Text</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="stage" class="form-label">Stage Number <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="stage" min="1" required />
+                        <div class="form-text">The order of this stage in the workflow</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isMandatory" checked />
+                            <label class="form-check-label" for="isMandatory">
+                                Mandatory Stage
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isParallel" />
+                            <label class="form-check-label" for="isParallel">
+                                Allow Parallel Processing
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Stage</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Condition Modal -->
+<div class="modal fade" id="addConditionModal" tabindex="-1" aria-labelledby="addConditionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addConditionModalLabel">Add Workflow Condition</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addConditionForm" onsubmit="return false;">
+                <div class="modal-body">
+                    <input type="hidden" id="conditionWorkflowId" value="@Model.Workflow.Id" />
+                    
+                    <div class="mb-3">
+                        <label for="conditionType" class="form-label">Condition Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="conditionType" required onchange="updateConditionFields()">
+                            <option value="">Select Condition Type</option>
+                            @foreach (var conditionType in Model.ConditionTypeList)
+                            {
+                                <option value="@conditionType.Value">@conditionType.Text</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="operatorType" class="form-label">Operator <span class="text-danger">*</span></label>
+                        <select class="form-select" id="operatorType" required>
+                            <option value="">Select Operator</option>
+                            @foreach (var operatorItem in Model.OperatorList)
+                            {
+                                <option value="@operatorItem.Value">@operatorItem.Text</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="conditionValueDiv">
+                        <label for="conditionValue" class="form-label">Condition Value <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="conditionValue" required />
+                        <div class="form-text" id="conditionValueHelp">Enter the value for this condition</div>
+                    </div>
+                    
+                    <div class="mb-3" id="conditionSelectDiv" style="display: none;">
+                        <label for="conditionSelect" class="form-label">Select Value <span class="text-danger">*</span></label>
+                        <select class="form-select" id="conditionSelect">
+                            <option value="">Select...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Add Condition</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Set up URLs for workflow management details
+        window.workflowManagementUrls = {
+            addStage: '@Url.Action("AddStage", "WorkflowManagement")',
+            addCondition: '@Url.Action("AddCondition", "WorkflowManagement")',
+            deleteStage: '@Url.Action("DeleteStage", "WorkflowManagement")',
+            deleteCondition: '@Url.Action("DeleteCondition", "WorkflowManagement")',
+            editWorkflow: '@Url.Action("EditBasic", "WorkflowManagement")',
+            deleteWorkflow: '@Url.Action("Delete", "WorkflowManagement")'
+        };
+        
+        // Populate condition select options
+        window.conditionOptions = {
+            categories: [
+                @foreach (var category in Model.CategoryList)
+                {
+                    <text>{ value: '@category.Value', text: '@category.Text' },</text>
+                }
+            ],
+            divisions: [
+                @foreach (var division in Model.DivisionList)
+                {
+                    <text>{ value: '@division.Value', text: '@division.Text' },</text>
+                }
+            ],
+            departments: [
+                @foreach (var department in Model.DepartmentList)
+                {
+                    <text>{ value: '@department.Value', text: '@department.Text' },</text>
+                }
+            ]
+        };
+        
+        // Override updateConditionFields to use the data
+        function updateConditionFields() {
+            const conditionType = document.getElementById('conditionType').value;
+            const conditionValueDiv = document.getElementById('conditionValueDiv');
+            const conditionSelectDiv = document.getElementById('conditionSelectDiv');
+            const conditionSelect = document.getElementById('conditionSelect');
+            const conditionValueHelp = document.getElementById('conditionValueHelp');
+            
+            // Reset
+            conditionValueDiv.style.display = 'block';
+            conditionSelectDiv.style.display = 'none';
+            conditionSelect.innerHTML = '<option value="">Select...</option>';
+            
+            if (conditionType === 'CATEGORY') {
+                conditionValueDiv.style.display = 'none';
+                conditionSelectDiv.style.display = 'block';
+                window.conditionOptions.categories.forEach(item => {
+                    conditionSelect.innerHTML += `<option value="${item.value}">${item.text}</option>`;
+                });
+            } else if (conditionType === 'DIVISION') {
+                conditionValueDiv.style.display = 'none';
+                conditionSelectDiv.style.display = 'block';
+                window.conditionOptions.divisions.forEach(item => {
+                    conditionSelect.innerHTML += `<option value="${item.value}">${item.text}</option>`;
+                });
+            } else if (conditionType === 'DEPARTMENT') {
+                conditionValueDiv.style.display = 'none';
+                conditionSelectDiv.style.display = 'block';
+                window.conditionOptions.departments.forEach(item => {
+                    conditionSelect.innerHTML += `<option value="${item.value}">${item.text}</option>`;
+                });
+            } else if (conditionType === 'SAVING_COST') {
+                conditionValueHelp.textContent = 'Enter amount (e.g., 1000000 for 1 million)';
+            } else if (conditionType === 'EVENT') {
+                conditionValueHelp.textContent = 'Enter event type or description';
+            }
+        }
+    </script>
+    <script src="~/js/pages/workflow-management-details.js"></script>
+}
+

@@ -11,25 +11,15 @@ namespace Ideku.Controllers
             return View();
         }
 
-        // Workflow Management Actions
+        // Management Actions
         public IActionResult WorkflowManagement()
         {
-            return View("WorkflowManagement/Index");
+            return RedirectToAction("Index", "WorkflowManagement");
         }
 
-        public IActionResult Workflows()
+        public IActionResult LevelManagement()
         {
-            return View("WorkflowManagement/Workflows");
-        }
-
-        public IActionResult Stages()
-        {
-            return View("WorkflowManagement/Stages");
-        }
-
-        public IActionResult Conditions()
-        {
-            return View("WorkflowManagement/Conditions");
+            return RedirectToAction("Index", "LevelManagement");
         }
     }
 }
