@@ -18,13 +18,15 @@ namespace Ideku.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IWorkflowRepository _workflowRepository;
         private readonly ILookupRepository _lookupRepository;
+        private readonly IWebHostEnvironment _hostEnvironment;
 
-        public ApprovalController(IWorkflowService workflowService, IUserRepository userRepository, IWorkflowRepository workflowRepository, ILookupRepository lookupRepository)
+        public ApprovalController(IWorkflowService workflowService, IUserRepository userRepository, IWorkflowRepository workflowRepository, ILookupRepository lookupRepository, IWebHostEnvironment hostEnvironment)
         {
             _workflowService = workflowService;
             _userRepository = userRepository;
             _workflowRepository = workflowRepository;
             _lookupRepository = lookupRepository;
+            _hostEnvironment = hostEnvironment;
         }
 
         // GET: /Approval or /Approval/Index
@@ -352,6 +354,125 @@ namespace Ideku.Controllers
             ModelState.Remove("Idea");
             ModelState.Remove("ValidatedSavingCost");
             ModelState.Remove("ApprovalComments");
+        }
+
+        /// <summary>
+        /// Download attachment file
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> DownloadAttachment(string filename, int ideaId)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Challenge();
+            }
+
+            // Validate user can access this idea
+            var idea = await _workflowService.GetIdeaForReview(ideaId, username);
+            if (idea == null)
+            {
+                return NotFound("Idea not found or access denied");
+            }
+
+            // Sanitize filename to prevent path traversal
+            var sanitizedFilename = Path.GetFileName(filename);
+            if (string.IsNullOrEmpty(sanitizedFilename))
+            {
+                return BadRequest("Invalid filename");
+            }
+
+            // Construct file path
+            var filePath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", "ideas", sanitizedFilename);
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound("File not found");
+            }
+
+            try
+            {
+                // Read file and determine content type
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                var contentType = GetContentType(sanitizedFilename);
+
+                // Return file with download headers (forces download)
+                return File(fileBytes, contentType, sanitizedFilename);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Error reading file");
+            }
+        }
+
+        /// <summary>
+        /// View attachment file inline (for popup preview)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ViewAttachment(string filename, int ideaId)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Challenge();
+            }
+
+            // Validate user can access this idea
+            var idea = await _workflowService.GetIdeaForReview(ideaId, username);
+            if (idea == null)
+            {
+                return NotFound("Idea not found or access denied");
+            }
+
+            // Sanitize filename to prevent path traversal
+            var sanitizedFilename = Path.GetFileName(filename);
+            if (string.IsNullOrEmpty(sanitizedFilename))
+            {
+                return BadRequest("Invalid filename");
+            }
+
+            // Construct file path
+            var filePath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", "ideas", sanitizedFilename);
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound("File not found");
+            }
+
+            try
+            {
+                // Read file and determine content type
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                var contentType = GetContentType(sanitizedFilename);
+
+                // Return file for inline viewing (no attachment header)
+                return File(fileBytes, contentType);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Error reading file");
+            }
+        }
+
+        /// <summary>
+        /// Get MIME content type based on file extension
+        /// </summary>
+        private string GetContentType(string filename)
+        {
+            var extension = Path.GetExtension(filename).ToLowerInvariant();
+            return extension switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".pdf" => "application/pdf",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".xls" => "application/vnd.ms-excel",
+                ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".ppt" => "application/vnd.ms-powerpoint",
+                ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                ".txt" => "text/plain",
+                _ => "application/octet-stream"
+            };
         }
 
         /// <summary>
