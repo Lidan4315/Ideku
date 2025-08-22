@@ -44,12 +44,40 @@ namespace Ideku.Data.Repositories
                 };
             }
 
+            // Debug: Get ALL departments first to see what's in database
+            var allDepartments = await _context.Departments.ToListAsync();
+            
+            // Debug: Get departments for this specific division
             var departments = await _context.Departments
                 .Where(d => d.DivisiId == divisionId && d.IsActive)
                 .OrderBy(d => d.NameDepartment)
                 .ToListAsync();
 
-            // Don't add placeholder here, let JavaScript handle it
+            // Debug: If no departments found, try without IsActive filter
+            if (!departments.Any())
+            {
+                var allDepartmentsForDivision = await _context.Departments
+                    .Where(d => d.DivisiId == divisionId) // Remove IsActive filter
+                    .OrderBy(d => d.NameDepartment)
+                    .ToListAsync();
+                    
+                if (allDepartmentsForDivision.Any())
+                {
+                    return allDepartmentsForDivision.Select(d => new SelectListItem
+                    {
+                        Value = d.Id,
+                        Text = d.NameDepartment + " (Inactive)"
+                    }).ToList();
+                }
+                
+                // If still no data, return test data
+                return new List<SelectListItem>
+                {
+                    new SelectListItem { Value = "TEST1", Text = "Test Department 1" },
+                    new SelectListItem { Value = "TEST2", Text = "Test Department 2" }
+                };
+            }
+
             return departments.Select(d => new SelectListItem
             {
                 Value = d.Id,

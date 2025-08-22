@@ -29,8 +29,105 @@
         </div>
     }
 
-    <div class="card">
-        <div class="card-body">
+    <!-- Integrated Filter and Table Card -->
+    <div class="card filter-card">
+        <div class="card-body p-4">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <!-- Search Input with Clear Button -->
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <div class="input-group flex-grow-1">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" 
+                                       id="searchTerm"
+                                       name="searchTerm" 
+                                       value="@Model.SearchTerm"
+                                       class="form-control" 
+                                       placeholder="Search by Idea ID, Title, or Initiator...">
+                            </div>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary text-nowrap clear-all-btn">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Clear All
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Filters in Horizontal Layout -->
+                    
+                    <!-- Division -->
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Division</label>
+                        <select id="selectedDivision" name="selectedDivision" class="form-select">
+                            <option value="">All Divisions</option>
+                            @if (ViewBag.Divisions != null)
+                            {
+                                @foreach (var division in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Divisions)
+                                {
+                                    if (!string.IsNullOrEmpty(division.Value))
+                                    {
+                                        <option value="@division.Value" selected="@(Model.SelectedDivision == division.Value)">@division.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Department -->
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Department</label>
+                        <select id="selectedDepartment" name="selectedDepartment" class="form-select">
+                            <option value="">Please select Division first</option>
+                        </select>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Category</label>
+                        <select id="selectedCategory" name="selectedCategory" class="form-select">
+                            <option value="">All Categories</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                @foreach (var category in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories)
+                                {
+                                    if (!string.IsNullOrEmpty(category.Value))
+                                    {
+                                        <option value="@category.Value" selected="@(Model.SelectedCategory.ToString() == category.Value)">@category.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Stage -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Stage</label>
+                        <select id="selectedStage" name="selectedStage" class="form-select">
+                            <option value="">All Stages</option>
+                            <option value="0" selected="@(Model.SelectedStage == 0)">Stage S0</option>
+                            <option value="1" selected="@(Model.SelectedStage == 1)">Stage S1</option>
+                            <option value="2" selected="@(Model.SelectedStage == 2)">Stage S2</option>
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Status</label>
+                        <select id="selectedStatus" name="selectedStatus" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="Waiting Approval S1" selected="@(Model.SelectedStatus == "Waiting Approval S1")">Waiting Approval S1</option>
+                            <option value="Waiting Approval S2" selected="@(Model.SelectedStatus == "Waiting Approval S2")">Waiting Approval S2</option>
+                            <option value="Rejected S0" selected="@(Model.SelectedStatus == "Rejected S0")">Rejected S0</option>
+                            <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Approved</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Table Section -->
+        <div class="card-body border-top">
             @if (Model.IdeasForApproval.Any())
             {
                 <div class="table-responsive-custom">
@@ -50,7 +147,7 @@
                                 <th>Submitted</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="ideas-table-body">
                             @foreach (var idea in Model.IdeasForApproval)
                             {
                                 <tr style="cursor: pointer;" onclick="window.location='@Url.Action("Review", "Approval", new { id = idea.Id })'">
@@ -132,6 +229,12 @@
                     <p class="text-muted">You have no pending approvals at the moment.</p>
                 </div>
             }
+            
+            <!-- Pagination Controls -->
+            @if (Model.ShowPagination)
+            {
+                @await Html.PartialAsync("_PaginationPartial", Model.PagedIdeas)
+            }
         </div>
     </div>
 </div>
@@ -211,5 +314,648 @@
     .bg-orange {
         background-color: #f97316 !important;
     }
+
+    /* Simplified Integrated Card Styling */
+    .filter-card {
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+
+
+    /* Table section styling */
+    .card-body.border-top {
+        border-top: 1px solid #e5e7eb !important;
+        padding: 1.5rem;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    /* Clear All button styling */
+    .clear-all-btn {
+        padding: 0.375rem 0.75rem;
+        height: auto;
+        min-height: calc(1.5em + 0.75rem + 2px);
+        display: flex;
+        align-items: center;
+        border-radius: 0.375rem;
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa !important;
+        border-color: #6c757d !important;
+        color: #6c757d !important;
+    }
 </style>
+
+<script>
+// ========================================================
+// AJAX FILTERING & PAGINATION SYSTEM
+// ========================================================
+// Features:
+// - Real-time filtering without page reload
+// - Dynamic pagination based on filtered results  
+// - Cascading dropdown (Division -> Department)
+// - Browser history management
+// ========================================================
+
+/**
+ * Enhanced load filtered results with pagination support and URL management
+ */
+function loadFilteredResults(page = 1, pageSize = 10) {
+    const filters = getCurrentFilters();
+    
+    // Build parameters including pagination
+    const params = new URLSearchParams();
+    
+    // Add pagination
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    
+    // Add filters only if they have values
+    if (filters.searchTerm && filters.searchTerm.trim()) {
+        params.append('searchTerm', filters.searchTerm.trim());
+    }
+    if (filters.selectedDivision) {
+        params.append('selectedDivision', filters.selectedDivision);
+    }
+    if (filters.selectedDepartment) {
+        params.append('selectedDepartment', filters.selectedDepartment);
+    }
+    if (filters.selectedCategory) {
+        params.append('selectedCategory', filters.selectedCategory);
+    }
+    if (filters.selectedStage) {
+        params.append('selectedStage', filters.selectedStage);
+    }
+    if (filters.selectedStatus) {
+        params.append('selectedStatus', filters.selectedStatus);
+    }
+
+    // Show loading state
+    showLoadingState();
+
+    // Build URL for browser history
+    const newUrl = `/Approval?${params.toString()}`;
+    
+    // Update browser URL without reload (for bookmarking)
+    if (page !== 1 || hasActiveFilters()) {
+        history.pushState({ page, filters }, null, newUrl);
+    }
+
+    // Execute AJAX request
+    const requestUrl = `/Approval/FilterIdeas?${params.toString()}`;
+    
+    fetch(requestUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                updateTable(data.ideas);
+                updateAjaxPagination(data.pagination, filters);
+                hideLoadingState();
+            } else {
+                showErrorState(data.message || 'Error loading data');
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Filter Error:', error);
+            showErrorState(`Error: ${error.message}`);
+        });
+}
+
+/**
+ * Get current filter values from form elements
+ */
+function getCurrentFilters() {
+    return {
+        searchTerm: document.getElementById('searchTerm')?.value?.trim() || '',
+        selectedDivision: document.getElementById('selectedDivision')?.value || '',
+        selectedDepartment: document.getElementById('selectedDepartment')?.value || '',
+        selectedCategory: document.getElementById('selectedCategory')?.value || '',
+        selectedStage: document.getElementById('selectedStage')?.value || '',
+        selectedStatus: document.getElementById('selectedStatus')?.value || ''
+    };
+}
+
+/**
+ * Check if any filters are currently active
+ */
+function hasActiveFilters() {
+    const filters = getCurrentFilters();
+    return Object.values(filters).some(value => value && value.toString().trim() !== '');
+}
+
+/**
+ * Get current page size from pagination
+ */
+function getCurrentPageSize() {
+    return parseInt(document.querySelector('.pagination select')?.value) || 10;
+}
+
+/**
+ * Show loading state with modern spinner
+ */
+function showLoadingState() {
+    const tableBody = document.querySelector('#ideas-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="11" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted">Loading filtered results...</div>
+                </td>
+            </tr>`;
+    }
+}
+
+/**
+ * Show error state with retry option  
+ */
+function showErrorState(message) {
+    const tableBody = document.querySelector('#ideas-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="11" class="text-center py-4">
+                    <div class="text-danger mb-2">
+                        <i class="bi bi-exclamation-triangle"></i> ${message}
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadFilteredResults()">
+                        <i class="bi bi-arrow-clockwise"></i> Retry
+                    </button>
+                </td>
+            </tr>`;
+    }
+    
+    // Hide pagination on error
+    const paginationContainer = document.querySelector('.pagination-container-single-row');
+    if (paginationContainer) {
+        paginationContainer.style.display = 'none';
+    }
+}
+
+function hideLoadingState() {
+    // Loading state will be replaced by updateTable()
+}
+
+// ========================================================
+// GLOBAL VARIABLES & UTILITY FUNCTIONS
+// ========================================================
+
+// DOM element references
+let searchInput, divisionSelect, departmentSelect, categorySelect, stageSelect, statusSelect, tableBody;
+
+// Helper functions for styling and formatting
+function getCategoryClass(categoryName) {
+    switch (categoryName) {
+        case 'Cost Reduction (CR)': return 'bg-success';
+        case 'Digitalization': return 'bg-primary';
+        case 'General Transformation': return 'bg-info text-dark';
+        case 'Increase Revenue': return 'bg-warning text-dark';
+        default: return 'bg-secondary';
+    }
+}
+
+function getEventClass(eventName) {
+    switch (eventName) {
+        case 'CI Academy': return 'bg-purple text-white';
+        case 'Hackathon': return 'bg-orange text-white';
+        default: return 'bg-light text-dark';
+    }
+}
+
+function getStatusClass(status) {
+    if (status.startsWith('Waiting Approval')) return 'bg-warning text-dark';
+    if (status.startsWith('Rejected S')) return 'bg-danger';
+    if (status === 'Approved') return 'bg-success';
+    if (status === 'Rejected') return 'bg-danger';
+    if (status === 'Completed') return 'bg-primary';
+    return 'bg-secondary';
+}
+
+function formatCurrency(amount) {
+    if (!amount || amount === 0) return '';
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+
+function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    const dateStr = date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+    const timeStr = date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+    return { dateStr, timeStr };
+}
+
+function createTableRow(idea) {
+    const { dateStr, timeStr } = formatDateTime(idea.submittedDate);
+    
+    return `
+        <tr style="cursor: pointer;" onclick="window.location='${idea.reviewUrl}'">
+            <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
+            <td>
+                <div class="truncate-title" title="${idea.ideaName}">
+                    ${idea.ideaName}
+                </div>
+            </td>
+            <td><strong>${idea.initiatorName || ''}</strong></td>
+            <td><strong>${idea.divisionName || ''}</strong></td>
+            <td><small class="text-muted">${idea.departmentName || ''}</small></td>
+            <td>
+                ${idea.categoryName ? `<span class="badge ${getCategoryClass(idea.categoryName)}">${idea.categoryName}</span>` : ''}
+            </td>
+            <td>
+                ${idea.eventName ? `<span class="badge ${getEventClass(idea.eventName)}">${idea.eventName}</span>` : ''}
+            </td>
+            <td><span class="badge bg-secondary">S${idea.currentStage}</span></td>
+            <td>
+                ${idea.savingCost ? `<span class="fw-bold text-success">${formatCurrency(idea.savingCost)}</span>` : ''}
+            </td>
+            <td><span class="badge ${getStatusClass(idea.currentStatus)}">${idea.currentStatus}</span></td>
+            <td>
+                <div>${dateStr}</div>
+                <small class="text-muted">${timeStr}</small>
+            </td>
+        </tr>
+    `;
+}
+
+// ========================================================
+// TABLE & PAGINATION UPDATE FUNCTIONS
+// ========================================================
+
+function updateTable(ideas) {
+    if (!tableBody) {
+        console.error('Table body element not found');
+        return;
+    }
+    
+    if (ideas.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No ideas found matching your filters</td></tr>';
+        return;
+    }
+
+    const rows = ideas.map(createTableRow).join('');
+    tableBody.innerHTML = rows;
+}
+
+/**
+ * Update AJAX pagination with filter awareness
+ */
+function updateAjaxPagination(paginationData, filters = {}) {
+    const paginationContainer = document.querySelector('.pagination-container-single-row');
+    
+    if (!paginationData || paginationData.totalPages <= 1) {
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
+        return;
+    }
+
+    if (paginationContainer) {
+        paginationContainer.style.display = 'flex';
+        
+        // Update pagination info
+        const paginationInfo = paginationContainer.querySelector('.pagination-info span');
+        if (paginationInfo) {
+            paginationInfo.innerHTML = `
+                Showing <strong>${paginationData.firstItemIndex}-${paginationData.lastItemIndex}</strong> 
+                of <strong>${paginationData.totalCount}</strong> items
+            `;
+        }
+
+        // Regenerate pagination HTML based on filtered data
+        regeneratePaginationHTML(paginationData, filters);
+        
+        // Update pagination links with AJAX handlers
+        updatePaginationLinks(paginationData, filters);
+    }
+}
+
+/**
+ * Regenerate pagination HTML based on filtered data
+ */
+function regeneratePaginationHTML(paginationData, filters = {}) {
+    const paginationNav = document.querySelector('.pagination-navigation ul.pagination');
+    if (!paginationNav) {
+        return;
+    }
+    
+    // Calculate visible pages (show max 5 pages)
+    const currentPage = paginationData.currentPage;
+    const totalPages = paginationData.totalPages;
+    const maxVisible = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
+    // Adjust start if we're near the end
+    if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    // Build filter parameters for URLs
+    const filterParams = new URLSearchParams();
+    if (filters.searchTerm) filterParams.append('searchTerm', filters.searchTerm);
+    if (filters.selectedDivision) filterParams.append('selectedDivision', filters.selectedDivision);
+    if (filters.selectedDepartment) filterParams.append('selectedDepartment', filters.selectedDepartment);
+    if (filters.selectedCategory) filterParams.append('selectedCategory', filters.selectedCategory);
+    if (filters.selectedStage) filterParams.append('selectedStage', filters.selectedStage);
+    if (filters.selectedStatus) filterParams.append('selectedStatus', filters.selectedStatus);
+    filterParams.append('pageSize', paginationData.pageSize);
+    
+    // Generate pagination HTML
+    let paginationHTML = '';
+    
+    // First button
+    paginationHTML += `
+        <li class="page-item first-last-btn ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="/Approval?${filterParams}&page=1" title="First Page">
+                <i class="bi bi-chevron-double-left"></i>
+            </a>
+        </li>
+    `;
+    
+    // Previous button
+    paginationHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="/Approval?${filterParams}&page=${currentPage - 1}" title="Previous">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+    `;
+    
+    // Page numbers
+    for (let page = startPage; page <= endPage; page++) {
+        const isActive = page === currentPage;
+        paginationHTML += `
+            <li class="page-item page-number desktop-page ${isActive ? 'active' : ''}">
+                <a class="page-link ${isActive ? 'current-page' : ''}" href="/Approval?${filterParams}&page=${page}" title="Go to page ${page}">${page}</a>
+            </li>
+        `;
+    }
+    
+    // Mobile current page
+    paginationHTML += `
+        <li class="page-item page-number mobile-page">
+            <span class="page-link" style="background-color: white; border-color: #dee2e6; color: #495057;" aria-current="page">${currentPage}</span>
+        </li>
+    `;
+    
+    // Next button
+    paginationHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="/Approval?${filterParams}&page=${currentPage + 1}" title="Next">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    `;
+    
+    // Last button
+    paginationHTML += `
+        <li class="page-item first-last-btn ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="/Approval?${filterParams}&page=${totalPages}" title="Last Page">
+                <i class="bi bi-chevron-double-right"></i>
+            </a>
+        </li>
+    `;
+    
+    // Update pagination HTML
+    paginationNav.innerHTML = paginationHTML;
+}
+
+// ========================================================
+// PAGINATION EVENT HANDLERS
+// ========================================================
+
+// setupInitialPaginationHandlers function removed - pagination works normally without filters
+
+/**
+ * Update pagination links with AJAX event handlers
+ */
+function updatePaginationLinks(paginationData, filters) {
+    const paginationLinks = document.querySelectorAll('.pagination a');
+    
+    // Remove existing event listeners and add new AJAX handlers
+    paginationLinks.forEach(link => {
+        // Clone node to remove all event listeners
+        const newLink = link.cloneNode(true);
+        link.parentNode.replaceChild(newLink, link);
+        
+        // Add AJAX click handler
+        newLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Extract page number from href
+            const url = new URL(this.href, window.location.origin);
+            const page = parseInt(url.searchParams.get('page')) || 1;
+            const pageSize = parseInt(url.searchParams.get('pageSize')) || getCurrentPageSize();
+            
+            // Load page via AJAX with current filters
+            loadFilteredResults(page, pageSize);
+        });
+    });
+
+    // Also handle page size selector
+    const pageSizeSelect = document.querySelector('.pagination select');
+    if (pageSizeSelect) {
+        // Remove existing onchange and add AJAX handler
+        pageSizeSelect.removeAttribute('onchange');
+        
+        pageSizeSelect.addEventListener('change', function() {
+            const newPageSize = parseInt(this.value);
+            loadFilteredResults(1, newPageSize); // Reset to page 1 with new page size
+        });
+    }
+}
+
+// ========================================================
+// INITIALIZATION & EVENT SETUP
+// ========================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DOM element references
+    searchInput = document.getElementById('searchTerm');
+    divisionSelect = document.getElementById('selectedDivision');
+    departmentSelect = document.getElementById('selectedDepartment');
+    categorySelect = document.getElementById('selectedCategory');
+    stageSelect = document.getElementById('selectedStage');
+    statusSelect = document.getElementById('selectedStatus');
+    tableBody = document.getElementById('ideas-table-body');
+    
+    let debounceTimeout;
+
+    // Initialize cascading dropdown state on page load
+    const initialDivision = divisionSelect.value;
+    const initialDepartment = '@Model.SelectedDepartment';
+    
+    if (initialDivision && initialDivision !== '') {
+        loadDepartmentsForDivision(initialDivision, initialDepartment);
+    }
+
+    // Pagination works normally without filters - AJAX only activated after filtering
+
+
+    // Prevent form submission - use AJAX only
+    const filterForm = document.querySelector('form[method="get"]');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent traditional form submission
+            applyFilters(); // Use AJAX instead
+        });
+    }
+
+    // Handle Enter key in search input
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Prevent form submission
+            applyFilters(); // Use AJAX instead
+        }
+    });
+
+    // Debounced search input with AJAX
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => applyFilters(), 300);
+    });
+
+    // Dropdown change events with AJAX
+    [departmentSelect, categorySelect, stageSelect, statusSelect].forEach(select => {
+        select.addEventListener('change', applyFilters);
+    });
+
+    // Function to load departments for a division
+    function loadDepartmentsForDivision(divisionId, selectedDepartmentId = '') {
+        if (!divisionId) {
+            departmentSelect.innerHTML = '<option value="">Please select Division first</option>';
+            departmentSelect.value = '';
+            return;
+        }
+        
+        // Show simple loading state
+        departmentSelect.innerHTML = '<option value="">Loading departments...</option>';
+        departmentSelect.disabled = true;
+        
+        // Fetch departments for selected division
+        fetch(`/Approval/GetDepartmentsByDivision?divisionId=${divisionId}`)
+            .then(response => response.json())
+            .then(data => {
+                departmentSelect.innerHTML = '<option value="">All Departments</option>';
+                
+                if (data.success && data.departments) {
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        // Select the department if it matches the selectedDepartmentId
+                        if (selectedDepartmentId && dept.id === selectedDepartmentId) {
+                            option.selected = true;
+                        }
+                        departmentSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching departments:', error);
+                departmentSelect.innerHTML = '<option value="">Error loading departments</option>';
+            })
+            .finally(() => {
+                departmentSelect.disabled = false;
+            });
+    }
+
+    // Special handling for Division dropdown (cascading) 
+    divisionSelect.addEventListener('change', function() {
+        const divisionId = this.value;
+        
+        // Reset department dropdown
+        departmentSelect.innerHTML = '<option value="">Please select Division first</option>';
+        departmentSelect.value = '';
+        
+        if (!divisionId) {
+            // If "All Divisions" selected, apply filters
+            applyFilters();
+            return;
+        }
+        
+        loadDepartmentsForDivision(divisionId);
+        
+        // Apply filters after department dropdown is updated
+        setTimeout(() => applyFilters(), 500);
+    });
+
+    function applyFilters() {
+        const searchTerm = searchInput.value;
+        const selectedDivision = divisionSelect.value;
+        const selectedDepartment = departmentSelect.value;
+        const selectedCategory = categorySelect.value;
+        const selectedStage = stageSelect.value;
+        const selectedStatus = statusSelect.value;
+
+        // Check if all filters are empty - if so, reload original table
+        const isAllEmpty = !searchTerm.trim() && 
+                          !selectedDivision && 
+                          !selectedDepartment && 
+                          !selectedCategory && 
+                          !selectedStage && 
+                          !selectedStatus;
+
+        if (isAllEmpty) {
+            window.location.href = window.location.pathname; // Reload to original state
+            return;
+        }
+
+        // Call the enhanced load function with current filters
+        loadFilteredResults(1, getCurrentPageSize());
+    }
+
+    // Functions have been moved to global scope above
+
+    // Browser history management for back/forward navigation
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.filters) {
+            // Restore filter values from history state
+            const filters = event.state.filters;
+            
+            document.getElementById('searchTerm').value = filters.searchTerm || '';
+            document.getElementById('selectedDivision').value = filters.selectedDivision || '';
+            document.getElementById('selectedDepartment').value = filters.selectedDepartment || '';
+            document.getElementById('selectedCategory').value = filters.selectedCategory || '';
+            document.getElementById('selectedStage').value = filters.selectedStage || '';
+            document.getElementById('selectedStatus').value = filters.selectedStatus || '';
+            
+            // Reload departments if division is selected
+            if (filters.selectedDivision) {
+                loadDepartmentsForDivision(filters.selectedDivision, filters.selectedDepartment);
+            }
+            
+            // Load results for the restored state
+            loadFilteredResults(event.state.page || 1, getCurrentPageSize());
+        } else {
+            // No state, reload original page
+            window.location.reload();
+        }
+    });
+});
+</script>
 

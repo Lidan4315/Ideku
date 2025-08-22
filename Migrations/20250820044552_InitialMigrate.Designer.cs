@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250813011736_InitialMigrate")]
+    [Migration("20250820044552_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />

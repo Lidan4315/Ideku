@@ -15,5 +15,11 @@ namespace Ideku.Data.Repositories
         Task<IEnumerable<Idea>> GetIdeasByStatusAsync(string status);
         Task<IEnumerable<Idea>> GetAllIdeasForApprovalAsync();
         Task UpdateAsync(Idea idea);
+        
+        /// <summary>
+        /// Gets IQueryable with all necessary includes for efficient pagination and filtering
+        /// </summary>
+        /// <returns>IQueryable of Ideas with related entities included</returns>
+        IQueryable<Idea> GetQueryableWithIncludes();
     }
 }

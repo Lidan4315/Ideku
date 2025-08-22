@@ -92,19 +92,46 @@
                 <label>Proposed Solution</label>
                 <div class="form-control-plaintext">@Model.Idea.IdeaSolution</div>
             </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group-view">
-                        <label>Financial Impact</label>
-                        <p>@Model.Idea.SavingCost.ToString("C")</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group-view">
-                        <label>Attachments</label>
-                        <p><a href="/uploads/@Model.Idea.AttachmentFiles" target="_blank">@Model.Idea.AttachmentFiles</a></p>
-                    </div>
-                </div>
+            <div class="form-group-view mb-3">
+                <label>Financial Impact</label>
+                <p>@Model.Idea.SavingCost.ToString("C")</p>
+            </div>
+            <div class="form-group-view mb-3">
+                <label>Attachments</label>
+                @if (!string.IsNullOrEmpty(Model.Idea.AttachmentFiles))
+                {
+                    @foreach (var file in Model.Idea.AttachmentFiles.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var filename = System.IO.Path.GetFileName(file);
+                        var viewUrl = Url.Action("ViewAttachment", new { filename = filename, ideaId = Model.Idea.Id });
+                        var downloadUrl = Url.Action("DownloadAttachment", new { filename = filename, ideaId = Model.Idea.Id });
+
+                        <div class="attachment-item d-flex justify-content-between align-items-center mb-2">
+                            <span class="filename text-truncate me-2" title="@filename">
+                                <i class="bi bi-paperclip me-1"></i>@filename
+                            </span>
+                            <div class="attachment-actions">
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-secondary view-attachment-btn" 
+                                        data-filename="@filename"
+                                        data-view-url="@viewUrl"
+                                        data-download-url="@downloadUrl"
+                                        title="View @filename">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <a href="@downloadUrl" 
+                                   class="btn btn-sm btn-outline-secondary ms-1"
+                                   title="Download @filename">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">No attachments</p>
+                }
             </div>
         </div>
     </div>
@@ -122,13 +149,20 @@
                     <div class="approve-section mb-4">
                         <h5><i class="fas fa-check-circle text-success"></i> Approve Idea</h5>
                         <div class="form-group mb-3">
-                            <label asp-for="ValidatedSavingCost" class="form-label"></label>
-                            <input asp-for="ValidatedSavingCost" class="form-control" placeholder="Enter validated amount" />
+                            <label asp-for="ValidatedSavingCost" class="form-label">
+                                Validated Saving Cost (USD) <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ValidatedSavingCost" class="form-control" 
+                                   type="number" step="0.01" min="0" 
+                                   placeholder="Enter validated cost savings amount in USD" />
                             <span asp-validation-for="ValidatedSavingCost" class="text-danger"></span>
                         </div>
                         <div class="form-group mb-3">
-                            <label asp-for="ApprovalComments" class="form-label"></label>
-                            <textarea asp-for="ApprovalComments" class="form-control" rows="3" placeholder="Enter approval comments"></textarea>
+                            <label asp-for="ApprovalComments" class="form-label">
+                                Approval Comments <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="ApprovalComments" class="form-control" rows="3" 
+                                      placeholder="Please provide detailed approval comments"></textarea>
                             <span asp-validation-for="ApprovalComments" class="text-danger"></span>
                         </div>
                         <button type="submit" class="btn btn-success" id="approveBtn"><i class="fas fa-check"></i> Approve Idea</button>
@@ -140,7 +174,9 @@
                     <div class="reject-section">
                         <h5><i class="fas fa-times-circle text-danger"></i> Reject Idea</h5>
                         <div class="form-group mb-3">
-                            <label asp-for="RejectionReason" class="form-label"></label>
+                            <label asp-for="RejectionReason" class="form-label">
+                                Rejection Reason <span class="text-danger">*</span>
+                            </label>
                             <textarea asp-for="RejectionReason" class="form-control" rows="3" placeholder="Please provide a clear reason for rejection"></textarea>
                             <span asp-validation-for="RejectionReason" class="text-danger"></span>
                         </div>
@@ -255,7 +291,38 @@
                 }
             </div>
         </div>
-apaa    }
+    }
+</div>
+
+<!-- File Preview Modal -->
+<div class="modal fade" id="attachmentModal" tabindex="-1" aria-labelledby="attachmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attachmentModalLabel">
+                    <i class="bi bi-file-earmark me-2"></i>File Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="attachment-preview">
+                <!-- Dynamic content will be loaded here -->
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Loading file preview...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Close
+                </button>
+                <a href="#" id="modalDownloadBtn" class="btn btn-primary" style="display: none;">
+                    <i class="bi bi-download me-1"></i>Download File
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -362,16 +429,157 @@ apaa    }
             margin-top: 1rem;
         }
     }
+
+    /* Attachment Styles */
+    .attachment-item {
+        background-color: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        margin: 0;
+        font-size: 1rem;
+        color: #1f2937;
+    }
+
+
+    .filename {
+        font-size: 0.9rem;
+        color: #495057;
+        font-weight: 500;
+        max-width: 200px;
+    }
+
+    .attachment-actions .btn {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+
+    .attachment-actions .btn:hover {
+        transform: scale(1.05);
+        border-color: #007bff;
+        color: #007bff;
+        background-color: #f8f9fa;
+    }
+
+    /* Modal Styles */
+    .modal-xl {
+        max-width: 70vw;
+    }
+
+    #attachment-preview img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+
+    #attachment-preview iframe {
+        width: 100%;
+        height: 70vh;
+        border: none;
+    }
+
+    .file-preview-error {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .file-preview-error i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #dc3545;
+    }
+
+    @@media (max-width: 768px) {
+        .modal-xl {
+            max-width: 95vw;
+            margin: 0.5rem;
+        }
+        
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+        
+        .modal-content {
+            border-radius: 0.5rem;
+        }
+        
+        #attachment-preview iframe {
+            width: 100% !important;
+            height: 60vh !important;
+            min-height: 350px !important;
+        }
+        
+        #attachment-preview img {
+            max-width: 100% !important;
+            height: auto !important;
+            max-height: 60vh !important;
+        }
+        
+        .attachment-item {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .attachment-actions {
+            align-self: flex-end;
+        }
+        
+        .filename {
+            max-width: 100%;
+        }
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Handle File Preview
+        initializeFilePreview();
+        
         // Handle Approve form
         const approveForm = document.querySelector('form[action*="Approve"]');
         if (approveForm) {
             approveForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                // Client-side validation
+                const validatedSavingCost = document.querySelector('input[name="ValidatedSavingCost"]').value;
+                const approvalComments = document.querySelector('textarea[name="ApprovalComments"]').value;
+                
+                if (!validatedSavingCost.trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning!',
+                        text: 'Validated saving cost is required'
+                    });
+                    return;
+                }
+                
+                if (parseFloat(validatedSavingCost) < 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning!',
+                        text: 'Validated saving cost must be a positive number'
+                    });
+                    return;
+                }
+                
+                if (!approvalComments.trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning!',
+                        text: 'Approval comments are required'
+                    });
+                    return;
+                }
                 
                 Swal.fire({
                     title: 'Confirm Approval',
@@ -384,12 +592,22 @@ apaa    }
                     cancelButtonText: 'Cancel'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Show loading state
+                        const approveBtn = document.getElementById('approveBtn');
+                        const originalBtnContent = approveBtn.innerHTML;
+                        approveBtn.disabled = true;
+                        approveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+                        
                         // Submit form by creating a new form submission
                         const formData = new FormData(approveForm);
                         fetch(approveForm.action, {
                             method: 'POST',
                             body: formData
                         }).then(response => {
+                            // Reset button state
+                            approveBtn.disabled = false;
+                            approveBtn.innerHTML = originalBtnContent;
+                            
                             if (response.redirected) {
                                 Swal.fire({
                                     icon: 'success',
@@ -402,6 +620,10 @@ apaa    }
                                 });
                             }
                         }).catch(error => {
+                            // Reset button state on error
+                            approveBtn.disabled = false;
+                            approveBtn.innerHTML = originalBtnContent;
+                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
@@ -424,7 +646,7 @@ apaa    }
                     Swal.fire({
                         icon: 'warning',
                         title: 'Warning!',
-                        text: 'Please provide a rejection reason first.'
+                        text: 'Rejection reason is required'
                     });
                     return;
                 }
@@ -440,12 +662,22 @@ apaa    }
                     cancelButtonText: 'Cancel'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Show loading state
+                        const rejectBtn = document.getElementById('rejectBtn');
+                        const originalBtnContent = rejectBtn.innerHTML;
+                        rejectBtn.disabled = true;
+                        rejectBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+                        
                         // Submit form by creating a new form submission
                         const formData = new FormData(rejectForm);
                         fetch(rejectForm.action, {
                             method: 'POST',
                             body: formData
                         }).then(response => {
+                            // Reset button state
+                            rejectBtn.disabled = false;
+                            rejectBtn.innerHTML = originalBtnContent;
+                            
                             if (response.redirected) {
                                 Swal.fire({
                                     icon: 'success',
@@ -458,6 +690,10 @@ apaa    }
                                 });
                             }
                         }).catch(error => {
+                            // Reset button state on error
+                            rejectBtn.disabled = false;
+                            rejectBtn.innerHTML = originalBtnContent;
+                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
@@ -469,4 +705,210 @@ apaa    }
             });
         }
     });
+
+    // File Preview Functions
+    function initializeFilePreview() {
+        const viewButtons = document.querySelectorAll('.view-attachment-btn');
+        
+        viewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const filename = this.dataset.filename;
+                const viewUrl = this.dataset.viewUrl;
+                const downloadUrl = this.dataset.downloadUrl;
+                
+                showFilePreview(filename, viewUrl, downloadUrl);
+            });
+        });
+    }
+    
+    // Re-initialize on window resize (for mobile/desktop switch)
+    window.addEventListener('resize', function() {
+        setTimeout(() => {
+            initializeFilePreview();
+        }, 100);
+    });
+
+    function showFilePreview(filename, viewUrl, downloadUrl) {
+        const modal = new bootstrap.Modal(document.getElementById('attachmentModal'));
+        const modalTitle = document.getElementById('attachmentModalLabel');
+        const modalBody = document.getElementById('attachment-preview');
+        const downloadBtn = document.getElementById('modalDownloadBtn');
+        
+        // Update modal title
+        modalTitle.innerHTML = `<i class="bi bi-file-earmark me-2"></i>Preview: ${filename}`;
+        
+        // Show loading state
+        modalBody.innerHTML = `
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted">Loading file preview...</p>
+            </div>
+        `;
+        
+        // Setup download button
+        downloadBtn.href = downloadUrl;
+        downloadBtn.style.display = 'inline-block';
+        
+        // Show modal
+        modal.show();
+        
+        // Force modal recalculation for mobile
+        if (window.innerWidth <= 768) {
+            setTimeout(() => {
+                if (modal.handleUpdate) {
+                    modal.handleUpdate();
+                }
+                // Force modal display
+                const modalElement = document.getElementById('attachmentModal');
+                if (modalElement) {
+                    modalElement.style.display = 'block';
+                    modalElement.classList.add('show');
+                }
+            }, 100);
+        }
+        
+        // Determine file type and show appropriate preview
+        const extension = filename.split('.').pop().toLowerCase();
+        
+        setTimeout(() => {
+            loadFilePreview(extension, filename, viewUrl, downloadUrl, modalBody);
+        }, window.innerWidth <= 768 ? 500 : 300); // Longer delay for mobile
+    }
+
+    function loadFilePreview(extension, filename, viewUrl, downloadUrl, modalBody) {
+        const isMobile = window.innerWidth <= 768;
+        
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+            // Image preview
+            showImagePreview(viewUrl, filename, modalBody);
+            
+        } else if (extension === 'pdf') {
+            // PDF preview (desktop only)
+            showPdfPreview(viewUrl, filename, modalBody);
+            
+        } else if (['ppt', 'pptx'].includes(extension)) {
+            // PowerPoint - Download only
+            showUnsupportedFile(filename, downloadUrl, modalBody, 'file-earmark-ppt', 'PowerPoint Presentation');
+            
+        } else if (['doc', 'docx'].includes(extension)) {
+            // Word document - Download only
+            showUnsupportedFile(filename, downloadUrl, modalBody, 'file-earmark-word', 'Word Document');
+            
+        } else if (['xls', 'xlsx'].includes(extension)) {
+            // Excel document - Download only
+            showUnsupportedFile(filename, downloadUrl, modalBody, 'file-earmark-excel', 'Excel Spreadsheet');
+            
+        } else if (extension === 'txt') {
+            // Text file - Could show content
+            showTextPreview(viewUrl, filename, modalBody);
+            
+        } else {
+            // Unknown file type
+            showUnsupportedFile(filename, downloadUrl, modalBody, 'file-earmark', 'Unknown File Type');
+        }
+    }
+
+    function showImagePreview(viewUrl, filename, modalBody) {
+        const img = new Image();
+        const isMobile = window.innerWidth <= 768;
+        
+        // Set timeout for mobile loading
+        let loadTimeout = setTimeout(() => {
+            if (isMobile) {
+                showErrorPreview('Loading timeout - check connection', modalBody);
+            }
+        }, isMobile ? 8000 : 10000);
+        
+        img.onload = function() {
+            clearTimeout(loadTimeout);
+            modalBody.innerHTML = `
+                <div class="text-center p-3">
+                    <img src="${viewUrl}" class="img-fluid" alt="${filename}" style="max-height: ${isMobile ? '60vh' : '70vh'};">
+                </div>
+            `;
+        };
+        
+        img.onerror = function() {
+            clearTimeout(loadTimeout);
+            if (isMobile) {
+                // Fallback to download for mobile
+                showUnsupportedFile(filename, viewUrl, modalBody, 'file-earmark-image', 'Image File - Download to View');
+            } else {
+                showErrorPreview('Failed to load image', modalBody);
+            }
+        };
+        
+        img.src = viewUrl;
+    }
+
+    function showPdfPreview(viewUrl, filename, modalBody) {
+        const isMobile = window.innerWidth <= 768;
+        
+        // Set timeout untuk mobile PDF loading
+        if (isMobile) {
+            let pdfTimeout = setTimeout(() => {
+                // Fallback ke download kalau PDF tidak load dalam 5 detik
+                showUnsupportedFile(filename, viewUrl, modalBody, 'file-earmark-pdf', 'PDF Document - Download to View');
+            }, 5000);
+            
+            // Clear timeout jika user manually close modal
+            document.getElementById('attachmentModal').addEventListener('hidden.bs.modal', () => {
+                clearTimeout(pdfTimeout);
+            }, { once: true });
+        }
+        
+        modalBody.innerHTML = `
+            <div class="p-2">
+                <iframe src="${viewUrl}" style="width: 100%; height: ${isMobile ? '60vh' : '70vh'}; min-height: ${isMobile ? '350px' : '400px'}; border: none;" title="${filename}" onload="console.log('PDF loaded successfully')">
+                    <p>Your browser does not support PDFs. <a href="${viewUrl}">Download the PDF</a>.</p>
+                </iframe>
+            </div>
+        `;
+    }
+
+    function showTextPreview(viewUrl, filename, modalBody) {
+        fetch(viewUrl)
+            .then(response => response.text())
+            .then(text => {
+                modalBody.innerHTML = `
+                    <div class="p-4">
+                        <pre class="bg-light p-3 rounded" style="max-height: 60vh; overflow-y: auto; white-space: pre-wrap;">${escapeHtml(text)}</pre>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                showErrorPreview('Failed to load text file', modalBody);
+            });
+    }
+
+    function showUnsupportedFile(filename, downloadUrl, modalBody, iconClass, fileType) {
+        modalBody.innerHTML = `
+            <div class="file-preview-error">
+                <i class="bi bi-${iconClass} text-warning mb-3" style="font-size: 4rem;"></i>
+                <h5>${fileType}</h5>
+                <p class="text-muted mb-4">Preview not available for this file type</p>
+                <a href="${downloadUrl}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-download me-2"></i>Download ${filename}
+                </a>
+            </div>
+        `;
+    }
+
+    function showErrorPreview(message, modalBody) {
+        modalBody.innerHTML = `
+            <div class="file-preview-error">
+                <i class="bi bi-exclamation-triangle text-danger"></i>
+                <h5>Preview Error</h5>
+                <p class="text-muted">${message}</p>
+            </div>
+        `;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 </script>

@@ -4,6 +4,7 @@ using Ideku.Services.Email;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Ideku.Services.Workflow
@@ -160,6 +161,45 @@ namespace Ideku.Services.Workflow
 
             // Return empty list if the user is not a designated approver
             return new List<Models.Entities.Idea>();
+        }
+
+        public async Task<IQueryable<Models.Entities.Idea>> GetPendingApprovalsQueryAsync(string username)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            if (user == null)
+            {
+                return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+            }
+
+            // Get base queryable for ideas with all necessary includes
+            var baseQuery = _ideaRepository.GetQueryableWithIncludes();
+
+            // Apply role-based filtering using the same logic as GetPendingApprovalsForUserAsync
+            if (user.Role.RoleName == "Superuser")
+            {
+                // Superuser can see all ideas regardless of stage or status
+                return baseQuery.Where(idea => 
+                    idea.CurrentStatus.StartsWith("Waiting Approval") ||
+                    idea.CurrentStatus.StartsWith("Rejected S") ||
+                    idea.CurrentStatus == "Approved")
+                    .OrderByDescending(idea => idea.SubmittedDate)
+                    .ThenByDescending(idea => idea.Id);
+            }
+            else if (user.Role.RoleName == "Workstream Leader")
+            {
+                // Workstream Leader can see:
+                // - Ideas at stage 0 waiting for S1 approval (their responsibility)
+                // - Ideas that were processed at stage 0 (their history)
+                return baseQuery.Where(idea => 
+                    (idea.CurrentStage == 0 && idea.CurrentStatus == "Waiting Approval S1") || // Current responsibility
+                    (idea.CurrentStage >= 1) || // Ideas that have passed their stage
+                    (idea.CurrentStatus.StartsWith("Rejected S0")) // Ideas they rejected
+                ).OrderByDescending(idea => idea.SubmittedDate)
+                .ThenByDescending(idea => idea.Id);
+            }
+
+            // Return empty queryable if the user is not a designated approver
+            return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
         }
 
         public async Task<Models.Entities.Idea> GetIdeaForReview(int ideaId, string username)
@@ -441,6 +481,7 @@ namespace Ideku.Services.Workflow
         }}
     </style>
 </head>
+batu
 <body>
     <div class='container'>
         <div class='header'>
@@ -448,7 +489,7 @@ namespace Ideku.Services.Workflow
         </div>
         
         <div class='content'>
-            <p>ta {idea.InitiatorUser?.Name},</p>
+            <p>Hello {idea.InitiatorUser?.Name},</p>
             
             <p>Thank you for submitting your idea. After careful review, your idea has been rejected.</p>
             

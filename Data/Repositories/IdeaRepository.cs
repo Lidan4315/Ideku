@@ -118,5 +118,16 @@ namespace Ideku.Data.Repositories
             _context.Ideas.Update(idea);
             await _context.SaveChangesAsync();
         }
+
+        public IQueryable<Idea> GetQueryableWithIncludes()
+        {
+            return _context.Ideas
+                .Include(i => i.InitiatorUser)
+                    .ThenInclude(u => u.Employee)
+                .Include(i => i.TargetDivision)
+                .Include(i => i.TargetDepartment)
+                .Include(i => i.Category)
+                .Include(i => i.Event);
+        }
     }
 }
