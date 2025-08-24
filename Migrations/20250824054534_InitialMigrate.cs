@@ -98,6 +98,7 @@ namespace Ideku.Migrations
                     WorkflowName = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     Desc = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    Priority = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -291,7 +292,7 @@ namespace Ideku.Migrations
                     SavingCost = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     SavingCostVaidated = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
                     AttachmentFiles = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Workflow = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    WorkflowId = table.Column<int>(type: "int", nullable: false),
                     CurrentStage = table.Column<int>(type: "int", nullable: false),
                     CurrentStatus = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     IsRejected = table.Column<bool>(type: "bit", nullable: false),
@@ -332,6 +333,12 @@ namespace Ideku.Migrations
                         name: "FK_Ideas_Users_InitiatorUserId",
                         column: x => x.InitiatorUserId,
                         principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Ideas_Workflows_WorkflowId",
+                        column: x => x.WorkflowId,
+                        principalTable: "Workflows",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -439,6 +446,11 @@ namespace Ideku.Migrations
                 column: "ToDivisionId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Ideas_WorkflowId",
+                table: "Ideas",
+                column: "WorkflowId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_LevelApprovers_LevelId",
                 table: "LevelApprovers",
                 column: "LevelId");
@@ -516,6 +528,11 @@ namespace Ideku.Migrations
                 column: "IsActive");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Workflows_IsActive_Priority",
+                table: "Workflows",
+                columns: new[] { "IsActive", "Priority" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_WorkflowStages_LevelId",
                 table: "WorkflowStages",
                 column: "LevelId");
@@ -557,9 +574,6 @@ namespace Ideku.Migrations
                 name: "Levels");
 
             migrationBuilder.DropTable(
-                name: "Workflows");
-
-            migrationBuilder.DropTable(
                 name: "Categories");
 
             migrationBuilder.DropTable(
@@ -567,6 +581,9 @@ namespace Ideku.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Workflows");
 
             migrationBuilder.DropTable(
                 name: "EMPLIST");

@@ -69,6 +69,10 @@ namespace Ideku.Data.Context
                 .HasIndex(w => w.IsActive)
                 .HasDatabaseName("IX_Workflows_IsActive");
 
+            modelBuilder.Entity<Workflow>()
+                .HasIndex(w => new { w.IsActive, w.Priority })
+                .HasDatabaseName("IX_Workflows_IsActive_Priority");
+
             // Level indexes
             modelBuilder.Entity<Level>()
                 .HasIndex(l => l.IsActive)
@@ -113,6 +117,21 @@ namespace Ideku.Data.Context
             modelBuilder.Entity<LevelApprover>()
                 .HasIndex(la => new { la.LevelId, la.IsPrimary })
                 .HasDatabaseName("IX_LevelApprovers_LevelId_IsPrimary");
+
+            // Idea indexes for workflow
+            modelBuilder.Entity<Idea>()
+                .HasIndex(i => i.WorkflowId)
+                .HasDatabaseName("IX_Ideas_WorkflowId");
+
+            // Idea indexes for soft delete
+            modelBuilder.Entity<Idea>()
+                .HasIndex(i => i.IsDeleted)
+                .HasDatabaseName("IX_Ideas_IsDeleted");
+
+            // Composite index for active ideas
+            modelBuilder.Entity<Idea>()
+                .HasIndex(i => new { i.IsDeleted, i.CurrentStatus })
+                .HasDatabaseName("IX_Ideas_IsDeleted_CurrentStatus");
 
             // =================== RELATIONSHIPS ===================
 
@@ -262,6 +281,13 @@ namespace Ideku.Data.Context
                 .HasOne(la => la.Role)
                 .WithMany()
                 .HasForeignKey(la => la.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Idea-Workflow relationship
+            modelBuilder.Entity<Idea>()
+                .HasOne(i => i.Workflow)
+                .WithMany()
+                .HasForeignKey(i => i.WorkflowId)
                 .OnDelete(DeleteBehavior.Restrict);
 
         }

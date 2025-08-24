@@ -24,6 +24,10 @@ namespace Ideku.Models.Entities
         public bool IsActive { get; set; } = true;
 
         [Required]
+        [Column("Priority")]
+        public int Priority { get; set; } = 1;
+
+        [Required]
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

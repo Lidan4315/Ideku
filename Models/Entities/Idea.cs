@@ -73,12 +73,17 @@ namespace Ideku.Models.Entities
         public string AttachmentFiles { get; set; } = string.Empty;
 
         [Required]
-        [Column("Workflow")]
-        [StringLength(20)]
-        public string Workflow { get; set; } = string.Empty;
+        [Column("WorkflowId")]
+        public int WorkflowId { get; set; }
+
+        [ForeignKey("WorkflowId")]
+        public Workflow Workflow { get; set; } = null!;
 
         [Column("CurrentStage")]
         public int CurrentStage { get; set; } = 0;
+
+        [Column("MaxStage")]
+        public int MaxStage { get; set; } = 0;
 
         [Required]
         [Column("CurrentStatus")]
@@ -105,6 +110,9 @@ namespace Ideku.Models.Entities
 
         [Column("CompletedDate")]
         public DateTime? CompletedDate { get; set; }
+
+        [Column("IsDeleted")]
+        public bool IsDeleted { get; set; } = false;
 
         public ICollection<WorkflowHistory> WorkflowHistories { get; set; } = new List<WorkflowHistory>();
         public ICollection<Milestone> Milestones { get; set; } = new List<Milestone>();
