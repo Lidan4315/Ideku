@@ -56,6 +56,7 @@ namespace Ideku.Controllers
                 {
                     WorkflowName = formattedWorkflowName,
                     Desc = string.IsNullOrEmpty(model.Desc) ? null : model.Desc.Trim(),
+                    Priority = model.Priority,
                     IsActive = model.IsActive,
                     CreatedAt = DateTime.Now
                 };
@@ -258,6 +259,7 @@ namespace Ideku.Controllers
                     Id = workflow.Id,
                     WorkflowName = workflow.WorkflowName,
                     Desc = workflow.Desc,
+                    Priority = workflow.Priority,
                     IsActive = workflow.IsActive
                 };
 
@@ -298,6 +300,7 @@ namespace Ideku.Controllers
                     Id = model.Id,
                     WorkflowName = formattedWorkflowName,
                     Desc = model.Desc?.Trim(),
+                    Priority = model.Priority,
                     IsActive = model.IsActive
                 };
 

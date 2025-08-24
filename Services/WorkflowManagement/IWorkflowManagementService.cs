@@ -26,5 +26,8 @@ namespace Ideku.Services.WorkflowManagement
         Task<IEnumerable<Category>> GetAllCategoriesAsync();
         Task<IEnumerable<Division>> GetAllDivisionsAsync();
         Task<IEnumerable<Department>> GetAllDepartmentsAsync();
+
+        // Workflow Selection
+        Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, decimal savingCost, int? eventId);
     }
 }
