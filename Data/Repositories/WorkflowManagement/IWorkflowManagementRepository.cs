@@ -22,6 +22,10 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         // Workflow Selection
         Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, decimal savingCost, int? eventId);
 
+        // Stage & Approver Management
+        Task<IEnumerable<User>> GetApproversForWorkflowStageAsync(int workflowId, int targetStage, string? targetDivisionId, string? targetDepartmentId);
+        Task<WorkflowStage?> GetWorkflowStageAsync(int workflowId, int stage);
+
         // Helper Methods for Dropdowns
         Task<IEnumerable<Models.Entities.Level>> GetAllLevelsAsync();
         Task<IEnumerable<Category>> GetAllCategoriesAsync();

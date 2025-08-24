@@ -28,5 +28,15 @@ namespace Ideku.Data.Repositories
                 .OrderByDescending(wh => wh.Timestamp)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<WorkflowHistory>> GetWorkflowHistoryForIdeaAsync(long ideaId)
+        {
+            return await _context.WorkflowHistories
+                .Include(wh => wh.ActorUser)
+                    .ThenInclude(u => u.Role)
+                .Where(wh => wh.IdeaId == ideaId)
+                .OrderByDescending(wh => wh.Timestamp)
+                .ToListAsync();
+        }
     }
 }

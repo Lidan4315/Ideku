@@ -205,5 +205,58 @@ namespace Ideku.Data.Repositories.WorkflowManagement
                 _ => false
             };
         }
+
+        public async Task<IEnumerable<User>> GetApproversForWorkflowStageAsync(int workflowId, int targetStage, string? targetDivisionId, string? targetDepartmentId)
+        {
+            // Get WorkflowStage for the target stage
+            var workflowStage = await _context.WorkflowStages
+                .Include(ws => ws.Level)
+                    .ThenInclude(l => l.LevelApprovers)
+                        .ThenInclude(la => la.Role)
+                            .ThenInclude(r => r.Users)
+                                .ThenInclude(u => u.Employee)
+                .FirstOrDefaultAsync(ws => ws.WorkflowId == workflowId && ws.Stage == targetStage);
+
+            if (workflowStage == null)
+                return new List<User>();
+
+            // Get all users with roles that can approve at this level
+            var approverUsers = new List<User>();
+            
+            foreach (var levelApprover in workflowStage.Level.LevelApprovers)
+            {
+                var query = _context.Users
+                    .Include(u => u.Employee)
+                    .Include(u => u.Role)
+                    .Where(u => u.RoleId == levelApprover.RoleId && u.Employee.EMP_STATUS == "Active");
+
+                // Filter by target division if specified
+                if (!string.IsNullOrEmpty(targetDivisionId))
+                {
+                    query = query.Where(u => u.Employee.DIVISION == targetDivisionId);
+                }
+
+                // Filter by target department if specified
+                if (!string.IsNullOrEmpty(targetDepartmentId))
+                {
+                    query = query.Where(u => u.Employee.DEPARTEMENT == targetDepartmentId);
+                }
+
+                var usersWithRole = await query.ToListAsync();
+                approverUsers.AddRange(usersWithRole);
+            }
+
+            // Remove duplicates and return
+            return approverUsers.DistinctBy(u => u.Id).ToList();
+        }
+
+        public async Task<WorkflowStage?> GetWorkflowStageAsync(int workflowId, int stage)
+        {
+            return await _context.WorkflowStages
+                .Include(ws => ws.Level)
+                    .ThenInclude(l => l.LevelApprovers)
+                        .ThenInclude(la => la.Role)
+                .FirstOrDefaultAsync(ws => ws.WorkflowId == workflowId && ws.Stage == stage);
+        }
     }
 }

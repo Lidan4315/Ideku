@@ -1,6 +1,7 @@
 using Ideku.Data.Repositories;
 using Ideku.Models;
 using Ideku.Services.Email;
+using Ideku.Services.WorkflowManagement;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -15,51 +16,61 @@ namespace Ideku.Services.Workflow
         private readonly IUserRepository _userRepository;
         private readonly IIdeaRepository _ideaRepository;
         private readonly IWorkflowRepository _workflowRepository;
+        private readonly IWorkflowManagementService _workflowManagementService;
         private readonly ILogger<WorkflowService> _logger;
         private readonly EmailSettings _emailSettings;
 
-        public WorkflowService(IEmailService emailService, IUserRepository userRepository, IIdeaRepository ideaRepository, IWorkflowRepository workflowRepository, ILogger<WorkflowService> logger, IOptions<EmailSettings> emailSettings)
+        public WorkflowService(IEmailService emailService, IUserRepository userRepository, IIdeaRepository ideaRepository, IWorkflowRepository workflowRepository, IWorkflowManagementService workflowManagementService, ILogger<WorkflowService> logger, IOptions<EmailSettings> emailSettings)
         {
             _emailService = emailService;
             _userRepository = userRepository;
             _ideaRepository = ideaRepository;
             _workflowRepository = workflowRepository;
+            _workflowManagementService = workflowManagementService;
             _logger = logger;
             _emailSettings = emailSettings.Value;
         }
 
         public async Task InitiateWorkflowAsync(Models.Entities.Idea idea)
         {
-            // Find the first approver, which should be the Workstream Leader.
-            var firstApprover = await _userRepository.GetUserByRoleAsync("Workstream Leader");
+            // Get approvers for the first stage of the workflow (stage 1)
+            var targetStage = 1; // Idea at S0 needs approval from Stage 1 approvers
+            var approvers = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
 
-            if (firstApprover != null)
+            if (approvers.Any())
             {
-                var emailMessage = new EmailMessage
+                // Send email to all approvers for this stage
+                foreach (var approver in approvers)
                 {
-                    To = firstApprover.Employee.EMAIL,
-                    Subject = $"[Ideku] New Idea Submission Requires Approval - {idea.IdeaName}",
-                    Body = GenerateValidationEmailBody(idea),
-                    IsHtml = true
-                };
+                    var emailMessage = new EmailMessage
+                    {
+                        To = approver.Employee.EMAIL,
+                        Subject = $"[Ideku] New Idea Submission Requires Approval - {idea.IdeaName}",
+                        Body = GenerateValidationEmailBody(idea, approver, targetStage),
+                        IsHtml = true
+                    };
 
-                try
-                {
-                    await _emailService.SendEmailAsync(emailMessage);
-                    _logger.LogInformation("Workflow initiated for Idea {IdeaId}. Approval email sent to {ApproverEmail}", idea.Id, firstApprover.Employee.EMAIL);
-                }
-                catch (System.Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send workflow initiation email for Idea {IdeaId}", idea.Id);
+                    try
+                    {
+                        await _emailService.SendEmailAsync(emailMessage);
+                        _logger.LogInformation("Workflow initiated for Idea {IdeaId}. Approval email sent to {ApproverEmail} for Stage {Stage}", 
+                            idea.Id, approver.Employee.EMAIL, targetStage);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send workflow initiation email to {ApproverEmail} for Idea {IdeaId}", 
+                            approver.Employee.EMAIL, idea.Id);
+                    }
                 }
             }
             else
             {
-                _logger.LogWarning("Could not find an approver with the 'Workstream Leader' role to initiate workflow for Idea {IdeaId}", idea.Id);
+                _logger.LogWarning("No approvers found for Idea {IdeaId} at Stage {Stage}. WorkflowId: {WorkflowId}", 
+                    idea.Id, targetStage, idea.WorkflowId);
             }
         }
 
-        private string GenerateValidationEmailBody(Models.Entities.Idea idea)
+        private string GenerateValidationEmailBody(Models.Entities.Idea idea, Models.Entities.User approver, int targetStage)
         {
             var approvalUrl = $"{_emailSettings.BaseUrl}/Approval/Review/{idea.Id}";
 
@@ -94,9 +105,9 @@ namespace Ideku.Services.Workflow
         </div>
         
         <div class='content'>
-            <p>Hello,</p>
+            <p>Hello {approver.Employee.NAME},</p>
             
-            <p>A new idea has been submitted in the Ideku system and requires your approval:</p>
+            <p>A new idea has been submitted in the Ideku system and requires your approval at <strong>Stage {targetStage}</strong>:</p>
             
             <div class='idea-details'>
                 <h3>{idea.IdeaName}</h3>
@@ -218,25 +229,33 @@ namespace Ideku.Services.Workflow
                 return null;
             }
 
-            // Simple authorization logic:
-            // Does the user's role match the required role for the idea's current stage?
-            // This is a placeholder for more complex workflow logic.
             bool canView = false;
+            
+            // Superuser can view anything
             if (user.Role.RoleName == "Superuser")
             {
-                canView = true; // Superuser can view anything
+                canView = true;
             }
-            else if (user.Role.RoleName == "Workstream Leader")
+            else
             {
-                // Workstream Leader can view:
-                // 1. Ideas they can currently approve (stage 0, waiting S1)
-                // 2. Ideas that have moved beyond their stage (history/context)
-                // 3. Ideas they have rejected
-                canView = (idea.CurrentStage == 0 && idea.CurrentStatus == "Waiting Approval S1") || // Can review
-                         (idea.CurrentStage >= 1) || // Can view history
-                         (idea.CurrentStatus.StartsWith("Rejected S0")); // Can view their rejections
+                // Check if user is an approver for the current stage or has history with this idea
+                var targetStage = idea.CurrentStage + 1; // Next stage that needs approval
+                
+                // Get approvers for the target stage
+                var approversForCurrentStage = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
+                
+                // User can view if:
+                // 1. They are an approver for the current stage that needs approval
+                // 2. They have previously acted on this idea (check workflow history)
+                canView = approversForCurrentStage.Any(a => a.Id == user.Id);
+
+                if (!canView)
+                {
+                    // Check if user has history with this idea (previously approved/rejected)
+                    var workflowHistory = await _workflowRepository.GetWorkflowHistoryForIdeaAsync(ideaId);
+                    canView = workflowHistory.Any(wh => wh.ActorUserId == user.Id);
+                }
             }
-            // Add other roles and stages here as needed
 
             if (!canView)
             {
@@ -258,11 +277,17 @@ namespace Ideku.Services.Workflow
                 return;
             }
 
-            // Authorization check: Only Workstream Leader or Superuser can approve S0->S1
-            if (idea.CurrentStage == 0 && user.Role.RoleName != "Workstream Leader" && user.Role.RoleName != "Superuser")
+            // Authorization check: User must be authorized approver for the target stage
+            var targetStage = idea.CurrentStage + 1; // Stage that needs approval
+            var authorizedApprovers = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
+            
+            bool isAuthorized = user.Role.RoleName == "Superuser" || 
+                               authorizedApprovers.Any(a => a.Id == user.Id);
+
+            if (!isAuthorized)
             {
-                _logger.LogWarning("User {Username} with role {RoleName} is not authorized to approve idea {IdeaId} at stage {Stage}", 
-                    username, user.Role.RoleName, ideaId, idea.CurrentStage);
+                _logger.LogWarning("User {Username} with role {RoleName} is not authorized to approve idea {IdeaId} at target stage {TargetStage}", 
+                    username, user.Role.RoleName, ideaId, targetStage);
                 return;
             }
 
@@ -338,6 +363,35 @@ namespace Ideku.Services.Workflow
             catch (System.Exception ex)
             {
                 _logger.LogError(ex, "Failed to send approval confirmation email for Idea {IdeaId}", ideaId);
+            }
+
+            // If idea moved to next stage (not completed), send emails to next stage approvers
+            if (nextStage <= idea.MaxStage && idea.CurrentStatus != "Approved")
+            {
+                var nextStageApprovers = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, nextStage + 1, idea.ToDivisionId, idea.ToDepartmentId);
+                
+                foreach (var nextApprover in nextStageApprovers)
+                {
+                    try
+                    {
+                        var nextStageEmailMessage = new EmailMessage
+                        {
+                            To = nextApprover.Employee.EMAIL,
+                            Subject = $"[Ideku] Idea Requires Your Approval - {idea.IdeaName}",
+                            Body = GenerateValidationEmailBody(idea, nextApprover, nextStage + 1),
+                            IsHtml = true
+                        };
+
+                        await _emailService.SendEmailAsync(nextStageEmailMessage);
+                        _logger.LogInformation("Next stage approval email sent to {ApproverEmail} for Idea {IdeaId} Stage {Stage}", 
+                            nextApprover.Employee.EMAIL, ideaId, nextStage + 1);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send next stage approval email to {ApproverEmail} for Idea {IdeaId}", 
+                            nextApprover.Employee.EMAIL, ideaId);
+                    }
+                }
             }
 
             // Log successful approval

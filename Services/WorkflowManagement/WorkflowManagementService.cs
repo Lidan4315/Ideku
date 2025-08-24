@@ -140,5 +140,15 @@ namespace Ideku.Services.WorkflowManagement
         {
             return await _workflowRepository.GetApplicableWorkflowAsync(categoryId, divisionId, departmentId, savingCost, eventId);
         }
+
+        public async Task<IEnumerable<User>> GetApproversForWorkflowStageAsync(int workflowId, int targetStage, string? targetDivisionId, string? targetDepartmentId)
+        {
+            return await _workflowRepository.GetApproversForWorkflowStageAsync(workflowId, targetStage, targetDivisionId, targetDepartmentId);
+        }
+
+        public async Task<WorkflowStage?> GetWorkflowStageAsync(int workflowId, int stage)
+        {
+            return await _workflowRepository.GetWorkflowStageAsync(workflowId, stage);
+        }
     }
 }
