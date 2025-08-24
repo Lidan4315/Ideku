@@ -133,6 +133,161 @@
     font-weight: 500;
 }
 
+/* Enhanced Modal Styles */
+.level-modal {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.level-modal-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    padding: 1.25rem 1.5rem;
+    position: relative;
+}
+
+.level-modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.3;
+}
+
+.level-modal-header .modal-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+    position: relative;
+    z-index: 1;
+}
+
+.level-modal-header .modal-icon i {
+    font-size: 1.25rem;
+    color: white;
+}
+
+.level-modal-header .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+    position: relative;
+    z-index: 1;
+}
+
+.level-modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+.level-modal-body {
+    padding: 1.5rem;
+    background: white;
+}
+
+.input-group-enhanced .input-group-text {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    border: 1px solid #d1d5db;
+    color: #374151;
+    font-weight: 500;
+    gap: 0.5rem;
+}
+
+.form-control-enhanced,
+.form-select-enhanced {
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.form-control-enhanced:focus,
+.form-select-enhanced:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+.form-check-input:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.level-modal-footer {
+    background: white;
+    border: none;
+    padding: 1.25rem 1.5rem;
+    gap: 1rem;
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-save:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
+}
+
+.btn-light {
+    background: #f8fafc;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-light:hover {
+    background: #f1f5f9;
+    border-color: #9ca3af;
+    color: #1f2937;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.form-text i {
+    color: #3b82f6;
+    margin-right: 0.25rem;
+}
+
+/* Animation for modal */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out;
+    transform: translate(0, -50px);
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+}
+
 @media (max-width: 768px) {
     .page-header {
         padding: 1.5rem;

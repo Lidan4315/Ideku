@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250824065501_InitialMigrate")]
+    [Migration("20250824142948_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -466,6 +466,12 @@ namespace Ideku.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("Note");
 
+                    b.Property<string>("PIC")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("PIC");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2")
                         .HasColumnName("StartDate");
@@ -475,6 +481,12 @@ namespace Ideku.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("Status");
+
+                    b.Property<string>("TitleMilestone")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("TitleMilestone");
 
                     b.HasKey("Id");
 

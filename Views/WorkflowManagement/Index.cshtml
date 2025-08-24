@@ -138,48 +138,84 @@
 
 <!-- Add Workflow Modal -->
 <div class="modal fade" id="addWorkflowModal" tabindex="-1" aria-labelledby="addWorkflowModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="addWorkflowForm">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addWorkflowModalLabel">
-                        <i class="bi bi-plus-circle me-2"></i>Add New Workflow
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="workflowName" class="form-label">Workflow Name <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text">WF_</span>
-                            <input type="text" class="form-control" id="workflowName" name="workflowName" maxlength="17" required 
-                                   placeholder="e.g. STANDARD, EMERGENCY, etc." style="text-transform: uppercase;">
-                        </div>
-                        <div class="form-text">Enter workflow identifier (will be prefixed with WF_ and converted to uppercase)</div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content level-modal">
+            <div class="modal-header level-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-plus-circle"></i>
                     </div>
-                    <div class="mb-3">
+                    <div>
+                        <h5 class="modal-title mb-0" id="addWorkflowModalLabel">Add New Workflow</h5>
+                        <small class="text-muted">Create a new workflow configuration</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addWorkflowForm">
+                <div class="modal-body level-modal-body">
+                    <!-- Workflow Name -->
+                    <div class="mb-4">
+                        <label for="workflowName" class="form-label">Workflow Name <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-diagram-3"></i>
+                                WF_
+                            </span>
+                            <input type="text" class="form-control" id="workflowName" name="workflowName" maxlength="17" required 
+                                   placeholder="E.G. STANDARD, EMERGENCY, ETC." style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter workflow identifier (will be prefixed with WF_ and converted to uppercase)
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-4">
                         <label for="desc" class="form-label">Description</label>
                         <textarea class="form-control" id="desc" name="desc" rows="3" maxlength="200" placeholder="Enter workflow description (optional)"></textarea>
-                        <div class="form-text">Maximum 200 characters</div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Maximum 200 characters
+                        </div>
                     </div>
-                    <div class="mb-3">
+                    
+                    <!-- Priority -->
+                    <div class="mb-4">
                         <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="priority" name="priority" min="1" max="100" placeholder="Enter priority (1-100)" required>
-                        <div class="form-text">Higher number = higher priority (1-100)</div>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </span>
+                            <input type="number" class="form-control" id="priority" name="priority" min="1" max="100" placeholder="Enter priority (1-100)" required>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Higher number = higher priority (1-100)
+                        </div>
                     </div>
+                    
+                    <!-- Status -->
                     <div class="mb-3">
-                        <div class="form-check">
+                        <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
                             <label class="form-check-label" for="isActive">
-                                Active
+                                <strong>Active Workflow</strong>
                             </label>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Inactive workflows will not be available for new ideas
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle me-1"></i>Add Workflow
+                <div class="modal-footer level-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Add Workflow
                     </button>
                 </div>
             </form>
@@ -189,49 +225,86 @@
 
 <!-- Edit Workflow Modal -->
 <div class="modal fade" id="editWorkflowModal" tabindex="-1" aria-labelledby="editWorkflowModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="editWorkflowForm">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editWorkflowModalLabel">
-                        <i class="bi bi-pencil-square me-2"></i>Edit Workflow
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="editWorkflowId" name="id">
-                    <div class="mb-3">
-                        <label for="editWorkflowName" class="form-label">Workflow Name <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text">WF_</span>
-                            <input type="text" class="form-control" id="editWorkflowName" name="workflowName" maxlength="17" required 
-                                   placeholder="e.g. STANDARD, EMERGENCY, etc." style="text-transform: uppercase;">
-                        </div>
-                        <div class="form-text">Enter workflow identifier (will be prefixed with WF_ and converted to uppercase)</div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content level-modal">
+            <div class="modal-header level-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-pencil-square"></i>
                     </div>
-                    <div class="mb-3">
+                    <div>
+                        <h5 class="modal-title mb-0" id="editWorkflowModalLabel">Edit Workflow</h5>
+                        <small class="text-muted">Update workflow configuration</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editWorkflowForm">
+                <div class="modal-body level-modal-body">
+                    <input type="hidden" id="editWorkflowId" name="id">
+                    
+                    <!-- Workflow Name -->
+                    <div class="mb-4">
+                        <label for="editWorkflowName" class="form-label">Workflow Name <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-diagram-3"></i>
+                                WF_
+                            </span>
+                            <input type="text" class="form-control" id="editWorkflowName" name="workflowName" maxlength="17" required 
+                                   placeholder="E.G. STANDARD, EMERGENCY, ETC." style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter workflow identifier (will be prefixed with WF_ and converted to uppercase)
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-4">
                         <label for="editDesc" class="form-label">Description</label>
                         <textarea class="form-control" id="editDesc" name="desc" rows="3" maxlength="200" placeholder="Enter workflow description (optional)"></textarea>
-                        <div class="form-text">Maximum 200 characters</div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Maximum 200 characters
+                        </div>
                     </div>
-                    <div class="mb-3">
+                    
+                    <!-- Priority -->
+                    <div class="mb-4">
                         <label for="editPriority" class="form-label">Priority <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="editPriority" name="priority" min="1" max="100" value="1" required>
-                        <div class="form-text">Higher number = higher priority (1-100)</div>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </span>
+                            <input type="number" class="form-control" id="editPriority" name="priority" min="1" max="100" value="1" required>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Higher number = higher priority (1-100)
+                        </div>
                     </div>
+                    
+                    <!-- Status -->
                     <div class="mb-3">
-                        <div class="form-check">
+                        <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="editIsActive" name="isActive">
                             <label class="form-check-label" for="editIsActive">
-                                Active
+                                <strong>Active Workflow</strong>
                             </label>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Inactive workflows will not be available for new ideas
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle me-1"></i>Update Workflow
+                <div class="modal-footer level-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Update Workflow
                     </button>
                 </div>
             </form>

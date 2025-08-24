@@ -353,6 +353,8 @@ namespace Ideku.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     IdeaId = table.Column<long>(type: "bigint", nullable: false),
                     CreatorUserId = table.Column<long>(type: "bigint", nullable: false),
+                    TitleMilestone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    PIC = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     Note = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
