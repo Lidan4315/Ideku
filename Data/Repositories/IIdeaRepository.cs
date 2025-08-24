@@ -21,5 +21,12 @@ namespace Ideku.Data.Repositories
         /// </summary>
         /// <returns>IQueryable of Ideas with related entities included</returns>
         IQueryable<Idea> GetQueryableWithIncludes();
+
+        /// <summary>
+        /// Soft delete an idea by setting IsDeleted to true
+        /// </summary>
+        /// <param name="id">Idea ID to soft delete</param>
+        /// <returns>True if successful, false if idea not found</returns>
+        Task<bool> SoftDeleteAsync(long id);
     }
 }

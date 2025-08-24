@@ -267,10 +267,36 @@ namespace Ideku.Services.Workflow
             }
 
             var previousStage = idea.CurrentStage;
+            var nextStage = idea.CurrentStage + 1;
             
-            // Update from S0 to S1
-            idea.CurrentStage = 1;
-            idea.CurrentStatus = "Waiting Approval S2";
+            // Check if we can advance to next stage (validate against MaxStage)
+            if (nextStage > idea.MaxStage)
+            {
+                // Already at final stage - mark as approved/completed
+                idea.CurrentStatus = "Approved";
+                idea.CompletedDate = DateTime.Now;
+                _logger.LogInformation("Idea {IdeaId} completed approval process - reached final stage {MaxStage}", ideaId, idea.MaxStage);
+            }
+            else
+            {
+                // Advance to next stage
+                idea.CurrentStage = nextStage;
+                
+                // Set status based on whether this is the final stage or not
+                if (nextStage == idea.MaxStage)
+                {
+                    idea.CurrentStatus = "Approved"; // Final approval
+                    idea.CompletedDate = DateTime.Now;
+                }
+                else
+                {
+                    idea.CurrentStatus = $"Waiting Approval S{nextStage + 1}";
+                }
+                
+                _logger.LogInformation("Idea {IdeaId} advanced from stage {FromStage} to stage {ToStage}, max stage is {MaxStage}", 
+                    ideaId, previousStage, idea.CurrentStage, idea.MaxStage);
+            }
+            
             idea.UpdatedDate = DateTime.Now;
             
             if (validatedSavingCost.HasValue)
@@ -284,7 +310,7 @@ namespace Ideku.Services.Workflow
                 IdeaId = ideaId,
                 ActorUserId = user.Id,
                 FromStage = previousStage,
-                ToStage = idea.CurrentStage,
+                ToStage = nextStage <= idea.MaxStage ? nextStage : (int?)null, // null if completed
                 Action = "Approved",
                 Comments = comments,
                 Timestamp = DateTime.Now
@@ -301,7 +327,7 @@ namespace Ideku.Services.Workflow
                 {
                     To = idea.InitiatorUser.Employee.EMAIL,
                     Subject = $"[Ideku] Your Idea '{idea.IdeaName}' Has Been Approved!",
-                    Body = GenerateApprovalEmailBody(idea, user, previousStage, idea.CurrentStage),
+                    Body = GenerateApprovalEmailBody(idea, user, previousStage, nextStage),
                     IsHtml = true
                 };
 
@@ -315,8 +341,8 @@ namespace Ideku.Services.Workflow
             }
 
             // Log successful approval
-            _logger.LogInformation("Idea {IdeaId} successfully approved from S{FromStage} to S{ToStage} by {Username}", 
-                ideaId, previousStage, idea.CurrentStage, username);
+            _logger.LogInformation("Idea {IdeaId} successfully approved from S{FromStage} to S{ToStage} by {Username}. Status: {Status}", 
+                ideaId, previousStage, nextStage, username, idea.CurrentStatus);
         }
 
         public async Task ProcessRejectionAsync(long ideaId, string username, string reason)

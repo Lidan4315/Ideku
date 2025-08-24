@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250824054534_InitialMigrate")]
+    [Migration("20250824065501_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -276,9 +276,17 @@ namespace Ideku.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("InitiatorUserId");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsDeleted");
+
                     b.Property<bool>("IsRejected")
                         .HasColumnType("bit")
                         .HasColumnName("IsRejected");
+
+                    b.Property<int>("MaxStage")
+                        .HasColumnType("int")
+                        .HasColumnName("MaxStage");
 
                     b.Property<string>("RejectedReason")
                         .HasMaxLength(1000)
@@ -327,12 +335,18 @@ namespace Ideku.Migrations
 
                     b.HasIndex("InitiatorUserId");
 
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Ideas_IsDeleted");
+
                     b.HasIndex("ToDepartmentId");
 
                     b.HasIndex("ToDivisionId");
 
                     b.HasIndex("WorkflowId")
                         .HasDatabaseName("IX_Ideas_WorkflowId");
+
+                    b.HasIndex("IsDeleted", "CurrentStatus")
+                        .HasDatabaseName("IX_Ideas_IsDeleted_CurrentStatus");
 
                     b.ToTable("Ideas");
                 });

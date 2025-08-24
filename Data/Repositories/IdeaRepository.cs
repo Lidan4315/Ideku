@@ -29,6 +29,7 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
                 .Include(i => i.Event)
+                .Where(i => !i.IsDeleted) // Exclude soft deleted records
                 .FirstOrDefaultAsync(i => i.Id == id);
         }
 
@@ -39,7 +40,7 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
                 .Include(i => i.Event)
-                .Where(i => i.InitiatorUserId == initiatorUserId)
+                .Where(i => i.InitiatorUserId == initiatorUserId && !i.IsDeleted)
                 .OrderByDescending(i => i.SubmittedDate)
                 .ToListAsync();
         }
@@ -81,7 +82,7 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
                 .Include(i => i.Event)
-                .Where(i => i.CurrentStage == stage && i.CurrentStatus == status)
+                .Where(i => i.CurrentStage == stage && i.CurrentStatus == status && !i.IsDeleted)
                 .OrderByDescending(i => i.SubmittedDate)
                 .ToListAsync();
         }
@@ -95,7 +96,7 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
                 .Include(i => i.Event)
-                .Where(i => i.CurrentStatus == status)
+                .Where(i => i.CurrentStatus == status && !i.IsDeleted)
                 .OrderByDescending(i => i.SubmittedDate)
                 .ToListAsync();
         }
@@ -109,6 +110,7 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
                 .Include(i => i.Event)
+                .Where(i => !i.IsDeleted)
                 .OrderByDescending(i => i.SubmittedDate)
                 .ToListAsync();
         }
@@ -127,7 +129,22 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDivision)
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
-                .Include(i => i.Event);
+                .Include(i => i.Event)
+                .Where(i => !i.IsDeleted);
+        }
+
+        public async Task<bool> SoftDeleteAsync(long id)
+        {
+            var idea = await _context.Ideas.FindAsync(id);
+            if (idea == null || idea.IsDeleted)
+            {
+                return false;
+            }
+
+            idea.IsDeleted = true;
+            idea.UpdatedDate = DateTime.Now;
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

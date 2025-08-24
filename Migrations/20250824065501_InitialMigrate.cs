@@ -294,13 +294,15 @@ namespace Ideku.Migrations
                     AttachmentFiles = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     WorkflowId = table.Column<int>(type: "int", nullable: false),
                     CurrentStage = table.Column<int>(type: "int", nullable: false),
+                    MaxStage = table.Column<int>(type: "int", nullable: false),
                     CurrentStatus = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     IsRejected = table.Column<bool>(type: "bit", nullable: false),
                     RejectedReason = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     IdeaCode = table.Column<string>(type: "nvarchar(11)", maxLength: 11, nullable: false),
                     SubmittedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CompletedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    CompletedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -434,6 +436,16 @@ namespace Ideku.Migrations
                 name: "IX_Ideas_InitiatorUserId",
                 table: "Ideas",
                 column: "InitiatorUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Ideas_IsDeleted",
+                table: "Ideas",
+                column: "IsDeleted");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Ideas_IsDeleted_CurrentStatus",
+                table: "Ideas",
+                columns: new[] { "IsDeleted", "CurrentStatus" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Ideas_ToDepartmentId",
