@@ -69,6 +69,7 @@ namespace Ideku.Services.WorkflowManagement
             // Update properties
             existingWorkflow.WorkflowName = editModel.WorkflowName;
             existingWorkflow.Desc = editModel.Desc;
+            existingWorkflow.Priority = editModel.Priority;
             existingWorkflow.IsActive = editModel.IsActive;
             existingWorkflow.UpdatedAt = DateTime.Now;
 
@@ -133,6 +134,21 @@ namespace Ideku.Services.WorkflowManagement
         public async Task<IEnumerable<Department>> GetAllDepartmentsAsync()
         {
             return await _workflowRepository.GetAllDepartmentsAsync();
+        }
+
+        public async Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, decimal savingCost, int? eventId)
+        {
+            return await _workflowRepository.GetApplicableWorkflowAsync(categoryId, divisionId, departmentId, savingCost, eventId);
+        }
+
+        public async Task<IEnumerable<User>> GetApproversForWorkflowStageAsync(int workflowId, int targetStage, string? targetDivisionId, string? targetDepartmentId)
+        {
+            return await _workflowRepository.GetApproversForWorkflowStageAsync(workflowId, targetStage, targetDivisionId, targetDepartmentId);
+        }
+
+        public async Task<WorkflowStage?> GetWorkflowStageAsync(int workflowId, int stage)
+        {
+            return await _workflowRepository.GetWorkflowStageAsync(workflowId, stage);
         }
     }
 }

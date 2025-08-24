@@ -273,9 +273,17 @@ namespace Ideku.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("InitiatorUserId");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsDeleted");
+
                     b.Property<bool>("IsRejected")
                         .HasColumnType("bit")
                         .HasColumnName("IsRejected");
+
+                    b.Property<int>("MaxStage")
+                        .HasColumnType("int")
+                        .HasColumnName("MaxStage");
 
                     b.Property<string>("RejectedReason")
                         .HasMaxLength(1000)
@@ -312,11 +320,9 @@ namespace Ideku.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("UpdatedDate");
 
-                    b.Property<string>("Workflow")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("Workflow");
+                    b.Property<int>("WorkflowId")
+                        .HasColumnType("int")
+                        .HasColumnName("WorkflowId");
 
                     b.HasKey("Id");
 
@@ -326,9 +332,18 @@ namespace Ideku.Migrations
 
                     b.HasIndex("InitiatorUserId");
 
+                    b.HasIndex("IsDeleted")
+                        .HasDatabaseName("IX_Ideas_IsDeleted");
+
                     b.HasIndex("ToDepartmentId");
 
                     b.HasIndex("ToDivisionId");
+
+                    b.HasIndex("WorkflowId")
+                        .HasDatabaseName("IX_Ideas_WorkflowId");
+
+                    b.HasIndex("IsDeleted", "CurrentStatus")
+                        .HasDatabaseName("IX_Ideas_IsDeleted_CurrentStatus");
 
                     b.ToTable("Ideas");
                 });
@@ -578,6 +593,10 @@ namespace Ideku.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("IsActive");
 
+                    b.Property<int>("Priority")
+                        .HasColumnType("int")
+                        .HasColumnName("Priority");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("UpdatedAt");
@@ -592,6 +611,9 @@ namespace Ideku.Migrations
 
                     b.HasIndex("IsActive")
                         .HasDatabaseName("IX_Workflows_IsActive");
+
+                    b.HasIndex("IsActive", "Priority")
+                        .HasDatabaseName("IX_Workflows_IsActive_Priority");
 
                     b.ToTable("Workflows");
                 });
@@ -812,6 +834,12 @@ namespace Ideku.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Ideku.Models.Entities.Workflow", "Workflow")
+                        .WithMany()
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Category");
 
                     b.Navigation("Event");
@@ -821,6 +849,8 @@ namespace Ideku.Migrations
                     b.Navigation("TargetDepartment");
 
                     b.Navigation("TargetDivision");
+
+                    b.Navigation("Workflow");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.LevelApprover", b =>

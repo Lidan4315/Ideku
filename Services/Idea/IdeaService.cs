@@ -1,6 +1,7 @@
 using Ideku.Data.Repositories;
 using Ideku.ViewModels;
 using Ideku.Models.Entities;
+using Ideku.Services.WorkflowManagement;
 
 namespace Ideku.Services.Idea
 {
@@ -10,6 +11,7 @@ namespace Ideku.Services.Idea
         private readonly IUserRepository _userRepository;
         private readonly ILookupRepository _lookupRepository;
         private readonly IWorkflowRepository _workflowRepository;
+        private readonly IWorkflowManagementService _workflowManagementService;
         private readonly IEmployeeRepository _employeeRepository;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
@@ -18,6 +20,7 @@ namespace Ideku.Services.Idea
             IUserRepository userRepository,
             ILookupRepository lookupRepository,
             IWorkflowRepository workflowRepository,
+            IWorkflowManagementService workflowManagementService,
             IEmployeeRepository employeeRepository,
             IWebHostEnvironment webHostEnvironment)
         {
@@ -25,6 +28,7 @@ namespace Ideku.Services.Idea
             _userRepository = userRepository;
             _lookupRepository = lookupRepository;
             _workflowRepository = workflowRepository;
+            _workflowManagementService = workflowManagementService;
             _employeeRepository = employeeRepository;
             _webHostEnvironment = webHostEnvironment;
         }
@@ -87,6 +91,24 @@ namespace Ideku.Services.Idea
                 // Handle file uploads
                 var attachmentPaths = await HandleFileUploadsAsync(files);
 
+                // Determine applicable workflow based on idea conditions
+                var applicableWorkflow = await _workflowManagementService.GetApplicableWorkflowAsync(
+                    model.CategoryId,
+                    model.ToDivisionId,
+                    model.ToDepartmentId,
+                    model.SavingCost,
+                    model.EventId
+                );
+
+                if (applicableWorkflow == null)
+                {
+                    return (false, "No applicable workflow found for this idea. Please contact administrator.", null);
+                }
+
+                // Get workflow stages count for MaxStage
+                var workflowWithStages = await _workflowManagementService.GetWorkflowByIdAsync(applicableWorkflow.Id);
+                var maxStage = workflowWithStages?.WorkflowStages?.Count() ?? 0;
+
                 // Create new Idea entity (without IdeaCode first)
                 var idea = new Models.Entities.Idea
                 {
@@ -101,9 +123,11 @@ namespace Ideku.Services.Idea
                     SavingCost = model.SavingCost,
                     AttachmentFiles = string.Join(";", attachmentPaths),
                     IdeaCode = "TMP", // Temporary code
-                    Workflow = "Draft", // Initial workflow status
+                    WorkflowId = applicableWorkflow.Id, // Assign determined workflow
+                    MaxStage = maxStage, // Set maximum stages for this workflow
                     CurrentStatus = "Waiting Approval S1",
-                    CurrentStage = 0, // Initial stage for new submission
+                    CurrentStage = 0, // Start from stage 0
+                    IsDeleted = false, // Default not deleted
                     SubmittedDate = DateTime.Now
                 };
 

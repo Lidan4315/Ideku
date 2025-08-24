@@ -15,5 +15,10 @@ namespace Ideku.ViewModels.WorkflowManagement
 
         [Display(Name = "Active")]
         public bool IsActive { get; set; } = true;
+
+        [Required(ErrorMessage = "Priority is required")]
+        [Range(1, 100, ErrorMessage = "Priority must be between 1 and 100")]
+        [Display(Name = "Priority")]
+        public int Priority { get; set; } = 1;
     }
 }

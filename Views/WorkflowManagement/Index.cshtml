@@ -69,7 +69,8 @@
                                     <tr>
                                         <th style="width: 5%">ID</th>
                                         <th style="width: 20%">Workflow Name</th>
-                                        <th style="width: 35%">Description</th>
+                                        <th style="width: 25%">Description</th>
+                                        <th style="width: 10%">Priority</th>
                                         <th style="width: 10%">Status</th>
                                         <th style="width: 10%">Stages</th>
                                         <th style="width: 10%">Conditions</th>
@@ -89,6 +90,9 @@
                                             </td>
                                             <td>
                                                 <span class="text-muted">@(workflow.Desc ?? "No description")</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@workflow.Priority</span>
                                             </td>
                                             <td>
                                                 @{
@@ -159,6 +163,11 @@
                         <div class="form-text">Maximum 200 characters</div>
                     </div>
                     <div class="mb-3">
+                        <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="priority" name="priority" min="1" max="100" placeholder="Enter priority (1-100)" required>
+                        <div class="form-text">Higher number = higher priority (1-100)</div>
+                    </div>
+                    <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
                             <label class="form-check-label" for="isActive">
@@ -206,6 +215,11 @@
                         <div class="form-text">Maximum 200 characters</div>
                     </div>
                     <div class="mb-3">
+                        <label for="editPriority" class="form-label">Priority <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="editPriority" name="priority" min="1" max="100" value="1" required>
+                        <div class="form-text">Higher number = higher priority (1-100)</div>
+                    </div>
+                    <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="editIsActive" name="isActive">
                             <label class="form-check-label" for="editIsActive">
@@ -235,7 +249,7 @@
         };
         
         // Open edit modal function
-        function openEditModal(id, workflowName, desc, isActive) {
+        function openEditModal(id, workflowName, desc, priority, isActive) {
             // Fill form with existing data
             document.getElementById('editWorkflowId').value = id;
             
@@ -244,6 +258,7 @@
             document.getElementById('editWorkflowName').value = displayName;
             
             document.getElementById('editDesc').value = desc || '';
+            document.getElementById('editPriority').value = priority || 1;
             document.getElementById('editIsActive').checked = isActive;
             
             // Show modal
