@@ -74,15 +74,12 @@
                         <p>@Model.Idea.Category.CategoryName</p>
                     </div>
                 </div>
-                @if (Model.Idea.Event != null)
-                {
-                    <div class="col-md-6">
-                        <div class="form-group-view">
-                            <label>Event</label>
-                            <p>@Model.Idea.Event.EventName</p>
-                        </div>
+                <div class="col-md-6">
+                    <div class="form-group-view">
+                        <label>Event</label>
+                        <p>@(Model.Idea.Event?.EventName ?? "-")</p>
                     </div>
-                }
+                </div>
             </div>
             <div class="form-group-view mb-3">
                 <label>Problem/Issue Background</label>
