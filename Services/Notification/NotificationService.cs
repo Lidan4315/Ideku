@@ -118,7 +118,7 @@ namespace Ideku.Services.Notification
             }
         }
 
-        public async Task NotifyMilestoneCreated(Milestone milestone)
+        public async Task NotifyMilestoneCreated(Models.Entities.Milestone milestone)
         {
             try
             {
@@ -221,7 +221,7 @@ namespace Ideku.Services.Notification
             <p>Best regards,<br>Ideku System</p>";
         }
 
-        private string GenerateMilestoneCreatedEmailBody(Milestone milestone)
+        private string GenerateMilestoneCreatedEmailBody(Models.Entities.Milestone milestone)
         {
             return $@"
             <h2>New Milestone Created</h2>

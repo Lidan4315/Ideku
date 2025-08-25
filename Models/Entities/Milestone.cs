@@ -19,6 +19,16 @@ namespace Ideku.Models.Entities
         public long CreatorUserId { get; set; }
 
         [Required]
+        [Column("TitleMilestone")]
+        [StringLength(50)]
+        public string TitleMilestone { get; set; } = string.Empty;
+
+        [Required]
+        [Column("PIC")]
+        [StringLength(200)]
+        public string PIC { get; set; } = string.Empty;
+
+        [Required]
         [Column("Status")]
         [StringLength(20)]
         public string Status { get; set; } = string.Empty;

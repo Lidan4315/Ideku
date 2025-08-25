@@ -44,7 +44,7 @@ $(document).ready(function() {
         var errorMessage = '';
         
         
-        $('.approver-row').each(function(index) {
+        $('.approver-card').each(function(index) {
             var $row = $(this);
             var roleId = $row.find('select[name="roleIds[]"]').val();
             var approvalLevel = $row.find('input[name="approvalLevels[]"]').val();
@@ -261,37 +261,49 @@ function addApprover() {
     var clonedSelect = existingSelect.clone();
     clonedSelect.val(''); // Reset selection
     
-    var newApproverRow = $(`
-        <div class="row approver-row mb-2">
-            <div class="col-md-6">
-                <!-- Placeholder for select -->
-            </div>
-            <div class="col-md-3">
-                <input type="number" class="form-control" name="approvalLevels[]" placeholder="Level" min="1" required>
-            </div>
-            <div class="col-md-2">
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" name="isPrimaries[]" value="1">
-                    <label class="form-check-label">Primary</label>
+    var newApproverCard = $(`
+        <div class="approver-card">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label-sm">Role</label>
+                    <!-- Placeholder for select -->
                 </div>
-            </div>
-            <div class="col-md-1">
-                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeApprover(this)">
-                    <i class="bi bi-trash"></i>
-                </button>
+                <div class="col-md-3">
+                    <label class="form-label-sm">Level</label>
+                    <input type="number" class="form-control" name="approvalLevels[]" 
+                           placeholder="Level" min="1" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label-sm">Options</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="isPrimaries[]" value="1">
+                            <label class="form-check-label">Primary</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label-sm">&nbsp;</label>
+                    <div>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeApprover(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     `);
     
-    // Replace placeholder with cloned select
-    newApproverRow.find('.col-md-6').html(clonedSelect);
+    // Replace placeholder with cloned select and add proper classes
+    clonedSelect.addClass('form-select');
+    newApproverCard.find('.col-md-4').append(clonedSelect);
     
-    $('#approversContainer').append(newApproverRow);
+    $('#approversContainer').append(newApproverCard);
 }
 
 function removeApprover(button) {
-    if ($('.approver-row').length > 1) {
-        $(button).closest('.approver-row').remove();
+    if ($('.approver-card').length > 1) {
+        $(button).closest('.approver-card').remove();
     } else {
         Swal.fire({
             icon: 'warning',

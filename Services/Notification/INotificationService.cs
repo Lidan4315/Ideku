@@ -8,6 +8,6 @@ namespace Ideku.Services.Notification
         Task NotifyIdeaApproved(Models.Entities.Idea idea, User approver);
         Task NotifyIdeaRejected(Models.Entities.Idea idea, User rejector, string reason);
         Task NotifyIdeaCompleted(Models.Entities.Idea idea);
-        Task NotifyMilestoneCreated(Milestone milestone);
+        Task NotifyMilestoneCreated(Models.Entities.Milestone milestone);
     }
 }

@@ -168,50 +168,80 @@
 <!-- Add Approver Modal -->
 <div class="modal fade" id="addApproverModal" tabindex="-1" aria-labelledby="addApproverModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addApproverModalLabel">
-                    <i class="bi bi-person-plus me-2"></i>Add Level Approver
-                </h5>
+        <div class="modal-content level-modal">
+            <div class="modal-header level-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="addApproverModalLabel">Add Level Approver</h5>
+                        <small class="text-muted">Assign a new approver to this level</small>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addApproverForm">
-                <div class="modal-body">
+                <div class="modal-body level-modal-body">
                     <input type="hidden" id="levelId" name="levelId" value="@Model.Level.Id" />
                     
-                    <div class="mb-3">
+                    <!-- Role Selection -->
+                    <div class="mb-4">
                         <label for="roleId" class="form-label">Role <span class="text-danger">*</span></label>
-                        <select class="form-select" id="roleId" name="roleId" required>
-                            <option value="">Select a role...</option>
-                            @foreach (var role in Model.RoleList)
-                            {
-                                <option value="@role.Value">@role.Text</option>
-                            }
-                        </select>
-                        <div class="form-text">Choose the role that will act as an approver for this level</div>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <select class="form-select" id="roleId" name="roleId" required>
+                                <option value="">Select a role...</option>
+                                @foreach (var role in Model.RoleList)
+                                {
+                                    <option value="@role.Value">@role.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Choose the role that will act as an approver for this level
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
+                    <!-- Approval Level -->
+                    <div class="mb-4">
                         <label for="approvalLevel" class="form-label">Approval Hierarchy <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="approvalLevel" name="approvalLevel" required 
-                               min="1" max="10" placeholder="e.g. 1, 2, 3">
-                        <div class="form-text">Enter the hierarchy level (1 = highest, 10 = lowest)</div>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-bar-chart-steps"></i>
+                            </span>
+                            <input type="number" class="form-control" id="approvalLevel" name="approvalLevel" required 
+                                   min="1" max="10" placeholder="e.g. 1, 2, 3">
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter the hierarchy level (1 = highest, 10 = lowest)
+                        </div>
                     </div>
                     
+                    <!-- Primary Status -->
                     <div class="mb-3">
-                        <div class="form-check">
+                        <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="isPrimary" name="isPrimary" value="true">
                             <label class="form-check-label" for="isPrimary">
-                                Primary Approver
+                                <strong>Primary Approver</strong>
                             </label>
                         </div>
-                        <div class="form-text">Check if this is the primary approver for this level</div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Check if this is the primary approver for this level
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save me-2"></i>Add Approver
+                <div class="modal-footer level-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Add Approver
                     </button>
                 </div>
             </form>
@@ -222,41 +252,59 @@
 <!-- Edit Level Modal -->
 <div class="modal fade" id="editLevelModal" tabindex="-1" aria-labelledby="editLevelModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editLevelModalLabel">
-                    <i class="bi bi-pencil-square me-2"></i>Edit Level
-                </h5>
+        <div class="modal-content level-modal">
+            <div class="modal-header level-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="editLevelModalLabel">Edit Level</h5>
+                        <small class="text-muted">Update level configuration</small>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editLevelForm">
-                <div class="modal-body">
+                <div class="modal-body level-modal-body">
                     <input type="hidden" id="editLevelId" name="id">
                     
-                    <div class="mb-3">
+                    <!-- Level Name -->
+                    <div class="mb-4">
                         <label for="editLevelName" class="form-label">Level Name <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text">LV</span>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-layers"></i>
+                                LV
+                            </span>
                             <input type="text" class="form-control" id="editLevelName" name="levelName" required 
-                                   placeholder="e.g. 01, 02, MANAGER, etc." style="text-transform: uppercase;">
+                                   placeholder="E.G. 01, 02, MANAGER, ETC." style="text-transform: uppercase;">
                         </div>
-                        <div class="form-text">Enter level identifier (will be prefixed with LV and converted to uppercase)</div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter level identifier (will be prefixed with LV and converted to uppercase)
+                        </div>
                     </div>
                     
-                    
+                    <!-- Status -->
                     <div class="mb-3">
-                        <div class="form-check">
+                        <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="editIsActive" name="isActive">
                             <label class="form-check-label" for="editIsActive">
-                                Active Level
+                                <strong>Active Level</strong>
                             </label>
                         </div>
-                        <div class="form-text">Inactive levels will not be available for new workflows</div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Inactive levels will not be available for new workflows
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
+                <div class="modal-footer level-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
                         <i class="bi bi-check-circle me-2"></i>Update Level
                     </button>
                 </div>
