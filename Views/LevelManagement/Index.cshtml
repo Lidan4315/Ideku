@@ -4,7 +4,7 @@
 }
 
 @section Styles {
-    <link href="~/css/pages/level-management.css" rel="stylesheet" />
+    <link href="~/css/pages/level-management.css" rel="stylesheet" asp-append-version="true" />
 }
 
 <div class="container-fluid">
@@ -249,5 +249,5 @@
             delete: '@Url.Action("Delete", "LevelManagement")'
         };
     </script>
-    <script src="~/js/pages/level-management.js"></script>
+    <script src="~/js/pages/level-management.js" asp-append-version="true"></script>
 }
