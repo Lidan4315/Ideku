@@ -136,8 +136,6 @@ namespace Ideku.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     LevelId = table.Column<int>(type: "int", nullable: false),
                     RoleId = table.Column<int>(type: "int", nullable: false),
-                    IsPrimary = table.Column<bool>(type: "bit", nullable: false),
-                    ApprovalLevel = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -468,16 +466,6 @@ namespace Ideku.Migrations
                 name: "IX_LevelApprovers_LevelId",
                 table: "LevelApprovers",
                 column: "LevelId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LevelApprovers_LevelId_ApprovalLevel",
-                table: "LevelApprovers",
-                columns: new[] { "LevelId", "ApprovalLevel" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LevelApprovers_LevelId_IsPrimary",
-                table: "LevelApprovers",
-                columns: new[] { "LevelId", "IsPrimary" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_LevelApprovers_RoleId",

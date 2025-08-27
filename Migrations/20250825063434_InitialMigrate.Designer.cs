@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250824142948_InitialMigrate")]
+    [Migration("20250825063434_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -395,17 +395,9 @@ namespace Ideku.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ApprovalLevel")
-                        .HasColumnType("int")
-                        .HasColumnName("ApprovalLevel");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("CreatedAt");
-
-                    b.Property<bool>("IsPrimary")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsPrimary");
 
                     b.Property<int>("LevelId")
                         .HasColumnType("int")
@@ -426,12 +418,6 @@ namespace Ideku.Migrations
 
                     b.HasIndex("RoleId")
                         .HasDatabaseName("IX_LevelApprovers_RoleId");
-
-                    b.HasIndex("LevelId", "ApprovalLevel")
-                        .HasDatabaseName("IX_LevelApprovers_LevelId_ApprovalLevel");
-
-                    b.HasIndex("LevelId", "IsPrimary")
-                        .HasDatabaseName("IX_LevelApprovers_LevelId_IsPrimary");
 
                     b.ToTable("LevelApprovers");
                 });

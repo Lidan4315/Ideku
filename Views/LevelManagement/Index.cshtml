@@ -169,7 +169,7 @@
                         <div id="approversContainer" class="approvers-container">
                             <div class="approver-card">
                                 <div class="row g-3">
-                                    <div class="col-md-4">
+                                    <div class="col-md-10">
                                         <label class="form-label-sm">Role</label>
                                         <select class="form-select" name="roleIds[]" required>
                                             <option value="">Select Role</option>
@@ -178,20 +178,6 @@
                                                 <option value="@role.Value">@role.Text</option>
                                             }
                                         </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label-sm">Level</label>
-                                        <input type="number" class="form-control" name="approvalLevels[]" 
-                                               placeholder="Level" min="1" required>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label-sm">Options</label>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="isPrimaries[]" value="1">
-                                                <label class="form-check-label">Primary</label>
-                                            </div>
-                                        </div>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label-sm">&nbsp;</label>

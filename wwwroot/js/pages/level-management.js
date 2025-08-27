@@ -47,8 +47,6 @@ $(document).ready(function() {
         $('.approver-card').each(function(index) {
             var $row = $(this);
             var roleId = $row.find('select[name="roleIds[]"]').val();
-            var approvalLevel = $row.find('input[name="approvalLevels[]"]').val();
-            var isPrimary = $row.find('input[name="isPrimaries[]"]').is(':checked');
             
             
             // Validate each approver row (only visible ones)
@@ -59,16 +57,8 @@ $(document).ready(function() {
                         return false; // Stop the loop
                 }
                 
-                if (!approvalLevel || approvalLevel === "" || parseInt(approvalLevel) <= 0) {
-                    hasError = true;
-                    errorMessage = `Please enter a valid approval level for approver ${index + 1}.`;
-                        return false; // Stop the loop
-                }
-                
                 var approverData = {
-                    roleId: parseInt(roleId),
-                    approvalLevel: parseInt(approvalLevel),
-                    isPrimary: isPrimary
+                    roleId: parseInt(roleId)
                 };
                 
                 approvers.push(approverData);
@@ -264,23 +254,9 @@ function addApprover() {
     var newApproverCard = $(`
         <div class="approver-card">
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-10">
                     <label class="form-label-sm">Role</label>
                     <!-- Placeholder for select -->
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label-sm">Level</label>
-                    <input type="number" class="form-control" name="approvalLevels[]" 
-                           placeholder="Level" min="1" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label-sm">Options</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="isPrimaries[]" value="1">
-                            <label class="form-check-label">Primary</label>
-                        </div>
-                    </div>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label-sm">&nbsp;</label>
@@ -296,7 +272,7 @@ function addApprover() {
     
     // Replace placeholder with cloned select and add proper classes
     clonedSelect.addClass('form-select');
-    newApproverCard.find('.col-md-4').append(clonedSelect);
+    newApproverCard.find('.col-md-10').append(clonedSelect);
     
     $('#approversContainer').append(newApproverCard);
 }

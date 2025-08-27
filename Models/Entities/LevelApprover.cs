@@ -25,14 +25,6 @@ namespace Ideku.Models.Entities
         public Role Role { get; set; } = null!;
 
         [Required]
-        [Column("IsPrimary")]
-        public bool IsPrimary { get; set; } = true;
-
-        [Required]
-        [Column("ApprovalLevel")]
-        public int ApprovalLevel { get; set; }
-
-        [Required]
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

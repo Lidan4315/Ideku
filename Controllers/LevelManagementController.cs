@@ -72,9 +72,7 @@ namespace Ideku.Controllers
                     {
                         Id = la.Id,
                         RoleId = la.RoleId,
-                        RoleName = la.Role.RoleName,
-                        ApprovalLevel = la.ApprovalLevel,
-                        IsPrimary = la.IsPrimary
+                        RoleName = la.Role.RoleName
                     }).ToList()
                 };
                 
@@ -151,8 +149,6 @@ namespace Ideku.Controllers
                     {
                         LevelId = level.Id,
                         RoleId = approverData.RoleId,
-                        IsPrimary = approverData.IsPrimary,
-                        ApprovalLevel = approverData.ApprovalLevel,
                         CreatedAt = DateTime.Now
                     };
 
@@ -170,8 +166,6 @@ namespace Ideku.Controllers
         public class ApproverData
         {
             public int RoleId { get; set; }
-            public int ApprovalLevel { get; set; }
-            public bool IsPrimary { get; set; }
         }
 
         // POST: Level/AddApprover
@@ -203,8 +197,6 @@ namespace Ideku.Controllers
                 {
                     LevelId = model.LevelId,
                     RoleId = model.RoleId,
-                    IsPrimary = model.IsPrimary,
-                    ApprovalLevel = model.ApprovalLevel,
                     CreatedAt = DateTime.Now
                 };
 
@@ -267,9 +259,7 @@ namespace Ideku.Controllers
                         levelApprovers = level.LevelApprovers.Select(la => new {
                             id = la.Id,
                             roleId = la.RoleId,
-                            roleName = la.Role.RoleName,
-                            isPrimary = la.IsPrimary,
-                            approvalLevel = la.ApprovalLevel
+                            roleName = la.Role.RoleName
                         }).ToList()
                     },
                     roleList = roleList
@@ -355,8 +345,6 @@ namespace Ideku.Controllers
                     {
                         LevelId = level.Id,
                         RoleId = approverData.RoleId,
-                        IsPrimary = approverData.IsPrimary,
-                        ApprovalLevel = approverData.ApprovalLevel,
                         CreatedAt = DateTime.Now
                     };
 

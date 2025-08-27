@@ -7,13 +7,11 @@ $(document).ready(function() {
         
         var formData = {
             levelId: $('#levelId').val(),
-            roleId: $('#roleId').val(),
-            isPrimary: $('#isPrimary').is(':checked'),
-            approvalLevel: $('#approvalLevel').val()
+            roleId: $('#roleId').val()
         };
         
         // Validate form
-        if (!formData.roleId || !formData.approvalLevel) {
+        if (!formData.roleId) {
             Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',

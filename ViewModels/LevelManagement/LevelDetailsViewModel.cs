@@ -19,7 +19,5 @@ namespace Ideku.ViewModels.LevelManagement
 
         // Statistics
         public int TotalApprovers => Approvers.Count;
-        public int PrimaryApprovers => Approvers.Count(a => a.IsPrimary);
-        public int SecondaryApprovers => Approvers.Count(a => !a.IsPrimary);
     }
 }

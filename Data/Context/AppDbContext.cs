@@ -110,13 +110,6 @@ namespace Ideku.Data.Context
                 .HasIndex(la => la.RoleId)
                 .HasDatabaseName("IX_LevelApprovers_RoleId");
 
-            modelBuilder.Entity<LevelApprover>()
-                .HasIndex(la => new { la.LevelId, la.ApprovalLevel })
-                .HasDatabaseName("IX_LevelApprovers_LevelId_ApprovalLevel");
-
-            modelBuilder.Entity<LevelApprover>()
-                .HasIndex(la => new { la.LevelId, la.IsPrimary })
-                .HasDatabaseName("IX_LevelApprovers_LevelId_IsPrimary");
 
             // Idea indexes for workflow
             modelBuilder.Entity<Idea>()
