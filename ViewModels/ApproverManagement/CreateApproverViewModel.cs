@@ -5,7 +5,7 @@ namespace Ideku.ViewModels.ApproverManagement
     public class CreateApproverViewModel
     {
         [Required(ErrorMessage = "Approver Name is required")]
-        [StringLength(8, ErrorMessage = "Approver Name cannot exceed 8 characters (excluding LV prefix)")]
+        [StringLength(8, ErrorMessage = "Approver Name cannot exceed 8 characters (excluding APV_ prefix)")]
         [Display(Name = "Approver Name")]
         public string ApproverName { get; set; } = string.Empty;
 

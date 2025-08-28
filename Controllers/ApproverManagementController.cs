@@ -101,11 +101,11 @@ namespace Ideku.Controllers
                     return Json(new { success = false, message = "At least one role is required." });
                 }
 
-                // Format approver name - ensure it starts with APR_ and is uppercase
+                // Format approver name - ensure it starts with APV_ and is uppercase
                 var formattedApproverName = model.ApproverName.Trim().ToUpper();
-                if (!formattedApproverName.StartsWith("APR_"))
+                if (!formattedApproverName.StartsWith("APV_"))
                 {
-                    formattedApproverName = "APR_" + formattedApproverName;
+                    formattedApproverName = "APV_" + formattedApproverName;
                 }
 
                 var approver = new Models.Entities.Approver
@@ -311,11 +311,11 @@ namespace Ideku.Controllers
                     return Json(new { success = false, message = "Validation failed. Please check your input." });
                 }
 
-                // Format approver name with APR_ prefix
+                // Format approver name with APV_ prefix
                 var formattedApproverName = model.ApproverName.Trim().ToUpperInvariant();
-                if (!formattedApproverName.StartsWith("APR_"))
+                if (!formattedApproverName.StartsWith("APV_"))
                 {
-                    formattedApproverName = "APR_" + formattedApproverName;
+                    formattedApproverName = "APV_" + formattedApproverName;
                 }
 
                 // Parse roles JSON

@@ -81,7 +81,7 @@ $(document).ready(function() {
     $('#editApproverForm').on('submit', function(e) {
         e.preventDefault();
         
-        // Format approver name with LV prefix
+        // Format approver name with APR prefix
         var approverNameInput = $('#editApproverName').val().trim().toUpperCase();
         
         // Validate approver name input
@@ -95,12 +95,12 @@ $(document).ready(function() {
             return;
         }
         
-        // Remove LV prefix if user accidentally typed it
-        if (approverNameInput.startsWith('LV')) {
+        // Remove APR prefix if user accidentally typed it
+        if (approverNameInput.startsWith('APV_')) {
             approverNameInput = approverNameInput.substring(2);
         }
         
-        var fullApproverName = 'LV' + approverNameInput;
+        var fullApproverName = 'APV_' + approverNameInput;
         var approverId = $('#editApproverId').val();
         
         // Send data (only approver name and active status)

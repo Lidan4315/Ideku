@@ -238,14 +238,14 @@
                         <div class="input-group input-group-enhanced">
                             <span class="input-group-text">
                                 <i class="bi bi-layers"></i>
-                                APR_
+                                APV_
                             </span>
                             <input type="text" class="form-control" id="editApproverName" name="approverName" required 
                                    placeholder="E.G. 01, 02, MANAGER, ETC." style="text-transform: uppercase;">
                         </div>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
-                            Enter approver identifier (will be prefixed with APR_ and converted to uppercase)
+                            Enter approver identifier (will be prefixed with APV_ and converted to uppercase)
                         </div>
                     </div>
                     
@@ -293,8 +293,8 @@
             // Set basic data
             document.getElementById('editApproverId').value = id;
             
-            // Remove LV prefix for display
-            var displayName = approverName.startsWith('LV') ? approverName.substring(2) : approverName;
+            // Remove APV_ prefix for display
+            var displayName = approverName.startsWith('APV_') ? approverName.substring(2) : approverName;
             document.getElementById('editApproverName').value = displayName;
             
             document.getElementById('editIsActive').checked = isActive;
