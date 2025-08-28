@@ -9,7 +9,7 @@ using Ideku.Services.Notification;
 using Ideku.Services.Idea;
 using Ideku.Services.Workflow;
 using Ideku.Services.WorkflowManagement;
-using Ideku.Services.Level;
+using Ideku.Services.Approver;
 using Ideku.Models;
 using Ideku.Models.Entities;
 using WebOptimizer;
@@ -77,7 +77,7 @@ builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
-builder.Services.AddScoped<ILevelService, LevelService>();
+builder.Services.AddScoped<IApproverService, ApproverService>();
 builder.Services.AddScoped<IWorkflowManagementService, WorkflowManagementService>();
 
 // Register Repositories
@@ -86,7 +86,7 @@ builder.Services.AddScoped<ILookupRepository, LookupRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-builder.Services.AddScoped<ILevelRepository, LevelRepository>();
+builder.Services.AddScoped<IApproverRepository, ApproverRepository>();
 builder.Services.AddScoped<IWorkflowManagementRepository, WorkflowManagementRepository>();
 
 var app = builder.Build();

@@ -1,12 +1,12 @@
-// Level Management Details Page JavaScript
+// Approver Management Details Page JavaScript
 
 $(document).ready(function() {
-    // Handle add approver form submission
-    $('#addApproverForm').on('submit', function(e) {
+    // Handle add approver role form submission
+    $('#addApproverRoleForm').on('submit', function(e) {
         e.preventDefault();
         
         var formData = {
-            levelId: $('#levelId').val(),
+            approverId: $('#approverId').val(),
             roleId: $('#roleId').val()
         };
         
@@ -27,7 +27,7 @@ $(document).ready(function() {
         submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Adding...').prop('disabled', true);
         
         $.ajax({
-            url: window.levelManagementUrls?.addApprover || '/LevelManagement/AddApprover',
+            url: window.approverManagementUrls?.addApproverRole || '/ApproverManagement/AddApproverRole',
             type: 'POST',
             data: formData,
             success: function(response) {
@@ -35,18 +35,18 @@ $(document).ready(function() {
                     Swal.fire({
                         icon: 'success',
                         title: 'Success!',
-                        text: 'Approver added successfully.',
+                        text: 'Role added successfully.',
                         confirmButtonColor: '#3b82f6'
                     }).then(() => {
                         // Close modal and reload page
-                        $('#addApproverModal').modal('hide');
+                        $('#addApproverRoleModal').modal('hide');
                         location.reload();
                     });
                 } else {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: response.message || 'Failed to add approver.',
+                        text: response.message || 'Failed to add role.',
                         confirmButtonColor: '#dc2626'
                     });
                 }
@@ -55,7 +55,7 @@ $(document).ready(function() {
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
-                    text: 'An error occurred while adding the approver.',
+                    text: 'An error occurred while adding the role.',
                     confirmButtonColor: '#dc2626'
                 });
             },
@@ -67,46 +67,46 @@ $(document).ready(function() {
     });
 
     // Reset form when modal is hidden
-    $('#addApproverModal').on('hidden.bs.modal', function () {
-        $('#addApproverForm')[0].reset();
+    $('#addApproverRoleModal').on('hidden.bs.modal', function () {
+        $('#addApproverRoleForm')[0].reset();
     });
     
-    // Auto-format level name input for edit form
-    $('#editLevelName').on('input', function() {
+    // Auto-format approver name input for edit form
+    $('#editApproverName').on('input', function() {
         var value = $(this).val().toUpperCase();
         $(this).val(value);
     });
     
-    // Handle edit level form submission
-    $('#editLevelForm').on('submit', function(e) {
+    // Handle edit approver form submission
+    $('#editApproverForm').on('submit', function(e) {
         e.preventDefault();
         
-        // Format level name with LV prefix
-        var levelNameInput = $('#editLevelName').val().trim().toUpperCase();
+        // Format approver name with LV prefix
+        var approverNameInput = $('#editApproverName').val().trim().toUpperCase();
         
-        // Validate level name input
-        if (!levelNameInput) {
+        // Validate approver name input
+        if (!approverNameInput) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Validation Error!',
-                text: 'Please enter a level identifier.',
+                text: 'Please enter an approver identifier.',
                 confirmButtonColor: '#dc2626'
             });
             return;
         }
         
         // Remove LV prefix if user accidentally typed it
-        if (levelNameInput.startsWith('LV')) {
-            levelNameInput = levelNameInput.substring(2);
+        if (approverNameInput.startsWith('LV')) {
+            approverNameInput = approverNameInput.substring(2);
         }
         
-        var fullLevelName = 'LV' + levelNameInput;
-        var levelId = $('#editLevelId').val();
+        var fullApproverName = 'LV' + approverNameInput;
+        var approverId = $('#editApproverId').val();
         
-        // Send data (only level name and active status)
+        // Send data (only approver name and active status)
         var formData = {
-            id: parseInt(levelId),
-            levelName: fullLevelName,
+            id: parseInt(approverId),
+            approverName: fullApproverName,
             isActive: $('#editIsActive').is(':checked')
         };
         
@@ -116,19 +116,19 @@ $(document).ready(function() {
         submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...').prop('disabled', true);
         
         $.ajax({
-            url: (window.levelManagementUrls?.editBasic || '/LevelManagement/EditBasic') + '/' + levelId,
+            url: (window.approverManagementUrls?.editBasic || '/ApproverManagement/EditBasic') + '/' + approverId,
             type: 'POST',
             data: formData,
             success: function(response) {
                 if (response.success) {
                     // Close modal
-                    var editModal = bootstrap.Modal.getInstance(document.getElementById('editLevelModal'));
+                    var editModal = bootstrap.Modal.getInstance(document.getElementById('editApproverModal'));
                     editModal.hide();
                     
                     Swal.fire({
                         icon: 'success',
                         title: 'Success!',
-                        text: 'Level updated successfully.',
+                        text: 'Approver updated successfully.',
                         confirmButtonColor: '#3b82f6'
                     }).then(() => {
                         location.reload();
@@ -137,7 +137,7 @@ $(document).ready(function() {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: response.message || 'Failed to update level.',
+                        text: response.message || 'Failed to update approver.',
                         confirmButtonColor: '#dc2626'
                     });
                 }
@@ -146,7 +146,7 @@ $(document).ready(function() {
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
-                    text: 'An error occurred while updating the level.',
+                    text: 'An error occurred while updating the approver.',
                     confirmButtonColor: '#dc2626'
                 });
             },
@@ -158,11 +158,11 @@ $(document).ready(function() {
     });
 });
 
-// Delete approver function
-function confirmDeleteApprover(approverId, roleName) {
+// Delete approver role function
+function confirmDeleteApproverRole(approverRoleId, roleName) {
     Swal.fire({
-        title: 'Remove Approver?',
-        text: `You are about to remove "${roleName}" as an approver for this level. This action cannot be undone!`,
+        title: 'Remove Role?',
+        text: `You are about to remove "${roleName}" as a role for this approver. This action cannot be undone!`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -173,7 +173,7 @@ function confirmDeleteApprover(approverId, roleName) {
             // Show loading
             Swal.fire({
                 title: 'Removing...',
-                text: 'Please wait while we remove the approver.',
+                text: 'Please wait while we remove the role.',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 showConfirmButton: false,
@@ -183,15 +183,15 @@ function confirmDeleteApprover(approverId, roleName) {
             });
             
             $.ajax({
-                url: window.levelManagementUrls?.deleteApprover || '/LevelManagement/DeleteApprover',
+                url: window.approverManagementUrls?.deleteApproverRole || '/ApproverManagement/DeleteApproverRole',
                 type: 'POST',
-                data: { levelApproverId: approverId },
+                data: { approverRoleId: approverRoleId },
                 success: function(response) {
                     if (response.success) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Deleted!',
-                            text: 'Approver has been removed successfully.',
+                            text: 'Role has been removed successfully.',
                             confirmButtonColor: '#3b82f6'
                         }).then(() => {
                             location.reload();
@@ -200,7 +200,7 @@ function confirmDeleteApprover(approverId, roleName) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: response.message || 'Failed to remove approver.',
+                            text: response.message || 'Failed to remove role.',
                             confirmButtonColor: '#dc2626'
                         });
                     }
@@ -209,7 +209,7 @@ function confirmDeleteApprover(approverId, roleName) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: 'An error occurred while removing the approver.',
+                        text: 'An error occurred while removing the role.',
                         confirmButtonColor: '#dc2626'
                     });
                 }
@@ -218,11 +218,11 @@ function confirmDeleteApprover(approverId, roleName) {
     });
 }
 
-// Delete level function  
-function confirmDeleteLevel(levelId, levelName) {
+// Delete approver function  
+function confirmDeleteApprover(approverId, approverName) {
     Swal.fire({
         title: 'Are you sure?',
-        text: `You are about to delete level "${levelName}". This action cannot be undone!`,
+        text: `You are about to delete approver "${approverName}". This action cannot be undone!`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -233,7 +233,7 @@ function confirmDeleteLevel(levelId, levelName) {
             // Show loading state
             Swal.fire({
                 title: 'Deleting...',
-                text: 'Please wait while we delete the level.',
+                text: 'Please wait while we delete the approver.',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 showConfirmButton: false,
@@ -244,7 +244,7 @@ function confirmDeleteLevel(levelId, levelName) {
             
             // Perform AJAX delete action
             $.ajax({
-                url: (window.levelManagementUrls?.delete || '/LevelManagement/Delete') + '/' + levelId,
+                url: (window.approverManagementUrls?.delete || '/ApproverManagement/Delete') + '/' + approverId,
                 type: 'GET', // Controller expects GET request
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -254,37 +254,37 @@ function confirmDeleteLevel(levelId, levelName) {
                     if (response.success === false) {
                         Swal.fire({
                             icon: 'error',
-                            title: 'Cannot Delete Level',
+                            title: 'Cannot Delete Approver',
                             text: response.error,
                             confirmButtonColor: '#dc2626'
                         });
                     } else if (response.success === true) {
-                        // Success - level deleted, redirect to index
+                        // Success - approver deleted, redirect to index
                         Swal.fire({
                             icon: 'success',
                             title: 'Deleted!',
-                            text: `Level "${levelName}" has been deleted successfully.`,
+                            text: `Approver "${approverName}" has been deleted successfully.`,
                             confirmButtonColor: '#3b82f6'
                         }).then(() => {
-                            window.location.href = '/LevelManagement';
+                            window.location.href = '/ApproverManagement';
                         });
                     }
                 },
                 error: function(xhr) {
                     // Handle error response
-                    var errorMessage = 'An error occurred while deleting the level.';
+                    var errorMessage = 'An error occurred while deleting the approver.';
                     if (xhr.responseJSON && xhr.responseJSON.error) {
                         errorMessage = xhr.responseJSON.error;
                     } else if (xhr.responseText) {
                         // Check if response contains error message
-                        if (xhr.responseText.includes('Cannot delete level')) {
-                            errorMessage = 'Cannot delete level. It has assigned approvers or is used in workflow stages. Please remove them first.';
+                        if (xhr.responseText.includes('Cannot delete approver')) {
+                            errorMessage = 'Cannot delete approver. It has assigned roles or is used in workflow stages. Please remove them first.';
                         }
                     }
                     
                     Swal.fire({
                         icon: 'error',
-                        title: 'Cannot Delete Level',
+                        title: 'Cannot Delete Approver',
                         text: errorMessage,
                         confirmButtonColor: '#dc2626'
                     });
@@ -293,4 +293,3 @@ function confirmDeleteLevel(levelId, levelName) {
         }
     });
 }
-

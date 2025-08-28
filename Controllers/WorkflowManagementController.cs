@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Ideku.Services.WorkflowManagement;
+using Ideku.Services.Approver;
 using Ideku.ViewModels.WorkflowManagement;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -10,10 +11,12 @@ namespace Ideku.Controllers
     public class WorkflowManagementController : Controller
     {
         private readonly IWorkflowManagementService _workflowService;
+        private readonly IApproverService _approverService;
 
-        public WorkflowManagementController(IWorkflowManagementService workflowService)
+        public WorkflowManagementController(IWorkflowManagementService workflowService, IApproverService approverService)
         {
             _workflowService = workflowService;
+            _approverService = approverService;
         }
 
         // GET: WorkflowManagement - List semua workflow
@@ -90,11 +93,11 @@ namespace Ideku.Controllers
                 };
 
                 // Load dropdown data
-                var levels = await _workflowService.GetAllLevelsAsync();
-                viewModel.LevelList = levels.Select(l => new SelectListItem
+                var approvers = await _approverService.GetAllApproversAsync();
+                viewModel.LevelList = approvers.Select(a => new SelectListItem
                 {
-                    Value = l.Id.ToString(),
-                    Text = l.LevelName
+                    Value = a.Id.ToString(),
+                    Text = a.ApproverName
                 }).ToList();
 
                 var categories = await _workflowService.GetAllCategoriesAsync();
@@ -141,7 +144,7 @@ namespace Ideku.Controllers
                 var workflowStage = new Models.Entities.WorkflowStage
                 {
                     WorkflowId = model.WorkflowId,
-                    LevelId = model.LevelId,
+                    ApproverId = model.LevelId,
                     Stage = model.Stage,
                     IsMandatory = model.IsMandatory,
                     IsParallel = model.IsParallel,

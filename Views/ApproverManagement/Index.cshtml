@@ -1,0 +1,232 @@
+@model Ideku.ViewModels.ApproverManagement.ApproverIndexViewModel
+@{
+    ViewData["Title"] = "Approver Management";
+}
+
+@section Styles {
+    <link href="~/css/pages/approver-management.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-secondary me-3" title="Back to Settings">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <h2 class="page-title text-gradient mb-0">
+                                <i class="bi bi-diagram-3 me-2"></i>Approver Management
+                            </h2>
+                        </div>
+                        <p class="text-muted">Manage workflow approvers and their configurations</p>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addApproverModal">
+                            <i class="bi bi-plus-circle me-2"></i>Add Approver
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    @if (Model.Approvers.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Approver Name</th>
+                                        <th>Status</th>
+                                        <th>Created Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var approver in Model.Approvers)
+                                    {
+                                        <tr class="clickable-row" data-href="@Url.Action("Details", "ApproverManagement", new { id = approver.Id })">
+                                            <td>
+                                                <span class="badge bg-light text-dark fw-bold">@approver.Id</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@approver.ApproverName</span>
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var statusClass = approver.IsActive ? "bg-success" : "bg-danger";
+                                                    var statusText = approver.IsActive ? "Active" : "Inactive";
+                                                }
+                                                <span class="badge @statusClass">@statusText</span>
+                                            </td>
+                                            <td>
+                                                <div class="text-dark fw-semibold">@approver.CreatedAt.ToString("MMM dd, yyyy")</div>
+                                                <small class="text-muted">@approver.CreatedAt.ToString("HH:mm")</small>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-outline-danger btn-sm delete-approver-btn" 
+                                                        data-approver-id="@approver.Id" 
+                                                        data-approver-name="@approver.ApproverName"
+                                                        title="Delete Approver">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-diagram-3 display-1 text-muted mb-3"></i>
+                                <h4 class="text-muted">No Approvers Configured</h4>
+                                <p class="text-muted mb-4">You haven't created any workflow approvers yet. Start by adding your first approver!</p>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addApproverModal">
+                                    <i class="bi bi-plus-circle me-2"></i>Add Your First Approver
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.Approvers.Any())
+            {
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <h3 class="text-primary">@Model.Approvers.Count()</h3>
+                                    <p class="text-muted mb-0">Total Approvers</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <h3 class="text-success">@Model.Approvers.Count(a => a.IsActive)</h3>
+                                    <p class="text-muted mb-0">Active</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-item">
+                                    <h3 class="text-danger">@Model.Approvers.Count(a => !a.IsActive)</h3>
+                                    <p class="text-muted mb-0">Inactive</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add Approver Modal -->
+<div class="modal fade" id="addApproverModal" tabindex="-1" aria-labelledby="addApproverModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content approver-modal">
+            <div class="modal-header approver-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-diagram-3"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="addApproverModalLabel">Add New Approver</h5>
+                        <small class="text-muted">Create a new workflow approval approver</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addApproverForm">
+                <div class="modal-body approver-modal-body">
+                    <!-- Approver Code -->
+                    <div class="mb-4">
+                        <label for="approverName" class="form-label">Approver Code <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-layers"></i>
+                                APR_
+                            </span>
+                            <input type="text" class="form-control form-control-enhanced" id="approverName" name="approverName" required 
+                                   placeholder="E.G. 01, 02, MANAGER, ETC." style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter approver identifier (will be prefixed with APR_ and converted to uppercase)
+                        </div>
+                    </div>
+                    
+                    <!-- Approvers -->
+                    <div class="mb-4">
+                        <label class="form-label">Approvers <span class="text-danger">*</span></label>
+                        <div id="rolesContainer" class="border rounded p-3 bg-light">
+                            <div class="role-item mb-3">
+                                <label class="form-label text-muted">Role</label>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-enhanced flex-grow-1" name="roleIds[]" required>
+                                        <option value="">Select Role</option>
+                                        @foreach (var role in Model.RoleList)
+                                        {
+                                            <option value="@role.Value">@role.Text</option>
+                                        }
+                                    </select>
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeRole(this)" title="Remove Role">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addRole()">
+                            <i class="bi bi-plus-circle me-1"></i>Add Another Approver
+                        </button>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Add at least one role for this approver
+                        </div>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                            <label class="form-check-label" for="isActive">
+                                <strong>Active Approver</strong>
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Inactive approvers will not be available for new workflows
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer approver-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Save Approver
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        // Set up URLs for approver management
+        window.approverManagementUrls = {
+            create: '@Url.Action("Create", "ApproverManagement")',
+            delete: '@Url.Action("Delete", "ApproverManagement")'
+        };
+    </script>
+    <script src="~/js/pages/approver-management.js" asp-append-version="true"></script>
+}

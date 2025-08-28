@@ -1,10 +1,10 @@
-@model Ideku.ViewModels.LevelManagement.LevelDetailsViewModel
+@model Ideku.ViewModels.ApproverManagement.ApproverDetailsViewModel
 @{
-    ViewData["Title"] = "Level Details";
+    ViewData["Title"] = "Approver Details";
 }
 
 @section Styles {
-    <link href="~/css/pages/level-management-details.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/pages/approver-management-details.css" rel="stylesheet" asp-append-version="true" />
 }
 
 <div class="container-fluid">
@@ -15,14 +15,14 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <div class="d-flex align-items-center mb-2">
-                            <a href="@Url.Action("Index", "LevelManagement")" class="btn btn-outline-secondary me-3" title="Back to Level List">
+                            <a href="@Url.Action("Index", "ApproverManagement")" class="btn btn-outline-secondary me-3" title="Back to Approver List">
                                 <i class="bi bi-arrow-left"></i>
                             </a>
                             <h2 class="page-title text-gradient mb-0">
-                                <i class="bi bi-diagram-3 me-2"></i>Level Details
+                                <i class="bi bi-diagram-3 me-2"></i>Approver Details
                             </h2>
                         </div>
-                        <p class="text-muted">Detailed information about level configuration</p>
+                        <p class="text-muted">Detailed information about approver configuration</p>
                     </div>
                     <div>
                         <!-- Buttons moved to Level Information section -->
@@ -30,18 +30,18 @@
                 </div>
             </div>
 
-            <!-- Level Information Card -->
+            <!-- Approver Information Card -->
             <div class="card mb-4">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-info-circle me-2"></i>Level Information
+                            <i class="bi bi-info-circle me-2"></i>Approver Information
                         </h5>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditLevelModal(@Model.Level.Id, '@Model.Level.LevelName', @Model.Level.IsActive.ToString().ToLower())">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditApproverModal(@Model.Approver.Id, '@Model.Approver.ApproverName', @Model.Approver.IsActive.ToString().ToLower())">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteLevel(@Model.Level.Id, '@Model.Level.LevelName')">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteApprover(@Model.Approver.Id, '@Model.Approver.ApproverName')">
                                 <i class="bi bi-trash me-1"></i>Delete
                             </button>
                         </div>
@@ -51,16 +51,16 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="info-group mb-4">
-                                <label class="info-label">Level ID</label>
+                                <label class="info-label">Approver ID</label>
                                 <div class="info-value">
-                                    <span class="badge bg-light text-dark fs-6 px-3 py-2">@Model.Level.Id</span>
+                                    <span class="badge bg-light text-dark fs-6 px-3 py-2">@Model.Approver.Id</span>
                                 </div>
                             </div>
                             
                             <div class="info-group mb-4">
-                                <label class="info-label">Level Name</label>
+                                <label class="info-label">Approver Code</label>
                                 <div class="info-value">
-                                    <span class="badge bg-primary fs-6 px-3 py-2">@Model.Level.LevelName</span>
+                                    <span class="badge bg-primary fs-6 px-3 py-2">@Model.Approver.ApproverName</span>
                                 </div>
                             </div>
                             
@@ -68,9 +68,9 @@
                                 <label class="info-label">Status</label>
                                 <div class="info-value">
                                     @{
-                                        var statusClass = Model.Level.IsActive ? "bg-success" : "bg-danger";
-                                        var statusText = Model.Level.IsActive ? "Active" : "Inactive";
-                                        var statusIcon = Model.Level.IsActive ? "bi-check-circle" : "bi-x-circle";
+                                        var statusClass = Model.Approver.IsActive ? "bg-success" : "bg-danger";
+                                        var statusText = Model.Approver.IsActive ? "Active" : "Inactive";
+                                        var statusIcon = Model.Approver.IsActive ? "bi-check-circle" : "bi-x-circle";
                                     }
                                     <span class="badge @statusClass fs-6 px-3 py-2">
                                         <i class="@statusIcon me-2"></i>@statusText
@@ -83,18 +83,18 @@
                             <div class="info-group mb-4">
                                 <label class="info-label">Created Date</label>
                                 <div class="info-value">
-                                    <div class="text-dark fw-semibold">@Model.Level.CreatedAt.ToString("MMMM dd, yyyy")</div>
-                                    <small class="text-muted">@Model.Level.CreatedAt.ToString("HH:mm:ss")</small>
+                                    <div class="text-dark fw-semibold">@Model.Approver.CreatedAt.ToString("MMMM dd, yyyy")</div>
+                                    <small class="text-muted">@Model.Approver.CreatedAt.ToString("HH:mm:ss")</small>
                                 </div>
                             </div>
                             
                             <div class="info-group mb-4">
                                 <label class="info-label">Last Updated</label>
                                 <div class="info-value">
-                                    @if (Model.Level.UpdatedAt.HasValue)
+                                    @if (Model.Approver.UpdatedAt.HasValue)
                                     {
-                                        <div class="text-dark fw-semibold">@Model.Level.UpdatedAt.Value.ToString("MMMM dd, yyyy")</div>
-                                        <small class="text-muted">@Model.Level.UpdatedAt.Value.ToString("HH:mm:ss")</small>
+                                        <div class="text-dark fw-semibold">@Model.Approver.UpdatedAt.Value.ToString("MMMM dd, yyyy")</div>
+                                        <small class="text-muted">@Model.Approver.UpdatedAt.Value.ToString("HH:mm:ss")</small>
                                     }
                                     else
                                     {
@@ -109,42 +109,35 @@
             </div>
 
 
-            <!-- Level Approvers -->
+            <!-- Approver Roles -->
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-people me-2"></i>Level Approvers
+                            <i class="bi bi-people me-2"></i>Approver Roles
                         </h5>
-                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addApproverModal">
-                            <i class="bi bi-plus-circle me-1"></i>Add Approver
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addApproverRoleModal">
+                            <i class="bi bi-plus-circle me-1"></i>Add Role
                         </button>
                     </div>
                 </div>
                 <div class="card-body">
-                    @if (Model.Approvers.Any())
+                    @if (Model.ApproverRoles.Any())
                     {
                         <div class="list-group list-group-flush">
-                            @foreach (var approver in Model.Approvers.OrderBy(a => a.ApprovalLevel))
+                            @foreach (var approverRole in Model.ApproverRoles)
                             {
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
                                     <div class="ms-2 me-auto">
-                                        <div class="fw-bold">@approver.RoleName</div>
-                                        <small class="text-muted">
-                                            Hierarchy Level: @approver.ApprovalLevel
-                                        </small>
+                                        <div class="fw-bold">@approverRole.RoleName</div>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
                                         <div>
-                                            @if (approver.IsPrimary)
-                                            {
-                                                <span class="badge bg-primary rounded-pill me-1">Primary</span>
-                                            }
-                                            <span class="badge bg-light text-dark rounded-pill">Level @approver.ApprovalLevel</span>
+                                            <span class="badge bg-primary rounded-pill">Role</span>
                                         </div>
                                         <button type="button" class="btn btn-outline-danger btn-sm" 
-                                                onclick="confirmDeleteApprover(@approver.Id, '@approver.RoleName')" 
-                                                title="Remove Approver">
+                                                onclick="confirmDeleteApproverRole(@approverRole.Id, '@approverRole.RoleName')" 
+                                                title="Remove Role">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -156,7 +149,7 @@
                     {
                         <div class="text-center py-4">
                             <i class="bi bi-people display-6 text-muted mb-3"></i>
-                            <p class="text-muted mb-0">No approvers assigned to this level</p>
+                            <p class="text-muted mb-0">No roles assigned to this approver</p>
                         </div>
                     }
                 </div>
@@ -165,8 +158,8 @@
     </div>
 </div>
 
-<!-- Add Approver Modal -->
-<div class="modal fade" id="addApproverModal" tabindex="-1" aria-labelledby="addApproverModalLabel" aria-hidden="true">
+<!-- Add Approver Role Modal -->
+<div class="modal fade" id="addApproverRoleModal" tabindex="-1" aria-labelledby="addApproverRoleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content level-modal">
             <div class="modal-header level-modal-header">
@@ -175,15 +168,15 @@
                         <i class="bi bi-person-plus"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title mb-0" id="addApproverModalLabel">Add Level Approver</h5>
-                        <small class="text-muted">Assign a new approver to this level</small>
+                        <h5 class="modal-title mb-0" id="addApproverRoleModalLabel">Add Approver Role</h5>
+                        <small class="text-muted">Assign a new role to this approver</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="addApproverForm">
-                <div class="modal-body level-modal-body">
-                    <input type="hidden" id="levelId" name="levelId" value="@Model.Level.Id" />
+            <form id="addApproverRoleForm">
+                <div class="modal-body approver-modal-body">
+                    <input type="hidden" id="approverId" name="approverId" value="@Model.Approver.Id" />
                     
                     <!-- Role Selection -->
                     <div class="mb-4">
@@ -202,37 +195,7 @@
                         </div>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
-                            Choose the role that will act as an approver for this level
-                        </div>
-                    </div>
-                    
-                    <!-- Approval Level -->
-                    <div class="mb-4">
-                        <label for="approvalLevel" class="form-label">Approval Hierarchy <span class="text-danger">*</span></label>
-                        <div class="input-group input-group-enhanced">
-                            <span class="input-group-text">
-                                <i class="bi bi-bar-chart-steps"></i>
-                            </span>
-                            <input type="number" class="form-control" id="approvalLevel" name="approvalLevel" required 
-                                   min="1" max="10" placeholder="e.g. 1, 2, 3">
-                        </div>
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Enter the hierarchy level (1 = highest, 10 = lowest)
-                        </div>
-                    </div>
-                    
-                    <!-- Primary Status -->
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="isPrimary" name="isPrimary" value="true">
-                            <label class="form-check-label" for="isPrimary">
-                                <strong>Primary Approver</strong>
-                            </label>
-                        </div>
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Check if this is the primary approver for this level
+                            Choose the role that will be assigned to this approver
                         </div>
                     </div>
                 </div>
@@ -241,7 +204,7 @@
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
                     <button type="submit" class="btn btn-primary btn-save">
-                        <i class="bi bi-check-circle me-2"></i>Add Approver
+                        <i class="bi bi-check-circle me-2"></i>Add Role
                     </button>
                 </div>
             </form>
@@ -249,8 +212,8 @@
     </div>
 </div>
 
-<!-- Edit Level Modal -->
-<div class="modal fade" id="editLevelModal" tabindex="-1" aria-labelledby="editLevelModalLabel" aria-hidden="true">
+<!-- Edit Approver Modal -->
+<div class="modal fade" id="editApproverModal" tabindex="-1" aria-labelledby="editApproverModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content level-modal">
             <div class="modal-header level-modal-header">
@@ -259,30 +222,30 @@
                         <i class="bi bi-pencil-square"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title mb-0" id="editLevelModalLabel">Edit Level</h5>
-                        <small class="text-muted">Update level configuration</small>
+                        <h5 class="modal-title mb-0" id="editApproverModalLabel">Edit Approver</h5>
+                        <small class="text-muted">Update approver configuration</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="editLevelForm">
-                <div class="modal-body level-modal-body">
-                    <input type="hidden" id="editLevelId" name="id">
+            <form id="editApproverForm">
+                <div class="modal-body approver-modal-body">
+                    <input type="hidden" id="editApproverId" name="id">
                     
-                    <!-- Level Name -->
+                    <!-- Approver Code -->
                     <div class="mb-4">
-                        <label for="editLevelName" class="form-label">Level Name <span class="text-danger">*</span></label>
+                        <label for="editApproverName" class="form-label">Approver Code <span class="text-danger">*</span></label>
                         <div class="input-group input-group-enhanced">
                             <span class="input-group-text">
                                 <i class="bi bi-layers"></i>
-                                LV
+                                APR_
                             </span>
-                            <input type="text" class="form-control" id="editLevelName" name="levelName" required 
+                            <input type="text" class="form-control" id="editApproverName" name="approverName" required 
                                    placeholder="E.G. 01, 02, MANAGER, ETC." style="text-transform: uppercase;">
                         </div>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
-                            Enter level identifier (will be prefixed with LV and converted to uppercase)
+                            Enter approver identifier (will be prefixed with APR_ and converted to uppercase)
                         </div>
                     </div>
                     
@@ -291,12 +254,12 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="editIsActive" name="isActive">
                             <label class="form-check-label" for="editIsActive">
-                                <strong>Active Level</strong>
+                                <strong>Active Approver</strong>
                             </label>
                         </div>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
-                            Inactive levels will not be available for new workflows
+                            Inactive approvers will not be available for new workflows
                         </div>
                     </div>
                 </div>
@@ -305,7 +268,7 @@
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
                     <button type="submit" class="btn btn-primary btn-save">
-                        <i class="bi bi-check-circle me-2"></i>Update Level
+                        <i class="bi bi-check-circle me-2"></i>Update Approver
                     </button>
                 </div>
             </form>
@@ -315,31 +278,31 @@
 
 @section Scripts {
     <script>
-        // Set up URLs for level management details
-        window.levelManagementUrls = {
-            addApprover: '@Url.Action("AddApprover", "LevelManagement")',
-            deleteApprover: '@Url.Action("DeleteApprover", "LevelManagement")',
-            edit: '@Url.Action("Edit", "LevelManagement")',
-            editBasic: '@Url.Action("EditBasic", "LevelManagement")',
-            getLevel: '@Url.Action("GetLevel", "LevelManagement")',
-            delete: '@Url.Action("Delete", "LevelManagement")'
+        // Set up URLs for approver management details
+        window.approverManagementUrls = {
+            addApproverRole: '@Url.Action("AddApproverRole", "ApproverManagement")',
+            deleteApproverRole: '@Url.Action("DeleteApproverRole", "ApproverManagement")',
+            edit: '@Url.Action("Edit", "ApproverManagement")',
+            editBasic: '@Url.Action("EditBasic", "ApproverManagement")',
+            getApprover: '@Url.Action("GetApprover", "ApproverManagement")',
+            delete: '@Url.Action("Delete", "ApproverManagement")'
         };
         
-        // Open edit level modal function
-        function openEditLevelModal(id, levelName, isActive) {
+        // Open edit approver modal function
+        function openEditApproverModal(id, approverName, isActive) {
             // Set basic data
-            document.getElementById('editLevelId').value = id;
+            document.getElementById('editApproverId').value = id;
             
             // Remove LV prefix for display
-            var displayName = levelName.startsWith('LV') ? levelName.substring(2) : levelName;
-            document.getElementById('editLevelName').value = displayName;
+            var displayName = approverName.startsWith('LV') ? approverName.substring(2) : approverName;
+            document.getElementById('editApproverName').value = displayName;
             
             document.getElementById('editIsActive').checked = isActive;
             
-            // Show modal directly (no need to fetch approvers data)
-            var editModal = new bootstrap.Modal(document.getElementById('editLevelModal'));
+            // Show modal directly (no need to fetch roles data)
+            var editModal = new bootstrap.Modal(document.getElementById('editApproverModal'));
             editModal.show();
         }
     </script>
-    <script src="~/js/pages/level-management-details.js" asp-append-version="true"></script>
+    <script src="~/js/pages/approver-management-details.js" asp-append-version="true"></script>
 }

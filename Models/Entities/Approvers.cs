@@ -3,17 +3,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ideku.Models.Entities
 {
-    [Table("Levels")]
-    public class Level
+    [Table("Approvers")]
+    public class Approver
     {
         [Key]
         [Column("Id")]
         public int Id { get; set; }
 
         [Required]
-        [Column("Level")]
+        [Column("ApproverName")]
         [StringLength(10)]
-        public string LevelName { get; set; } = string.Empty;
+        public string ApproverName { get; set; } = string.Empty;
 
 
         [Required]
@@ -28,7 +28,7 @@ namespace Ideku.Models.Entities
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation Properties
-        public ICollection<LevelApprover> LevelApprovers { get; set; } = new List<LevelApprover>();
+        public ICollection<ApproverRole> ApproverRoles { get; set; } = new List<ApproverRole>();
         public ICollection<WorkflowStage> WorkflowStages { get; set; } = new List<WorkflowStage>();
     }
 }

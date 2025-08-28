@@ -18,11 +18,11 @@ namespace Ideku.Models.Entities
         public Workflow Workflow { get; set; } = null!;
 
         [Required]
-        [Column("LevelId")]
-        public int LevelId { get; set; }
+        [Column("ApproverId")]
+        public int ApproverId { get; set; }
 
-        [ForeignKey("LevelId")]
-        public Level Level { get; set; } = null!;
+        [ForeignKey("ApproverId")]
+        public Approver Approver { get; set; } = null!;
 
         [Required]
         [Column("Stage")]

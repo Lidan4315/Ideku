@@ -12,6 +12,22 @@ namespace Ideku.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Approvers",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ApproverName = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Approvers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Categories",
                 columns: table => new
                 {
@@ -55,22 +71,6 @@ namespace Ideku.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Events", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Levels",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Level = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Levels", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -129,29 +129,27 @@ namespace Ideku.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "LevelApprovers",
+                name: "ApproverRoles",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    LevelId = table.Column<int>(type: "int", nullable: false),
+                    ApproverId = table.Column<int>(type: "int", nullable: false),
                     RoleId = table.Column<int>(type: "int", nullable: false),
-                    IsPrimary = table.Column<bool>(type: "bit", nullable: false),
-                    ApprovalLevel = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LevelApprovers", x => x.Id);
+                    table.PrimaryKey("PK_ApproverRoles", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_LevelApprovers_Levels_LevelId",
-                        column: x => x.LevelId,
-                        principalTable: "Levels",
+                        name: "FK_ApproverRoles_Approvers_ApproverId",
+                        column: x => x.ApproverId,
+                        principalTable: "Approvers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_LevelApprovers_Roles_RoleId",
+                        name: "FK_ApproverRoles_Roles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "Roles",
                         principalColumn: "Id",
@@ -190,7 +188,7 @@ namespace Ideku.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     WorkflowId = table.Column<int>(type: "int", nullable: false),
-                    LevelId = table.Column<int>(type: "int", nullable: false),
+                    ApproverId = table.Column<int>(type: "int", nullable: false),
                     Stage = table.Column<int>(type: "int", nullable: false),
                     IsMandatory = table.Column<bool>(type: "bit", nullable: false),
                     IsParallel = table.Column<bool>(type: "bit", nullable: false),
@@ -201,9 +199,9 @@ namespace Ideku.Migrations
                 {
                     table.PrimaryKey("PK_WorkflowStages", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_WorkflowStages_Levels_LevelId",
-                        column: x => x.LevelId,
-                        principalTable: "Levels",
+                        name: "FK_WorkflowStages_Approvers_ApproverId",
+                        column: x => x.ApproverId,
+                        principalTable: "Approvers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -410,6 +408,21 @@ namespace Ideku.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ApproverRoles_ApproverId",
+                table: "ApproverRoles",
+                column: "ApproverId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ApproverRoles_RoleId",
+                table: "ApproverRoles",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Approvers_IsActive",
+                table: "Approvers",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Departments_DivisiId",
                 table: "Departments",
                 column: "DivisiId");
@@ -463,31 +476,6 @@ namespace Ideku.Migrations
                 name: "IX_Ideas_WorkflowId",
                 table: "Ideas",
                 column: "WorkflowId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LevelApprovers_LevelId",
-                table: "LevelApprovers",
-                column: "LevelId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LevelApprovers_LevelId_ApprovalLevel",
-                table: "LevelApprovers",
-                columns: new[] { "LevelId", "ApprovalLevel" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LevelApprovers_LevelId_IsPrimary",
-                table: "LevelApprovers",
-                columns: new[] { "LevelId", "IsPrimary" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LevelApprovers_RoleId",
-                table: "LevelApprovers",
-                column: "RoleId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Levels_IsActive",
-                table: "Levels",
-                column: "IsActive");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Milestones_CreatorUserId",
@@ -547,9 +535,9 @@ namespace Ideku.Migrations
                 columns: new[] { "IsActive", "Priority" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_WorkflowStages_LevelId",
+                name: "IX_WorkflowStages_ApproverId",
                 table: "WorkflowStages",
-                column: "LevelId");
+                column: "ApproverId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkflowStages_WorkflowId",
@@ -567,7 +555,7 @@ namespace Ideku.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "LevelApprovers");
+                name: "ApproverRoles");
 
             migrationBuilder.DropTable(
                 name: "Milestones");
@@ -585,7 +573,7 @@ namespace Ideku.Migrations
                 name: "Ideas");
 
             migrationBuilder.DropTable(
-                name: "Levels");
+                name: "Approvers");
 
             migrationBuilder.DropTable(
                 name: "Categories");
