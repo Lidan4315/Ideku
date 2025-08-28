@@ -89,7 +89,7 @@ $(document).ready(function() {
             return;
         }
         
-        // Format approver name with LV prefix
+        // Format approver name with APV_ prefix
         var approverNameInput = $('#approverName').val().trim().toUpperCase();
         
         // Validate approver name input
@@ -103,12 +103,12 @@ $(document).ready(function() {
             return;
         }
         
-        // Remove LV prefix if user accidentally typed it
-        if (approverNameInput.startsWith('LV')) {
+        // Remove APV_ prefix if user accidentally typed it
+        if (approverNameInput.startsWith('APV_')) {
             approverNameInput = approverNameInput.substring(2);
         }
         
-        var fullApproverName = 'LV' + approverNameInput;
+        var fullApproverName = 'APV_' + approverNameInput;
         
         // Send data in the format expected by CreateApproverViewModel
         var formData = {

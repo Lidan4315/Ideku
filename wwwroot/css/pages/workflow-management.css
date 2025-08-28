@@ -227,6 +227,34 @@
     height: 1.5rem;
 }
 
+.form-check {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.form-check-label {
+    margin-left: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #374151;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.form-switch .form-check-input {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.form-switch .form-check-label {
+    padding-left: 0;
+}
+
+.form-switch {
+    padding-left: 0 !important;
+}
+
 .level-modal-footer {
     background: white;
     border: none;
