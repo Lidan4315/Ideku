@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250825063434_InitialMigrate")]
+    [Migration("20250827024105_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -24,6 +24,77 @@ namespace Ideku.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Ideku.Models.Entities.Approver", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApproverName")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("ApproverName");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsActive");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_Approvers_IsActive");
+
+                    b.ToTable("Approvers");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.ApproverRole", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApproverId")
+                        .HasColumnType("int")
+                        .HasColumnName("ApproverId");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int")
+                        .HasColumnName("RoleId");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApproverId")
+                        .HasDatabaseName("IX_ApproverRoles_ApproverId");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("IX_ApproverRoles_RoleId");
+
+                    b.ToTable("ApproverRoles");
+                });
 
             modelBuilder.Entity("Ideku.Models.Entities.Category", b =>
                 {
@@ -351,77 +422,6 @@ namespace Ideku.Migrations
                     b.ToTable("Ideas");
                 });
 
-            modelBuilder.Entity("Ideku.Models.Entities.Level", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("Id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("CreatedAt");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsActive");
-
-                    b.Property<string>("LevelName")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("Level");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("UpdatedAt");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IsActive")
-                        .HasDatabaseName("IX_Levels_IsActive");
-
-                    b.ToTable("Levels");
-                });
-
-            modelBuilder.Entity("Ideku.Models.Entities.LevelApprover", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("Id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("CreatedAt");
-
-                    b.Property<int>("LevelId")
-                        .HasColumnType("int")
-                        .HasColumnName("LevelId");
-
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int")
-                        .HasColumnName("RoleId");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("UpdatedAt");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LevelId")
-                        .HasDatabaseName("IX_LevelApprovers_LevelId");
-
-                    b.HasIndex("RoleId")
-                        .HasDatabaseName("IX_LevelApprovers_RoleId");
-
-                    b.ToTable("LevelApprovers");
-                });
-
             modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
                 {
                     b.Property<long>("Id")
@@ -731,6 +731,10 @@ namespace Ideku.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("ApproverId")
+                        .HasColumnType("int")
+                        .HasColumnName("ApproverId");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("CreatedAt");
@@ -742,10 +746,6 @@ namespace Ideku.Migrations
                     b.Property<bool>("IsParallel")
                         .HasColumnType("bit")
                         .HasColumnName("IsParallel");
-
-                    b.Property<int>("LevelId")
-                        .HasColumnType("int")
-                        .HasColumnName("LevelId");
 
                     b.Property<int>("Stage")
                         .HasColumnType("int")
@@ -761,8 +761,8 @@ namespace Ideku.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LevelId")
-                        .HasDatabaseName("IX_WorkflowStages_LevelId");
+                    b.HasIndex("ApproverId")
+                        .HasDatabaseName("IX_WorkflowStages_ApproverId");
 
                     b.HasIndex("WorkflowId")
                         .HasDatabaseName("IX_WorkflowStages_WorkflowId");
@@ -772,6 +772,25 @@ namespace Ideku.Migrations
                         .HasDatabaseName("IX_WorkflowStages_WorkflowId_Stage");
 
                     b.ToTable("WorkflowStages");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.ApproverRole", b =>
+                {
+                    b.HasOne("Ideku.Models.Entities.Approver", "Approver")
+                        .WithMany("ApproverRoles")
+                        .HasForeignKey("ApproverId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ideku.Models.Entities.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Approver");
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Department", b =>
@@ -854,25 +873,6 @@ namespace Ideku.Migrations
                     b.Navigation("Workflow");
                 });
 
-            modelBuilder.Entity("Ideku.Models.Entities.LevelApprover", b =>
-                {
-                    b.HasOne("Ideku.Models.Entities.Level", "Level")
-                        .WithMany("LevelApprovers")
-                        .HasForeignKey("LevelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Ideku.Models.Entities.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Level");
-
-                    b.Navigation("Role");
-                });
-
             modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
                 {
                     b.HasOne("Ideku.Models.Entities.User", "CreatorUser")
@@ -943,9 +943,9 @@ namespace Ideku.Migrations
 
             modelBuilder.Entity("Ideku.Models.Entities.WorkflowStage", b =>
                 {
-                    b.HasOne("Ideku.Models.Entities.Level", "Level")
+                    b.HasOne("Ideku.Models.Entities.Approver", "Approver")
                         .WithMany("WorkflowStages")
-                        .HasForeignKey("LevelId")
+                        .HasForeignKey("ApproverId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -955,9 +955,16 @@ namespace Ideku.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Level");
+                    b.Navigation("Approver");
 
                     b.Navigation("Workflow");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.Approver", b =>
+                {
+                    b.Navigation("ApproverRoles");
+
+                    b.Navigation("WorkflowStages");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Category", b =>
@@ -996,13 +1003,6 @@ namespace Ideku.Migrations
                     b.Navigation("Milestones");
 
                     b.Navigation("WorkflowHistories");
-                });
-
-            modelBuilder.Entity("Ideku.Models.Entities.Level", b =>
-                {
-                    b.Navigation("LevelApprovers");
-
-                    b.Navigation("WorkflowStages");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Role", b =>

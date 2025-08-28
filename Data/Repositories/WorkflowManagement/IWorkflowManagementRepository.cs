@@ -27,7 +27,7 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         Task<WorkflowStage?> GetWorkflowStageAsync(int workflowId, int stage);
 
         // Helper Methods for Dropdowns
-        Task<IEnumerable<Models.Entities.Level>> GetAllLevelsAsync();
+        Task<IEnumerable<Models.Entities.Approver>> GetAllApproversAsync();
         Task<IEnumerable<Category>> GetAllCategoriesAsync();
         Task<IEnumerable<Division>> GetAllDivisionsAsync();
         Task<IEnumerable<Department>> GetAllDepartmentsAsync();

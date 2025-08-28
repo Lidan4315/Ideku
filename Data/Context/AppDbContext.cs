@@ -24,8 +24,8 @@ namespace Ideku.Data.Context
         
         // Dynamic Workflow System DbSets
         public DbSet<Workflow> Workflows { get; set; }
-        public DbSet<Level> Levels { get; set; }
-        public DbSet<LevelApprover> LevelApprovers { get; set; }
+        public DbSet<Approver> Approvers { get; set; }
+        public DbSet<ApproverRole> ApproverRoles { get; set; }
         public DbSet<WorkflowStage> WorkflowStages { get; set; }
         public DbSet<WorkflowCondition> WorkflowConditions { get; set; }
 
@@ -73,10 +73,10 @@ namespace Ideku.Data.Context
                 .HasIndex(w => new { w.IsActive, w.Priority })
                 .HasDatabaseName("IX_Workflows_IsActive_Priority");
 
-            // Level indexes
-            modelBuilder.Entity<Level>()
-                .HasIndex(l => l.IsActive)
-                .HasDatabaseName("IX_Levels_IsActive");
+            // Approver indexes
+            modelBuilder.Entity<Approver>()
+                .HasIndex(a => a.IsActive)
+                .HasDatabaseName("IX_Approvers_IsActive");
 
             // WorkflowStage indexes for performance
             modelBuilder.Entity<WorkflowStage>()
@@ -84,8 +84,8 @@ namespace Ideku.Data.Context
                 .HasDatabaseName("IX_WorkflowStages_WorkflowId");
 
             modelBuilder.Entity<WorkflowStage>()
-                .HasIndex(ws => ws.LevelId)
-                .HasDatabaseName("IX_WorkflowStages_LevelId");
+                .HasIndex(ws => ws.ApproverId)
+                .HasDatabaseName("IX_WorkflowStages_ApproverId");
 
             modelBuilder.Entity<WorkflowStage>()
                 .HasIndex(ws => new { ws.WorkflowId, ws.Stage })
@@ -101,14 +101,14 @@ namespace Ideku.Data.Context
                 .HasIndex(wc => new { wc.ConditionType, wc.IsActive })
                 .HasDatabaseName("IX_WorkflowConditions_ConditionType_IsActive");
 
-            // LevelApprover indexes
-            modelBuilder.Entity<LevelApprover>()
-                .HasIndex(la => la.LevelId)
-                .HasDatabaseName("IX_LevelApprovers_LevelId");
+            // ApproverRole indexes
+            modelBuilder.Entity<ApproverRole>()
+                .HasIndex(ar => ar.ApproverId)
+                .HasDatabaseName("IX_ApproverRoles_ApproverId");
 
-            modelBuilder.Entity<LevelApprover>()
-                .HasIndex(la => la.RoleId)
-                .HasDatabaseName("IX_LevelApprovers_RoleId");
+            modelBuilder.Entity<ApproverRole>()
+                .HasIndex(ar => ar.RoleId)
+                .HasDatabaseName("IX_ApproverRoles_RoleId");
 
 
             // Idea indexes for workflow
@@ -248,11 +248,11 @@ namespace Ideku.Data.Context
                 .HasForeignKey(ws => ws.WorkflowId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // WorkflowStage-Level relationship
+            // WorkflowStage-Approver relationship
             modelBuilder.Entity<WorkflowStage>()
-                .HasOne(ws => ws.Level)
-                .WithMany(l => l.WorkflowStages)
-                .HasForeignKey(ws => ws.LevelId)
+                .HasOne(ws => ws.Approver)
+                .WithMany(a => a.WorkflowStages)
+                .HasForeignKey(ws => ws.ApproverId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // WorkflowCondition-Workflow relationship
@@ -262,18 +262,18 @@ namespace Ideku.Data.Context
                 .HasForeignKey(wc => wc.WorkflowId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // LevelApprover-Level relationship
-            modelBuilder.Entity<LevelApprover>()
-                .HasOne(la => la.Level)
-                .WithMany(l => l.LevelApprovers)
-                .HasForeignKey(la => la.LevelId)
+            // ApproverRole-Approver relationship
+            modelBuilder.Entity<ApproverRole>()
+                .HasOne(ar => ar.Approver)
+                .WithMany(a => a.ApproverRoles)
+                .HasForeignKey(ar => ar.ApproverId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // LevelApprover-Role relationship
-            modelBuilder.Entity<LevelApprover>()
-                .HasOne(la => la.Role)
+            // ApproverRole-Role relationship
+            modelBuilder.Entity<ApproverRole>()
+                .HasOne(ar => ar.Role)
                 .WithMany()
-                .HasForeignKey(la => la.RoleId)
+                .HasForeignKey(ar => ar.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Idea-Workflow relationship

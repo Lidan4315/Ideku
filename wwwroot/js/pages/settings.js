@@ -5,9 +5,9 @@ function navigateToWorkflow() {
     window.location.href = '/Settings/WorkflowManagement';
 }
 
-function navigateToLevel() {
-    // Navigate to level management page
-    window.location.href = '/Settings/LevelManagement';
+function navigateToApprover() {
+    // Navigate to approver management page
+    window.location.href = '/Settings/ApproverManagement';
 }
 
 function showComingSoon(featureName) {

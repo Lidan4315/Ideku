@@ -116,9 +116,9 @@ namespace Ideku.Services.WorkflowManagement
         }
 
         // Helper methods - untuk dropdown/select options
-        public async Task<IEnumerable<Models.Entities.Level>> GetAllLevelsAsync()
+        public async Task<IEnumerable<Models.Entities.Approver>> GetAllApproversAsync()
         {
-            return await _workflowRepository.GetAllLevelsAsync();
+            return await _workflowRepository.GetAllApproversAsync();
         }
 
         public async Task<IEnumerable<Category>> GetAllCategoriesAsync()

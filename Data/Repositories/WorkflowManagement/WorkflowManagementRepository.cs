@@ -17,7 +17,7 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         {
             return await _context.Workflows
                 .Include(w => w.WorkflowStages)
-                    .ThenInclude(ws => ws.Level)
+                    .ThenInclude(ws => ws.Approver)
                 .Include(w => w.WorkflowConditions)
                 .OrderByDescending(w => w.CreatedAt)
                 .ToListAsync();
@@ -27,7 +27,7 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         {
             return await _context.Workflows
                 .Include(w => w.WorkflowStages)
-                    .ThenInclude(ws => ws.Level)
+                    .ThenInclude(ws => ws.Approver)
                 .Include(w => w.WorkflowConditions)
                 .FirstOrDefaultAsync(w => w.Id == id);
         }
@@ -90,11 +90,11 @@ namespace Ideku.Data.Repositories.WorkflowManagement
             return result > 0;
         }
 
-        public async Task<IEnumerable<Models.Entities.Level>> GetAllLevelsAsync()
+        public async Task<IEnumerable<Models.Entities.Approver>> GetAllApproversAsync()
         {
-            return await _context.Levels
-                .Where(l => l.IsActive)
-                .OrderBy(l => l.LevelName)
+            return await _context.Approvers
+                .Where(a => a.IsActive)
+                .OrderBy(a => a.ApproverName)
                 .ToListAsync();
         }
 
@@ -210,8 +210,8 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         {
             // Get WorkflowStage for the target stage
             var workflowStage = await _context.WorkflowStages
-                .Include(ws => ws.Level)
-                    .ThenInclude(l => l.LevelApprovers)
+                .Include(ws => ws.Approver)
+                    .ThenInclude(a => a.ApproverRoles)
                         .ThenInclude(la => la.Role)
                             .ThenInclude(r => r.Users)
                                 .ThenInclude(u => u.Employee)
@@ -223,12 +223,12 @@ namespace Ideku.Data.Repositories.WorkflowManagement
             // Get all users with roles that can approve at this level
             var approverUsers = new List<User>();
             
-            foreach (var levelApprover in workflowStage.Level.LevelApprovers)
+            foreach (var approverRole in workflowStage.Approver.ApproverRoles)
             {
                 var query = _context.Users
                     .Include(u => u.Employee)
                     .Include(u => u.Role)
-                    .Where(u => u.RoleId == levelApprover.RoleId && u.Employee.EMP_STATUS == "Active");
+                    .Where(u => u.RoleId == approverRole.RoleId && u.Employee.EMP_STATUS == "Active");
 
                 // Filter by target division if specified
                 if (!string.IsNullOrEmpty(targetDivisionId))
@@ -253,8 +253,8 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         public async Task<WorkflowStage?> GetWorkflowStageAsync(int workflowId, int stage)
         {
             return await _context.WorkflowStages
-                .Include(ws => ws.Level)
-                    .ThenInclude(l => l.LevelApprovers)
+                .Include(ws => ws.Approver)
+                    .ThenInclude(a => a.ApproverRoles)
                         .ThenInclude(la => la.Role)
                 .FirstOrDefaultAsync(ws => ws.WorkflowId == workflowId && ws.Stage == stage);
         }

@@ -17,9 +17,9 @@ namespace Ideku.Controllers
             return RedirectToAction("Index", "WorkflowManagement");
         }
 
-        public IActionResult LevelManagement()
+        public IActionResult ApproverManagement()
         {
-            return RedirectToAction("Index", "LevelManagement");
+            return RedirectToAction("Index", "ApproverManagement");
         }
     }
 }

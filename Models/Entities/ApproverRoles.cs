@@ -3,19 +3,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ideku.Models.Entities
 {
-    [Table("LevelApprovers")]
-    public class LevelApprover
+    [Table("ApproverRoles")]
+    public class ApproverRole
     {
         [Key]
         [Column("Id")]
         public int Id { get; set; }
 
         [Required]
-        [Column("LevelId")]
-        public int LevelId { get; set; }
+        [Column("ApproverId")]
+        public int ApproverId { get; set; }
 
-        [ForeignKey("LevelId")]
-        public Level Level { get; set; } = null!;
+        [ForeignKey("ApproverId")]
+        public Approver Approver { get; set; } = null!;
 
         [Required]
         [Column("RoleId")]

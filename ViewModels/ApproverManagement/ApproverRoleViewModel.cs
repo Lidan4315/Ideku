@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Ideku.ViewModels.LevelManagement
+namespace Ideku.ViewModels.ApproverManagement
 {
-    public class LevelApproverViewModel
+    public class ApproverRoleViewModel
     {
         [Required(ErrorMessage = "Role is required")]
         [Display(Name = "Role")]
@@ -11,6 +11,6 @@ namespace Ideku.ViewModels.LevelManagement
 
         // Display properties (for showing in lists)
         public string RoleName { get; set; } = string.Empty;
-        public int Id { get; set; } // For editing existing approvers
+        public int Id { get; set; } // For editing existing roles
     }
 }

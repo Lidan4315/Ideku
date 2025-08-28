@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Ideku.ViewModels.LevelManagement
+namespace Ideku.ViewModels.ApproverManagement
 {
-    public class AddApproverViewModel
+    public class AddApproverRoleViewModel
     {
         [Required]
-        public int LevelId { get; set; }
+        public int ApproverId { get; set; }
 
         [Required(ErrorMessage = "Role is required")]
         [Display(Name = "Role")]
