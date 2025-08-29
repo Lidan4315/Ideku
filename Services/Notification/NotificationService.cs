@@ -237,5 +237,112 @@ namespace Ideku.Services.Notification
             <p><strong>Note:</strong> {milestone.Note}</p>
             <p>Best regards,<br>Ideku System</p>";
         }
+
+        public async Task NotifyWorkstreamLeadersAsync(Models.Entities.Idea idea, List<User> workstreamLeaders)
+        {
+            try
+            {
+                if (!workstreamLeaders.Any())
+                {
+                    _logger.LogInformation("No workstream leaders to notify for idea {IdeaId}", idea.Id);
+                    return;
+                }
+
+                var emailMessages = new List<EmailMessage>();
+
+                foreach (var workstreamLeader in workstreamLeaders)
+                {
+                    var emailMessage = new EmailMessage
+                    {
+                        To = workstreamLeader.Employee.EMAIL,
+                        Subject = $"[Ideku] Idea Approved - {idea.IdeaName} (Related to {workstreamLeader.Employee.DivisionNavigation?.NameDivision})",
+                        Body = GenerateWorkstreamLeaderNotificationEmailBody(idea, workstreamLeader),
+                        IsHtml = true
+                    };
+                    emailMessages.Add(emailMessage);
+                }
+
+                if (emailMessages.Any())
+                {
+                    await _emailService.SendBulkEmailAsync(emailMessages);
+                    _logger.LogInformation("Sent workstream leader notifications for Idea ID: {IdeaId} to {Count} leaders", 
+                        idea.Id, emailMessages.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send workstream leader notifications for Idea ID: {IdeaId}", idea.Id);
+            }
+        }
+
+        private string GenerateWorkstreamLeaderNotificationEmailBody(Models.Entities.Idea idea, User workstreamLeader)
+        {
+            var ideaUrl = $"https://yourdomain.com/Idea/Details/{idea.Id}"; // Replace with actual base URL
+            
+            return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
+        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .header {{ background: linear-gradient(135deg, #17a2b8, #138496); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
+        .header h1 {{ margin: 0; font-size: 28px; }}
+        .content {{ line-height: 1.6; color: #333; }}
+        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
+        .action-button {{ display: inline-block; background-color: #17a2b8; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
+        .background-section {{ background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #6c757d; }}
+        .solution-section {{ background-color: #e8f5e8; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #28a745; }}
+        @media screen and (max-width: 768px) {{ 
+            .container {{ max-width: 95%; padding: 20px; }} 
+            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
+            .header h1 {{ font-size: 24px; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>💡 Related Idea Approved</h1>
+        </div>
+        
+        <div class='content'>
+            <p>Dear {workstreamLeader.Name},</p>
+            
+            <p>An idea has been approved and your division (<strong>{workstreamLeader.Employee.DivisionNavigation?.NameDivision}</strong>) has been marked as related for potential collaboration.</p>
+            
+            <div class='idea-details'>
+                <h3>{idea.IdeaName}</h3>
+                <p><strong>Idea Code:</strong> {idea.IdeaCode}</p>
+                <p><strong>Initiator:</strong> {idea.InitiatorUser?.Name}</p>
+                <p><strong>Target Division:</strong> {idea.TargetDivision?.NameDivision}</p>
+                <p><strong>Category:</strong> {idea.Category?.CategoryName}</p>
+                <p><strong>Validated Saving Cost:</strong> {idea.SavingCostVaidated:C}</p>
+                <p><strong>Current Status:</strong> {idea.CurrentStatus}</p>
+            </div>
+            
+            <div class='background-section'>
+                <h4>Idea Description</h4>
+                <p>{idea.IdeaIssueBackground}</p>
+            </div>
+            
+            <div class='solution-section'>
+                <h4>Idea Solution</h4>
+                <p>{idea.IdeaSolution}</p>
+            </div>
+            
+            <p>As the Workstream Leader for <strong>{workstreamLeader.Employee.DivisionNavigation?.NameDivision}</strong>, your division may be involved in the implementation process. Please review the details and prepare for potential collaboration.</p>
+            
+            <a href='{ideaUrl}' class='action-button' style='color: white !important;'>View Idea Details</a>
+            
+            <p>If you have questions about this idea or need clarification on your division's involvement, please contact the idea initiator.</p>
+            
+            <p>Best regards,<br>The Ideku Team</p>
+        </div>
+    </div>
+</body>
+</html>";
+        }
     }
 }

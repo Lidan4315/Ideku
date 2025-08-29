@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Ideku.Data.Context;
+using Ideku.Models.Entities;
 
 namespace Ideku.Data.Repositories
 {
@@ -125,6 +126,14 @@ namespace Ideku.Data.Repositories
             }));
 
             return selectList;
+        }
+
+        public async Task<List<Division>> GetActiveDivisionsAsync()
+        {
+            return await _context.Divisions
+                .Where(d => d.IsActive)
+                .OrderBy(d => d.NameDivision)
+                .ToListAsync();
         }
     }
 }

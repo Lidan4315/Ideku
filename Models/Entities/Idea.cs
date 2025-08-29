@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 
 namespace Ideku.Models.Entities
 {
@@ -113,6 +114,23 @@ namespace Ideku.Models.Entities
 
         [Column("IsDeleted")]
         public bool IsDeleted { get; set; } = false;
+
+        // Related Divisions - JSON storage
+        [Column("RelatedDivisions")]
+        [StringLength(500)]
+        public string? RelatedDivisionsJson { get; set; }
+
+        // Related Divisions - Application property (auto-converts JSON ↔ List)
+        [NotMapped]
+        public List<string> RelatedDivisions
+        {
+            get => string.IsNullOrEmpty(RelatedDivisionsJson)
+                   ? new List<string>()
+                   : JsonSerializer.Deserialize<List<string>>(RelatedDivisionsJson) ?? new List<string>();
+            set => RelatedDivisionsJson = value?.Any() == true
+                   ? JsonSerializer.Serialize(value)
+                   : null;
+        }
 
         public ICollection<WorkflowHistory> WorkflowHistories { get; set; } = new List<WorkflowHistory>();
         public ICollection<Milestone> Milestones { get; set; } = new List<Milestone>();

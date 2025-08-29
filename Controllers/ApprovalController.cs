@@ -1,10 +1,13 @@
 using Ideku.Data.Repositories;
 using Ideku.Services.Workflow;
+using Ideku.Services.IdeaRelation;
 using Ideku.ViewModels.Approval;
+using Ideku.ViewModels.DTOs;
 using Ideku.Extensions;
 using Ideku.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,14 +21,22 @@ namespace Ideku.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IWorkflowRepository _workflowRepository;
         private readonly ILookupRepository _lookupRepository;
+        private readonly IIdeaRelationService _ideaRelationService;
         private readonly IWebHostEnvironment _hostEnvironment;
 
-        public ApprovalController(IWorkflowService workflowService, IUserRepository userRepository, IWorkflowRepository workflowRepository, ILookupRepository lookupRepository, IWebHostEnvironment hostEnvironment)
+        public ApprovalController(
+            IWorkflowService workflowService, 
+            IUserRepository userRepository, 
+            IWorkflowRepository workflowRepository, 
+            ILookupRepository lookupRepository,
+            IIdeaRelationService ideaRelationService,
+            IWebHostEnvironment hostEnvironment)
         {
             _workflowService = workflowService;
             _userRepository = userRepository;
             _workflowRepository = workflowRepository;
             _lookupRepository = lookupRepository;
+            _ideaRelationService = ideaRelationService;
             _hostEnvironment = hostEnvironment;
         }
 
@@ -272,10 +283,17 @@ namespace Ideku.Controllers
             // Get workflow history for this idea
             var workflowHistory = await _workflowRepository.GetByIdeaIdAsync(idea.Id);
 
+            // Get available divisions for related divisions dropdown
+            var availableDivisions = await _ideaRelationService.GetAvailableDivisionsAsync(idea.Id);
+
             var viewModel = new ApprovalReviewViewModel
             {
-                Idea = idea
-                // Populate other properties as needed
+                Idea = idea,
+                AvailableDivisions = availableDivisions.Select(d => new SelectListItem
+                {
+                    Value = d.Id,
+                    Text = d.NameDivision
+                }).ToList()
             };
 
             // Pass action capability and workflow history to view
@@ -301,9 +319,37 @@ namespace Ideku.Controllers
 
             if (ModelState.IsValid)
             {
-                await _workflowService.ProcessApprovalAsync((long)id, username, viewModel.ApprovalComments, viewModel.ValidatedSavingCost);
-                TempData["SuccessMessage"] = "Idea has been successfully approved!";
-                return RedirectToAction(nameof(Index));
+                // Get current user for approval process
+                var user = await _userRepository.GetByUsernameAsync(username);
+                if (user == null)
+                {
+                    TempData["ErrorMessage"] = "User not found. Please try again.";
+                    return RedirectToAction(nameof(Review), new { id });
+                }
+
+                // Create approval data DTO
+                var approvalData = new ApprovalProcessDto
+                {
+                    IdeaId = id,
+                    ValidatedSavingCost = viewModel.ValidatedSavingCost ?? 0,
+                    ApprovalComments = viewModel.ApprovalComments,
+                    RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
+                    ApprovedBy = user.Id
+                };
+
+                // Process approval with relations
+                var result = await _workflowService.ProcessApprovalWithRelationsAsync(approvalData);
+                
+                if (result.IsSuccess)
+                {
+                    TempData["SuccessMessage"] = result.SuccessMessage;
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.ErrorMessage;
+                    return RedirectToAction(nameof(Review), new { id });
+                }
             }
 
             // If model state is invalid, reload the review page
@@ -312,7 +358,16 @@ namespace Ideku.Controllers
             {
                 return NotFound();
             }
+
+            // Reload available divisions for dropdown
+            var availableDivisions = await _ideaRelationService.GetAvailableDivisionsAsync(idea.Id);
             viewModel.Idea = idea;
+            viewModel.AvailableDivisions = availableDivisions.Select(d => new SelectListItem
+            {
+                Value = d.Id,
+                Text = d.NameDivision
+            }).ToList();
+
             return View("Review", viewModel);
         }
 

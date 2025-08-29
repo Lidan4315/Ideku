@@ -10,6 +10,7 @@ using Ideku.Services.Idea;
 using Ideku.Services.Workflow;
 using Ideku.Services.WorkflowManagement;
 using Ideku.Services.Approver;
+using Ideku.Services.IdeaRelation;
 using Ideku.Models;
 using Ideku.Models.Entities;
 using WebOptimizer;
@@ -79,6 +80,7 @@ builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IApproverService, ApproverService>();
 builder.Services.AddScoped<IWorkflowManagementService, WorkflowManagementService>();
+builder.Services.AddScoped<IIdeaRelationService, IdeaRelationService>();
 
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();

@@ -162,6 +162,56 @@
                                       placeholder="Please provide detailed approval comments"></textarea>
                             <span asp-validation-for="ApprovalComments" class="text-danger"></span>
                         </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-building me-1"></i>Related Divisions
+                                <small class="text-muted">(Optional - Select divisions whose Workstream Leaders should be notified)</small>
+                            </label>
+                            
+                            <!-- Hidden input to store selected division IDs -->
+                            <input asp-for="SelectedRelatedDivisions" type="hidden" id="selectedDivisionsInput" />
+                            
+                            <!-- Button + Tags Interface -->
+                            <div class="related-divisions-container">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <!-- Add Division Button -->
+                                    <div class="dropdown position-relative">
+                                        <button type="button" class="btn dropdown-toggle add-division-btn" 
+                                                id="addDivisionBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-building-add me-2"></i>Select Division
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="addDivisionBtn" id="divisionsDropdown">
+                                            @foreach (var division in Model.AvailableDivisions)
+                                            {
+                                                <li>
+                                                    <a class="dropdown-item division-option" href="#" 
+                                                       data-division-id="@division.Value" 
+                                                       data-division-name="@division.Text">
+                                                        @division.Text
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- Selected Divisions Tags -->
+                                    <div id="selectedDivisionsTags" class="d-flex flex-wrap gap-2">
+                                        <!-- Tags will be dynamically added here -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Info message -->
+                                <div id="divisionsInfo" class="related-divisions-info d-none">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <strong><span id="selectedCount">0</span> division(s)</strong> selected. 
+                                        Workstream Leaders from selected divisions will receive email notifications.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <span asp-validation-for="SelectedRelatedDivisions" class="text-danger"></span>
+                        </div>
                         <button type="submit" class="btn btn-success" id="approveBtn"><i class="fas fa-check"></i> Approve Idea</button>
                     </div>
                 </form>
@@ -533,11 +583,164 @@
             max-width: 100%;
         }
     }
+
+    /* Related Divisions Button + Tags Styles */
+    .related-divisions-container {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        background-color: transparent;
+    }
+    
+    .add-division-btn {
+        border: 1px solid #6b7280;
+        background-color: #ffffff;
+        color: #374151;
+        font-weight: 500;
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .add-division-btn:hover {
+        border-color: #4b5563;
+        background-color: #f3f4f6;
+        color: #1f2937;
+    }
+    
+    .add-division-btn:focus {
+        box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25);
+        outline: none;
+    }
+    
+    /* Division Tags - Outline Style like Button */
+    .division-tag {
+        display: inline-flex;
+        align-items: center;
+        background-color: #ffffff;
+        border: 1px solid #6b7280;
+        color: #374151;
+        padding: 0.5rem 0.875rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        animation: fadeInScale 0.3s ease-out;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .division-tag:hover {
+        border-color: #4b5563;
+        background-color: #f9fafb;
+    }
+    
+    .division-tag .remove-btn {
+        background: none;
+        border: none;
+        color: #6b7280;
+        font-size: 1rem;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    
+    .division-tag .remove-btn:hover {
+        background-color: #f3f4f6;
+        color: #374151;
+        transform: scale(1.1);
+    }
+    
+    /* Dropdown styles */
+    .dropdown-menu {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .division-option {
+        padding: 0.75rem 1rem;
+        transition: background-color 0.15s ease;
+    }
+    
+    .division-option:hover {
+        background-color: #f3f4f6;
+        color: #1f2937;
+    }
+    
+    .division-option.selected {
+        background-color: #e5e7eb;
+        color: #374151;
+        font-weight: 500;
+    }
+    
+    /* Info panel - Simple text style */
+    .related-divisions-info {
+        margin-top: 0.5rem;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .related-divisions-info .text-muted {
+        font-size: 0.875rem;
+        color: #6b7280 !important;
+    }
+    
+    /* Animations */
+    @@keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    /* Empty state */
+    .empty-divisions-state {
+        text-align: center;
+        color: #6b7280;
+        font-style: italic;
+        padding: 1rem;
+    }
+    
+    /* Responsive design */
+    @@media (max-width: 768px) {
+        .related-divisions-container {
+            padding: 0.75rem;
+        }
+        
+        .division-tag {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .add-division-btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Related Divisions Dropdown
+        initializeRelatedDivisionsSelect();
+        
         // Handle File Preview
         initializeFilePreview();
         
@@ -578,9 +781,25 @@
                     return;
                 }
                 
+                // Get selected related divisions from tags interface
+                const selectedInput = document.getElementById('selectedDivisionsInput');
+                const selectedDivisionIds = selectedInput.value ? selectedInput.value.split(',') : [];
+                const selectedDivisionNames = [];
+                
+                // Get division names from the tags displayed
+                const divisionTags = document.querySelectorAll('.division-tag span');
+                divisionTags.forEach(tag => {
+                    selectedDivisionNames.push(tag.textContent.trim());
+                });
+                
+                let confirmText = 'Are you sure you want to approve this idea?';
+                if (selectedDivisionNames.length > 0) {
+                    confirmText = 'Are you sure you want to approve this idea? Workstream Leaders from selected divisions will be notified.';
+                }
+                
                 Swal.fire({
                     title: 'Confirm Approval',
-                    text: 'Are you sure you want to approve this idea?',
+                    text: confirmText,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#28a745',
@@ -907,5 +1126,124 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    // Related Divisions Button + Tags Functions
+    function initializeRelatedDivisionsSelect() {
+        initializeDivisionsTagsInterface();
+    }
+    
+    function initializeDivisionsTagsInterface() {
+        const addBtn = document.getElementById('addDivisionBtn');
+        const dropdownItems = document.querySelectorAll('.division-option');
+        const selectedInput = document.getElementById('selectedDivisionsInput');
+        const tagsContainer = document.getElementById('selectedDivisionsTags');
+        const infoPanel = document.getElementById('divisionsInfo');
+        
+        if (!addBtn || !selectedInput || !tagsContainer) return;
+        
+        // Store selected divisions
+        let selectedDivisions = [];
+        
+        // Handle dropdown item clicks
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const divisionId = this.dataset.divisionId;
+                const divisionName = this.dataset.divisionName;
+                
+                // Check if already selected
+                if (!selectedDivisions.find(d => d.id === divisionId)) {
+                    // Add to selected list
+                    selectedDivisions.push({ id: divisionId, name: divisionName });
+                    
+                    // Update UI
+                    updateTagsDisplay();
+                    updateDropdownOptions();
+                    updateHiddenInput();
+                    updateInfoPanel();
+                    
+                    // Close dropdown
+                    bootstrap.Dropdown.getInstance(addBtn)?.hide();
+                }
+            });
+        });
+        
+        function updateTagsDisplay() {
+            tagsContainer.innerHTML = '';
+            
+            selectedDivisions.forEach((division, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'division-tag';
+                tag.innerHTML = `
+                    <span>${division.name}</span>
+                    <button type="button" class="remove-btn" data-index="${index}" title="Remove ${division.name}">
+                        <i class="bi bi-x"></i>
+                    </button>
+                `;
+                
+                // Add remove functionality
+                const removeBtn = tag.querySelector('.remove-btn');
+                removeBtn.addEventListener('click', function() {
+                    const indexToRemove = parseInt(this.dataset.index);
+                    selectedDivisions.splice(indexToRemove, 1);
+                    updateTagsDisplay();
+                    updateDropdownOptions();
+                    updateHiddenInput();
+                    updateInfoPanel();
+                });
+                
+                tagsContainer.appendChild(tag);
+            });
+        }
+        
+        function updateDropdownOptions() {
+            dropdownItems.forEach(item => {
+                const divisionId = item.dataset.divisionId;
+                const isSelected = selectedDivisions.find(d => d.id === divisionId);
+                
+                if (isSelected) {
+                    item.classList.add('selected');
+                    item.style.display = 'none'; // Hide selected items
+                } else {
+                    item.classList.remove('selected');
+                    item.style.display = 'block';
+                }
+            });
+            
+            // Update button text
+            const availableCount = Array.from(dropdownItems).filter(item => item.style.display !== 'none').length;
+            if (availableCount === 0) {
+                addBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>All Divisions Selected';
+                addBtn.classList.add('disabled');
+                addBtn.style.opacity = '0.6';
+            } else {
+                addBtn.innerHTML = '<i class="bi bi-building-add me-2"></i>Select Division';
+                addBtn.classList.remove('disabled');
+                addBtn.style.opacity = '1';
+            }
+        }
+        
+        function updateHiddenInput() {
+            const selectedIds = selectedDivisions.map(d => d.id);
+            selectedInput.value = selectedIds.join(',');
+        }
+        
+        function updateInfoPanel() {
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedDivisions.length > 0) {
+                infoPanel.classList.remove('d-none');
+                selectedCount.textContent = selectedDivisions.length;
+            } else {
+                infoPanel.classList.add('d-none');
+            }
+        }
+        
+        // Initialize display
+        updateTagsDisplay();
+        updateDropdownOptions();
+        updateInfoPanel();
     }
 </script>

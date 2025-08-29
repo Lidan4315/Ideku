@@ -1,7 +1,10 @@
 using Ideku.Data.Repositories;
+using Ideku.Data.Context;
 using Ideku.Models;
 using Ideku.Services.Email;
 using Ideku.Services.WorkflowManagement;
+using Ideku.Services.IdeaRelation;
+using Ideku.ViewModels.DTOs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -17,16 +20,26 @@ namespace Ideku.Services.Workflow
         private readonly IIdeaRepository _ideaRepository;
         private readonly IWorkflowRepository _workflowRepository;
         private readonly IWorkflowManagementService _workflowManagementService;
+        private readonly IIdeaRelationService _ideaRelationService;
         private readonly ILogger<WorkflowService> _logger;
         private readonly EmailSettings _emailSettings;
 
-        public WorkflowService(IEmailService emailService, IUserRepository userRepository, IIdeaRepository ideaRepository, IWorkflowRepository workflowRepository, IWorkflowManagementService workflowManagementService, ILogger<WorkflowService> logger, IOptions<EmailSettings> emailSettings)
+        public WorkflowService(
+            IEmailService emailService, 
+            IUserRepository userRepository, 
+            IIdeaRepository ideaRepository, 
+            IWorkflowRepository workflowRepository, 
+            IWorkflowManagementService workflowManagementService,
+            IIdeaRelationService ideaRelationService,
+            ILogger<WorkflowService> logger, 
+            IOptions<EmailSettings> emailSettings)
         {
             _emailService = emailService;
             _userRepository = userRepository;
             _ideaRepository = ideaRepository;
             _workflowRepository = workflowRepository;
             _workflowManagementService = workflowManagementService;
+            _ideaRelationService = ideaRelationService;
             _logger = logger;
             _emailSettings = emailSettings.Value;
         }
@@ -605,6 +618,149 @@ batu
         
         <div class='footer'>
             <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>";
+        }
+
+        public async Task<WorkflowResult> ProcessApprovalWithRelationsAsync(ApprovalProcessDto approvalData)
+        {
+            try
+            {
+                _logger.LogInformation("Processing approval with relations for idea {IdeaId} by user {UserId}", 
+                    approvalData.IdeaId, approvalData.ApprovedBy);
+
+                // Get user info for reuse of existing method
+                var user = await _userRepository.GetByIdAsync(approvalData.ApprovedBy);
+                if (user == null)
+                {
+                    _logger.LogError("User {UserId} not found during approval processing", approvalData.ApprovedBy);
+                    return WorkflowResult.Failure("User not found");
+                }
+
+                // 1. REUSE existing proven approval functionality
+                await ProcessApprovalAsync(
+                    approvalData.IdeaId,
+                    user.Username,
+                    approvalData.ApprovalComments,
+                    approvalData.ValidatedSavingCost);
+
+                // 2. ADD new functionality - handle related divisions
+                if (approvalData.RelatedDivisions?.Any() == true)
+                {
+                    _logger.LogInformation("Processing related divisions for idea {IdeaId}: {DivisionIds}", 
+                        approvalData.IdeaId, string.Join(", ", approvalData.RelatedDivisions));
+                    
+                    // Get updated idea after standard approval
+                    var idea = await _ideaRepository.GetByIdAsync(approvalData.IdeaId);
+                    if (idea == null)
+                    {
+                        _logger.LogError("Idea {IdeaId} not found after approval processing", approvalData.IdeaId);
+                        return WorkflowResult.Failure("Idea not found after approval");
+                    }
+
+                    // Update related divisions in database
+                    await _ideaRelationService.UpdateIdeaRelatedDivisionsAsync(
+                        approvalData.IdeaId, 
+                        approvalData.RelatedDivisions);
+
+                    // Send notifications to related divisions' workstream leaders
+                    await _ideaRelationService.NotifyRelatedDivisionsAsync(
+                        idea, 
+                        approvalData.RelatedDivisions);
+
+                    _logger.LogInformation("Successfully processed {RelatedCount} related divisions for idea {IdeaId}", 
+                        approvalData.RelatedDivisions.Count, approvalData.IdeaId);
+                }
+                
+                // Get final idea state for result
+                var finalIdea = await _ideaRepository.GetByIdAsync(approvalData.IdeaId);
+                
+                _logger.LogInformation("Successfully processed approval with relations for idea {IdeaId}. " +
+                    "Status: {Status}, Related divisions: {RelatedCount}", 
+                    approvalData.IdeaId, finalIdea?.CurrentStatus, 
+                    approvalData.RelatedDivisions?.Count ?? 0);
+
+                return WorkflowResult.Success(
+                    approvalData.IdeaId, 
+                    finalIdea?.CurrentStage ?? 0, 
+                    finalIdea?.CurrentStatus ?? "Unknown",
+                    "Idea approved successfully and notifications sent to related divisions");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing approval with relations for idea {IdeaId}", 
+                    approvalData.IdeaId);
+                return WorkflowResult.Failure($"Error processing approval: {ex.Message}");
+            }
+        }
+
+        private async Task SendApprovalNotificationToInitiatorAsync(Models.Entities.Idea idea)
+        {
+            try
+            {
+                var initiatorEmail = idea.InitiatorUser?.Employee?.EMAIL;
+                if (string.IsNullOrEmpty(initiatorEmail))
+                {
+                    _logger.LogWarning("No email found for idea {IdeaId} initiator", idea.Id);
+                    return;
+                }
+
+                var emailMessage = new EmailMessage
+                {
+                    To = initiatorEmail,
+                    Subject = $"[Ideku] Your Idea Has Been Approved - {idea.IdeaName}",
+                    Body = GenerateApprovalNotificationEmail(idea),
+                    IsHtml = true
+                };
+
+                await _emailService.SendEmailAsync(emailMessage);
+                _logger.LogInformation("Approval notification sent to initiator {Email} for idea {IdeaId}", 
+                    initiatorEmail, idea.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send approval notification to initiator for idea {IdeaId}", idea.Id);
+                // Don't throw - notification failure shouldn't break the approval process
+            }
+        }
+
+        private string GenerateApprovalNotificationEmail(Models.Entities.Idea idea)
+        {
+            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
+            
+            return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; }}
+        .header {{ background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 20px; border-radius: 8px; text-align: center; }}
+        .content {{ padding: 20px 0; line-height: 1.6; }}
+        .action-button {{ display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>🎉 Your Idea Has Been Approved!</h1>
+        </div>
+        <div class='content'>
+            <p>Dear {idea.InitiatorUser?.Name},</p>
+            
+            <p>Great news! Your idea <strong>{idea.IdeaName}</strong> (ID: {idea.IdeaCode}) has been approved and is moving forward in the process.</p>
+            
+            <p><strong>Current Status:</strong> {idea.CurrentStatus}</p>
+            <p><strong>Validated Saving Cost:</strong> {idea.SavingCostVaidated:C}</p>
+            
+            <a href='{ideaUrl}' class='action-button'>View Your Idea</a>
+            
+            <p>Thank you for your innovation and contribution!</p>
+            
+            <p>Best regards,<br>The Ideku Team</p>
         </div>
     </div>
 </body>

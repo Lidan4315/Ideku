@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Ideku.ViewModels.DTOs;
 
 namespace Ideku.Services.Workflow
 {
@@ -17,5 +18,12 @@ namespace Ideku.Services.Workflow
         Task<Models.Entities.Idea> GetIdeaForReview(int ideaId, string username);
         Task ProcessApprovalAsync(long ideaId, string username, string? comments, decimal? validatedSavingCost);
         Task ProcessRejectionAsync(long ideaId, string username, string reason);
+        
+        /// <summary>
+        /// Process approval with related divisions notification
+        /// </summary>
+        /// <param name="approvalData">Complete approval data including related divisions</param>
+        /// <returns>Result of the approval process</returns>
+        Task<WorkflowResult> ProcessApprovalWithRelationsAsync(ApprovalProcessDto approvalData);
     }
 }
