@@ -165,9 +165,9 @@ namespace Ideku.Services.Notification
                 <li><strong>Category:</strong> {idea.Category.CategoryName}</li>
                 <li><strong>Estimated Saving:</strong> {idea.SavingCost:C}</li>
             </ul>
-            <p><strong>Background:</strong></p>
+            <p><strong>Idea Description:</strong></p>
             <p>{idea.IdeaIssueBackground}</p>
-            <p><strong>Proposed Solution:</strong></p>
+            <p><strong>Idea Solution:</strong></p>
             <p>{idea.IdeaSolution}</p>
             <p>Please log in to the system to review and approve this idea.</p>
             <p>Best regards,<br>Ideku System</p>";

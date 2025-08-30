@@ -31,5 +31,18 @@ namespace Ideku.ViewModels.Approval
 
         // Dropdown data for available divisions
         public List<SelectListItem> AvailableDivisions { get; set; } = new List<SelectListItem>();
+
+        // Context properties untuk validation history
+        [Display(Name = "Has Previous Validation")]
+        public bool HasPreviousValidation => Idea?.SavingCostVaidated.HasValue ?? false;
+        
+        [Display(Name = "Original Amount")]
+        public decimal OriginalAmount => Idea?.SavingCost ?? 0;
+        
+        [Display(Name = "Previously Validated Amount")]
+        public decimal? PreviouslyValidatedAmount => Idea?.SavingCostVaidated;
+        
+        [Display(Name = "Current Stage")]
+        public int CurrentStage => Idea?.CurrentStage ?? 0;
     }
 }

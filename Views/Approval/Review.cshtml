@@ -82,15 +82,15 @@
                 </div>
             </div>
             <div class="form-group-view mb-3">
-                <label>Problem/Issue Background</label>
+                <label>Idea Description</label>
                 <div class="form-control-plaintext">@Model.Idea.IdeaIssueBackground</div>
             </div>
             <div class="form-group-view mb-3">
-                <label>Proposed Solution</label>
+                <label>Idea Solution</label>
                 <div class="form-control-plaintext">@Model.Idea.IdeaSolution</div>
             </div>
             <div class="form-group-view mb-3">
-                <label>Financial Impact</label>
+                <label>Saving Cost (USD)</label>
                 <p>@Model.Idea.SavingCost.ToString("C")</p>
             </div>
             <div class="form-group-view mb-3">
@@ -145,13 +145,24 @@
                     @Html.AntiForgeryToken()
                     <div class="approve-section mb-4">
                         <h5><i class="fas fa-check-circle text-success"></i> Approve Idea</h5>
+                        
                         <div class="form-group mb-3">
                             <label asp-for="ValidatedSavingCost" class="form-label">
                                 Validated Saving Cost (USD) <span class="text-danger">*</span>
                             </label>
-                            <input asp-for="ValidatedSavingCost" class="form-control" 
-                                   type="number" step="0.01" min="0" 
-                                   placeholder="Enter validated cost savings amount in USD" />
+                            
+                            <!-- Display field dengan comma formatting -->
+                            <input type="text" class="form-control" id="validatedCostDisplay" 
+                                   placeholder="Enter validated saving cost" />
+                            
+                            <!-- Hidden field untuk form submission -->
+                            <input type="hidden" asp-for="ValidatedSavingCost" id="validatedCostHidden" />
+                                   
+                            <small class="form-text text-muted mt-1">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Enter the validated saving cost amount
+                            </small>
+                            
                             <span asp-validation-for="ValidatedSavingCost" class="text-danger"></span>
                         </div>
                         <div class="form-group mb-3">
@@ -717,6 +728,7 @@
         padding: 1rem;
     }
     
+
     /* Responsive design */
     @@media (max-width: 768px) {
         .related-divisions-container {
@@ -744,33 +756,44 @@
         // Handle File Preview
         initializeFilePreview();
         
+        // Initialize Validated Saving Cost Visual Feedback
+        initializeValidatedSavingCostFeedback();
+        
         // Handle Approve form
         const approveForm = document.querySelector('form[action*="Approve"]');
         if (approveForm) {
             approveForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                // Client-side validation
-                const validatedSavingCost = document.querySelector('input[name="ValidatedSavingCost"]').value;
+                // Client-side validation - Handle conditional field
+                const validatedSavingCostHidden = document.getElementById('validatedCostHidden');
+                const validatedSavingCostDisplay = document.getElementById('validatedCostDisplay');
                 const approvalComments = document.querySelector('textarea[name="ApprovalComments"]').value;
                 
-                if (!validatedSavingCost.trim()) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Warning!',
-                        text: 'Validated saving cost is required'
-                    });
-                    return;
+                // Validate Validated Saving Cost only if field exists (Stage 1+)
+                if (validatedSavingCostHidden && validatedSavingCostDisplay) {
+                    const numericValue = validatedSavingCostHidden.value;
+                    const displayValue = validatedSavingCostDisplay.value;
+                    
+                    if (!displayValue.trim()) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Warning!',
+                            text: 'Validated saving cost is required'
+                        });
+                        return;
+                    }
+                    
+                    if (!numericValue || parseFloat(numericValue) < 0 || isNaN(parseFloat(numericValue))) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Warning!',
+                            text: 'Validated saving cost must be a positive number'
+                        });
+                        return;
+                    }
                 }
-                
-                if (parseFloat(validatedSavingCost) < 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Warning!',
-                        text: 'Validated saving cost must be a positive number'
-                    });
-                    return;
-                }
+                // For Stage 0: Skip validated saving cost validation
                 
                 if (!approvalComments.trim()) {
                     Swal.fire({
@@ -1245,5 +1268,67 @@
         updateTagsDisplay();
         updateDropdownOptions();
         updateInfoPanel();
+    }
+    
+    // Validated Saving Cost Formatting - Only for Stage 1+
+    function initializeValidatedSavingCostFeedback() {
+        const displayInput = document.getElementById('validatedCostDisplay');
+        const hiddenInput = document.getElementById('validatedCostHidden');
+        
+        // Check if fields exist (only for Stage 1+)
+        if (!displayInput || !hiddenInput) {
+            return; // Fields not present for Stage 0
+        }
+        
+        // Initialize field based on stage
+        const currentStage = @Model.Idea.CurrentStage;
+        const originalValue = hiddenInput.value;
+        
+        if (currentStage > 0 && originalValue && originalValue !== '') {
+            // Stage 1+: Auto-fill from previous approver
+            displayInput.value = formatNumberWithCommas(originalValue);
+            hiddenInput.value = originalValue;
+        } else {
+            // Stage 0: Start empty, approver fills manually
+            displayInput.value = '';
+            hiddenInput.value = '';
+        }
+        
+        // Real-time formatting dan sync
+        displayInput.addEventListener('input', function() {
+            var value = this.value;
+            
+            // Remove all non-digit characters except decimal point
+            var numericValue = value.replace(/[^\d.]/g, '');
+            
+            // Ensure only one decimal point
+            var parts = numericValue.split('.');
+            if (parts.length > 2) {
+                numericValue = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Format display field dengan thousand separator
+            if (numericValue) {
+                var formattedValue = formatNumberWithCommas(numericValue);
+                this.value = formattedValue;
+                
+                // Store raw numeric value in hidden field
+                hiddenInput.value = numericValue;
+            } else {
+                hiddenInput.value = '';
+            }
+        });
+    }
+    
+    // Currency formatting function (sama seperti di Create.cshtml)
+    function formatNumberWithCommas(value) {
+        var parts = value.split('.');
+        var integerPart = parts[0];
+        var decimalPart = parts.length > 1 ? '.' + parts[1] : '';
+        
+        // Add commas to integer part
+        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        
+        return integerPart + decimalPart;
     }
 </script>

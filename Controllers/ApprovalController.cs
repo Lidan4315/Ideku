@@ -289,6 +289,8 @@ namespace Ideku.Controllers
             var viewModel = new ApprovalReviewViewModel
             {
                 Idea = idea,
+                // Stage-based auto-fill: Stage 0 = empty, Stage 1+ = from previous approver
+                ValidatedSavingCost = idea.CurrentStage == 0 ? null : idea.SavingCostVaidated,
                 AvailableDivisions = availableDivisions.Select(d => new SelectListItem
                 {
                     Value = d.Id,
@@ -327,11 +329,22 @@ namespace Ideku.Controllers
                     return RedirectToAction(nameof(Review), new { id });
                 }
 
+                // Get idea untuk check current stage
+                var idea = await _workflowService.GetIdeaForReview(id, username);
+                if (idea == null)
+                {
+                    TempData["ErrorMessage"] = "Idea not found or access denied.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 // Create approval data DTO
                 var approvalData = new ApprovalProcessDto
                 {
                     IdeaId = id,
-                    ValidatedSavingCost = viewModel.ValidatedSavingCost ?? 0,
+                    // For Stage 0: use original SavingCost, For Stage 1+: use ValidatedSavingCost
+                    ValidatedSavingCost = idea.CurrentStage == 0 
+                        ? idea.SavingCost 
+                        : (viewModel.ValidatedSavingCost ?? idea.SavingCost),
                     ApprovalComments = viewModel.ApprovalComments,
                     RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
                     ApprovedBy = user.Id
