@@ -361,6 +361,11 @@ namespace Ideku.Migrations
                         .HasColumnType("nvarchar(1000)")
                         .HasColumnName("RejectedReason");
 
+                    b.Property<string>("RelatedDivisionsJson")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("RelatedDivisions");
+
                     b.Property<decimal>("SavingCost")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)")

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250827024105_InitialMigrate")]
+    [Migration("20250828081048_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -363,6 +363,11 @@ namespace Ideku.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)")
                         .HasColumnName("RejectedReason");
+
+                    b.Property<string>("RelatedDivisionsJson")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("RelatedDivisions");
 
                     b.Property<decimal>("SavingCost")
                         .HasPrecision(18, 2)
