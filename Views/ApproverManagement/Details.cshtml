@@ -161,21 +161,20 @@
 <!-- Add Approver Role Modal -->
 <div class="modal fade" id="addApproverRoleModal" tabindex="-1" aria-labelledby="addApproverRoleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content level-modal">
-            <div class="modal-header level-modal-header">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="modal-icon">
                         <i class="bi bi-person-plus"></i>
                     </div>
                     <div>
                         <h5 class="modal-title mb-0" id="addApproverRoleModalLabel">Add Approver Role</h5>
-                        <small class="text-muted">Assign a new role to this approver</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addApproverRoleForm">
-                <div class="modal-body approver-modal-body">
+                <div class="modal-body app-modal-body">
                     <input type="hidden" id="approverId" name="approverId" value="@Model.Approver.Id" />
                     
                     <!-- Role Selection -->
@@ -199,7 +198,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer level-modal-footer">
+                <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
@@ -215,21 +214,20 @@
 <!-- Edit Approver Modal -->
 <div class="modal fade" id="editApproverModal" tabindex="-1" aria-labelledby="editApproverModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content level-modal">
-            <div class="modal-header level-modal-header">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="modal-icon">
                         <i class="bi bi-pencil-square"></i>
                     </div>
                     <div>
                         <h5 class="modal-title mb-0" id="editApproverModalLabel">Edit Approver</h5>
-                        <small class="text-muted">Update approver configuration</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editApproverForm">
-                <div class="modal-body approver-modal-body">
+                <div class="modal-body app-modal-body">
                     <input type="hidden" id="editApproverId" name="id">
                     
                     <!-- Approver Code -->
@@ -263,7 +261,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer level-modal-footer">
+                <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
