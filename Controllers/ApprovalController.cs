@@ -290,7 +290,7 @@ namespace Ideku.Controllers
             {
                 Idea = idea,
                 // Stage-based auto-fill: Stage 0 = empty, Stage 1+ = from previous approver
-                ValidatedSavingCost = idea.CurrentStage == 0 ? null : idea.SavingCostVaidated,
+                ValidatedSavingCost = idea.CurrentStage == 0 ? null : idea.SavingCostValidated,
                 AvailableDivisions = availableDivisions.Select(d => new SelectListItem
                 {
                     Value = d.Id,

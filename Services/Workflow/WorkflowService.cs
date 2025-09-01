@@ -339,7 +339,7 @@ namespace Ideku.Services.Workflow
             
             if (validatedSavingCost.HasValue)
             {
-                idea.SavingCostVaidated = validatedSavingCost.Value;
+                idea.SavingCostValidated = validatedSavingCost.Value;
             }
 
             // Add a record to WorkflowHistory
@@ -754,7 +754,7 @@ batu
             <p>Great news! Your idea <strong>{idea.IdeaName}</strong> (ID: {idea.IdeaCode}) has been approved and is moving forward in the process.</p>
             
             <p><strong>Current Status:</strong> {idea.CurrentStatus}</p>
-            <p><strong>Validated Saving Cost:</strong> {idea.SavingCostVaidated:C}</p>
+            <p><strong>Validated Saving Cost:</strong> {idea.SavingCostValidated:C}</p>
             
             <a href='{ideaUrl}' class='action-button'>View Your Idea</a>
             

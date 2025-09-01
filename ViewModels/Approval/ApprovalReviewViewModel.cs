@@ -34,13 +34,13 @@ namespace Ideku.ViewModels.Approval
 
         // Context properties untuk validation history
         [Display(Name = "Has Previous Validation")]
-        public bool HasPreviousValidation => Idea?.SavingCostVaidated.HasValue ?? false;
+        public bool HasPreviousValidation => Idea?.SavingCostValidated.HasValue ?? false;
         
         [Display(Name = "Original Amount")]
         public decimal OriginalAmount => Idea?.SavingCost ?? 0;
         
         [Display(Name = "Previously Validated Amount")]
-        public decimal? PreviouslyValidatedAmount => Idea?.SavingCostVaidated;
+        public decimal? PreviouslyValidatedAmount => Idea?.SavingCostValidated;
         
         [Display(Name = "Current Stage")]
         public int CurrentStage => Idea?.CurrentStage ?? 0;

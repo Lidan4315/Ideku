@@ -47,9 +47,9 @@
                                                 <span class="text-success fw-bold">@idea.SavingCost.ToString("N0")</span>
                                             </td>
                                             <td>
-                                                @if (idea.SavingCostVaidated.HasValue)
+                                                @if (idea.SavingCostValidated.HasValue)
                                                 {
-                                                    <span class="text-primary fw-bold">@idea.SavingCostVaidated.Value.ToString("N0")</span>
+                                                    <span class="text-primary fw-bold">@idea.SavingCostValidated.Value.ToString("N0")</span>
                                                 }
                                                 else
                                                 {

@@ -66,8 +66,8 @@ namespace Ideku.Models.Entities
         [Column("SavingCost", TypeName = "decimal(18,2)")]
         public decimal SavingCost { get; set; }
 
-        [Column("SavingCostVaidated", TypeName = "decimal(18,2)")]
-        public decimal? SavingCostVaidated { get; set; }
+        [Column("SavingCostValidated", TypeName = "decimal(18,2)")]
+        public decimal? SavingCostValidated { get; set; }
 
         [Required]
         [Column("AttachmentFiles")]

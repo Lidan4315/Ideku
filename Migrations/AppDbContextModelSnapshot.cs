@@ -371,10 +371,10 @@ namespace Ideku.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("SavingCost");
 
-                    b.Property<decimal?>("SavingCostVaidated")
+                    b.Property<decimal?>("SavingCostValidated")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)")
-                        .HasColumnName("SavingCostVaidated");
+                        .HasColumnName("SavingCostValidated");
 
                     b.Property<DateTime>("SubmittedDate")
                         .HasColumnType("datetime2")
