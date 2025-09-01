@@ -55,8 +55,20 @@ namespace Ideku.Controllers
                 
                 if (result.Success && result.CreatedIdea != null)
                 {
-                    // Initiate the workflow (which will handle the notifications)
-                    await _workflowService.InitiateWorkflowAsync(result.CreatedIdea);
+                    // Start workflow and email notifications in background
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _workflowService.InitiateWorkflowAsync(result.CreatedIdea);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log error silently - don't affect user experience
+                            // TODO: Add logging here if logger is available
+                            Console.WriteLine($"Background email error: {ex.Message}");
+                        }
+                    });
 
                     return Json(new { 
                         success = true, 

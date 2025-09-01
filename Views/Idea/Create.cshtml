@@ -163,10 +163,9 @@
                             <label asp-for="SavingCost" class="form-label">Saving Cost (USD) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">USD</span>
-                                <input asp-for="SavingCost" type="text" class="form-control" id="savingCostInput" placeholder="Enter amount" data-val-required="Saving Cost is required" data-val-range="Saving Cost must be greater than 0" data-val-range-min="0.01" data-val-range-max="999999999999" />
+                                <input asp-for="SavingCost" type="text" class="form-control" id="savingCostInput" placeholder="Enter amount" />
                             </div>
                             <small class="form-text text-muted">Estimated cost savings (e.g., 1,000 or 1,000,000)</small>
-                            <span asp-validation-for="SavingCost" class="text-danger"></span>
                         </div>
 
                         <!-- Attachments -->
@@ -294,16 +293,20 @@
                     numericValue = parts[0] + '.' + parts.slice(1).join('');
                 }
                 
-                // Store the numeric value directly in the field for validation
+                // Store the numeric value for form submission
                 if (numericValue) {
-                    // Set the raw numeric value temporarily for validation
+                    // Set the raw numeric value as a data attribute
                     $(this).attr('data-numeric-value', numericValue);
                     
                     // Format with thousand separator for display
                     var formattedValue = formatNumberWithCommas(numericValue);
                     $(this).val(formattedValue);
+                    
+                    // Override the validation to use numeric value
+                    $(this)[0].setCustomValidity('');
                 } else {
                     $(this).removeAttr('data-numeric-value');
+                    $(this)[0].setCustomValidity('Saving Cost is required');
                 }
                 
                 // Trigger validation
@@ -324,9 +327,15 @@
 
             // Convert display value back to numeric before form submission
             function prepareSavingCostForSubmission() {
-                var displayValue = $('#savingCostInput').val();
-                var numericValue = displayValue.replace(/[^\d.]/g, '');
-                $('#savingCostInput').val(numericValue);
+                var input = $('#savingCostInput');
+                var numericValue = input.attr('data-numeric-value') || input.val().replace(/[^\d.]/g, '');
+                
+                // Validate the numeric value
+                if (!numericValue || parseFloat(numericValue) <= 0) {
+                    return false;
+                }
+                
+                input.val(numericValue);
                 return numericValue;
             }
 
@@ -488,8 +497,20 @@
             $('#createIdeaForm').submit(function(e) {
                 e.preventDefault();
                 
+                // Check saving cost value
+                var savingCostValue = $('#savingCostInput').val().replace(/[^\d.]/g, '');
+                if (!savingCostValue || parseFloat(savingCostValue) <= 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Saving Cost Required',
+                        text: 'Please enter a valid saving cost greater than 0.',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+                
                 // Convert formatted saving cost back to numeric value for submission
-                prepareSavingCostForSubmission();
+                $('#savingCostInput').val(savingCostValue);
                 
                 // Check if at least one file is selected
                 if (selectedFiles.length === 0) {

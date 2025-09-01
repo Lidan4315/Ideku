@@ -542,11 +542,15 @@
             const conditionSelectDiv = document.getElementById('conditionSelectDiv');
             const conditionSelect = document.getElementById('conditionSelect');
             const conditionValueHelp = document.getElementById('conditionValueHelp');
+            const operatorSelect = document.getElementById('operatorType');
             
             // Reset
             conditionValueDiv.style.display = 'block';
             conditionSelectDiv.style.display = 'none';
             conditionSelect.innerHTML = '<option value="">Select...</option>';
+            
+            // Update operator options based on condition type
+            updateOperatorOptions(conditionType);
             
             if (conditionType === 'CATEGORY') {
                 conditionValueDiv.style.display = 'none';
@@ -572,6 +576,72 @@
                 conditionValueHelp.textContent = 'Enter event type or description';
             }
         }
+        
+        // Define all available operators
+        const allOperators = [
+            @foreach (var operatorItem in Model.OperatorList)
+            {
+                <text>{ value: '@operatorItem.Value', text: '@operatorItem.Text' },</text>
+            }
+        ];
+        
+        // Function to update operator options based on condition type
+        function updateOperatorOptions(conditionType) {
+            console.log('updateOperatorOptions called with:', conditionType);
+            const operatorSelect = document.getElementById('operatorType');
+            const currentValue = operatorSelect.value;
+            
+            // Clear existing options
+            operatorSelect.innerHTML = '<option value="">Select Operator</option>';
+            
+            if (conditionType === 'CATEGORY' || conditionType === 'DIVISION' || conditionType === 'DEPARTMENT' || conditionType === 'EVENT') {
+                console.log('Setting equality operators only for categorical data');
+                // For categorical data, only allow equality operators
+                operatorSelect.innerHTML += '<option value="=">=</option>';
+                operatorSelect.innerHTML += '<option value="!=">!=</option>';
+            } else if (conditionType === 'SAVING_COST') {
+                // For numerical data, allow all operators
+                operatorSelect.innerHTML += '<option value=">=">&gt;=</option>';
+                operatorSelect.innerHTML += '<option value="<=">&lt;=</option>';
+                operatorSelect.innerHTML += '<option value="=">=</option>';
+                operatorSelect.innerHTML += '<option value="!=">!=</option>';
+            } else {
+                // Default: show all operators
+                allOperators.forEach(op => {
+                    operatorSelect.innerHTML += `<option value="${op.value}">${op.text}</option>`;
+                });
+            }
+            
+            // Restore previous selection if still valid
+            if (currentValue && operatorSelect.querySelector(`option[value="${currentValue}"]`)) {
+                operatorSelect.value = currentValue;
+            }
+        }
+        
+        // Reset form when modal opens
+        document.addEventListener('DOMContentLoaded', function() {
+            const addConditionModal = document.getElementById('addConditionModal');
+            if (addConditionModal) {
+                addConditionModal.addEventListener('show.bs.modal', function() {
+                    // Reset form fields
+                    document.getElementById('conditionType').value = '';
+                    document.getElementById('operatorType').innerHTML = '<option value="">Select Operator</option>';
+                    document.getElementById('conditionValue').value = '';
+                    document.getElementById('conditionSelect').value = '';
+                    
+                    // Reset visibility
+                    document.getElementById('conditionValueDiv').style.display = 'block';
+                    document.getElementById('conditionSelectDiv').style.display = 'none';
+                    
+                    // Reset operator options to default
+                    const operatorSelect = document.getElementById('operatorType');
+                    operatorSelect.innerHTML = '<option value="">Select Operator</option>';
+                    allOperators.forEach(op => {
+                        operatorSelect.innerHTML += `<option value="${op.value}">${op.text}</option>`;
+                    });
+                });
+            }
+        });
     </script>
     <script src="~/js/pages/workflow-management-details.js" asp-append-version="true"></script>
 }
