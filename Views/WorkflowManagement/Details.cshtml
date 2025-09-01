@@ -232,21 +232,20 @@
 <!-- Edit Workflow Modal -->
 <div class="modal fade" id="editWorkflowModal" tabindex="-1" aria-labelledby="editWorkflowModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content level-modal">
-            <div class="modal-header level-modal-header">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="modal-icon">
                         <i class="bi bi-pencil-square"></i>
                     </div>
                     <div>
                         <h5 class="modal-title mb-0" id="editWorkflowModalLabel">Edit Workflow</h5>
-                        <small class="text-muted">Update workflow configuration</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editWorkflowForm">
-                <div class="modal-body level-modal-body">
+                <div class="modal-body app-modal-body">
                     <input type="hidden" id="editWorkflowId" name="id">
                     
                     <!-- Workflow Name -->
@@ -290,7 +289,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer level-modal-footer">
+                <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
@@ -306,22 +305,36 @@
 <!-- Add Stage Modal -->
 <div class="modal fade" id="addStageModal" tabindex="-1" aria-labelledby="addStageModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content level-modal">
-            <div class="modal-header level-modal-header">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="modal-icon">
                         <i class="bi bi-list-ol"></i>
                     </div>
                     <div>
                         <h5 class="modal-title mb-0" id="addStageModalLabel">Add Workflow Stage</h5>
-                        <small class="text-muted">Add a new stage to the workflow</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addStageForm">
-                <div class="modal-body level-modal-body">
+                <div class="modal-body app-modal-body">
                     <input type="hidden" id="workflowId" value="@Model.Workflow.Id" />
+
+                    <!-- Stage Number -->
+                    <div class="mb-4">
+                        <label for="stage" class="form-label">Stage Number <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-hash"></i>
+                            </span>
+                            <input type="number" class="form-control" id="stage" min="1" required />
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            The order of this stage in the workflow
+                        </div>
+                    </div>
                     
                     <!-- Level Selection -->
                     <div class="mb-4">
@@ -341,21 +354,6 @@
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
                             Choose the approval level for this stage
-                        </div>
-                    </div>
-                    
-                    <!-- Stage Number -->
-                    <div class="mb-4">
-                        <label for="stage" class="form-label">Stage Number <span class="text-danger">*</span></label>
-                        <div class="input-group input-group-enhanced">
-                            <span class="input-group-text">
-                                <i class="bi bi-hash"></i>
-                            </span>
-                            <input type="number" class="form-control" id="stage" min="1" required />
-                        </div>
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i>
-                            The order of this stage in the workflow
                         </div>
                     </div>
                     
@@ -384,7 +382,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer level-modal-footer">
+                <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
@@ -400,21 +398,20 @@
 <!-- Add Condition Modal -->
 <div class="modal fade" id="addConditionModal" tabindex="-1" aria-labelledby="addConditionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content level-modal">
-            <div class="modal-header level-modal-header">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="modal-icon">
                         <i class="bi bi-funnel"></i>
                     </div>
                     <div>
                         <h5 class="modal-title mb-0" id="addConditionModalLabel">Add Workflow Condition</h5>
-                        <small class="text-muted">Define when this workflow should be applied</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addConditionForm" onsubmit="return false;">
-                <div class="modal-body level-modal-body">
+                <div class="modal-body app-modal-body">
                     <input type="hidden" id="conditionWorkflowId" value="@Model.Workflow.Id" />
                     
                     <!-- Condition Type -->
@@ -491,7 +488,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer level-modal-footer">
+                <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
