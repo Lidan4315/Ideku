@@ -366,15 +366,15 @@ namespace Ideku.Controllers
             }
 
             // If model state is invalid, reload the review page
-            var idea = await _workflowService.GetIdeaForReview(id, username);
-            if (idea == null)
+            var reloadedIdea = await _workflowService.GetIdeaForReview(id, username);
+            if (reloadedIdea == null)
             {
                 return NotFound();
             }
 
             // Reload available divisions for dropdown
-            var availableDivisions = await _ideaRelationService.GetAvailableDivisionsAsync(idea.Id);
-            viewModel.Idea = idea;
+            var availableDivisions = await _ideaRelationService.GetAvailableDivisionsAsync(reloadedIdea.Id);
+            viewModel.Idea = reloadedIdea;
             viewModel.AvailableDivisions = availableDivisions.Select(d => new SelectListItem
             {
                 Value = d.Id,
@@ -405,12 +405,12 @@ namespace Ideku.Controllers
             }
 
             // If model state is invalid, reload the review page
-            var idea = await _workflowService.GetIdeaForReview(id, username);
-            if (idea == null)
+            var reloadedIdeaForReject = await _workflowService.GetIdeaForReview(id, username);
+            if (reloadedIdeaForReject == null)
             {
                 return NotFound();
             }
-            viewModel.Idea = idea;
+            viewModel.Idea = reloadedIdeaForReject;
             return View("Review", viewModel);
         }
 
@@ -437,8 +437,8 @@ namespace Ideku.Controllers
             }
 
             // Validate user can access this idea
-            var idea = await _workflowService.GetIdeaForReview(ideaId, username);
-            if (idea == null)
+            var ideaForDownload = await _workflowService.GetIdeaForReview(ideaId, username);
+            if (ideaForDownload == null)
             {
                 return NotFound("Idea not found or access denied");
             }
@@ -485,8 +485,8 @@ namespace Ideku.Controllers
             }
 
             // Validate user can access this idea
-            var idea = await _workflowService.GetIdeaForReview(ideaId, username);
-            if (idea == null)
+            var ideaForView = await _workflowService.GetIdeaForReview(ideaId, username);
+            if (ideaForView == null)
             {
                 return NotFound("Idea not found or access denied");
             }
