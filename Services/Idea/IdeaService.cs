@@ -88,8 +88,8 @@ namespace Ideku.Services.Idea
                     initiatorUserId = initiatorUser.Id;
                 }
 
-                // Handle file uploads
-                var attachmentPaths = await HandleFileUploadsAsync(files);
+                // First save the idea with temporary file paths to get the ID and generate idea code
+                // We'll handle file uploads after getting the idea code
 
                 // Determine applicable workflow based on idea conditions
                 var applicableWorkflow = await _workflowManagementService.GetApplicableWorkflowAsync(
@@ -121,7 +121,7 @@ namespace Ideku.Services.Idea
                     IdeaIssueBackground = model.IdeaDescription,
                     IdeaSolution = model.Solution,
                     SavingCost = model.SavingCost,
-                    AttachmentFiles = string.Join(";", attachmentPaths),
+                    AttachmentFiles = "", // Will be updated after file upload with proper naming
                     IdeaCode = "TMP", // Temporary code
                     WorkflowId = applicableWorkflow.Id, // Assign determined workflow
                     MaxStage = maxStage, // Set maximum stages for this workflow
@@ -137,8 +137,15 @@ namespace Ideku.Services.Idea
                 // Generate IdeaCode based on the actual ID
                 var ideaCode = _ideaRepository.GenerateIdeaCodeFromId(createdIdea.Id);
                 
-                // Update IdeaCode
+                // Handle file uploads with proper naming now that we have idea code
+                var attachmentPaths = await HandleFileUploadsWithNamingAsync(files, ideaCode, createdIdea.CurrentStage);
+                
+                // Update IdeaCode and AttachmentFiles
                 await _ideaRepository.UpdateIdeaCodeAsync(createdIdea.Id, ideaCode);
+                
+                // Update attachment files with proper naming
+                createdIdea.AttachmentFiles = string.Join(";", attachmentPaths);
+                await _ideaRepository.UpdateAsync(createdIdea);
 
                 // Note: No WorkflowHistory entry for initial submission
                 // Submission is already tracked by Idea.SubmittedDate
@@ -193,6 +200,60 @@ namespace Ideku.Services.Idea
 
         #region Private Methods
 
+        private async Task<List<string>> HandleFileUploadsWithNamingAsync(List<IFormFile>? files, string ideaCode, int currentStage)
+        {
+            var filePaths = new List<string>();
+
+            if (files == null || !files.Any())
+                return filePaths;
+
+            // Create uploads directory if it doesn't exist
+            var uploadsPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "ideas");
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+            }
+
+            int fileCounter = 1;
+            foreach (var file in files)
+            {
+                if (file.Length > 0)
+                {
+                    // Validate file type
+                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xlsx", ".jpg", ".jpeg", ".png" };
+                    var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                    
+                    if (!allowedExtensions.Contains(fileExtension))
+                    {
+                        throw new InvalidOperationException($"File type {fileExtension} is not allowed. Allowed types: {string.Join(", ", allowedExtensions)}");
+                    }
+
+                    // Validate file size (max 10MB)
+                    if (file.Length > 10 * 1024 * 1024)
+                    {
+                        throw new InvalidOperationException($"File {file.FileName} is too large. Maximum size is 10MB.");
+                    }
+
+                    // Generate filename with format: ideaCode_S(currentStage)_00X.extension
+                    var fileName = $"{ideaCode}_S{currentStage}_{fileCounter:D3}{fileExtension}";
+                    var filePath = Path.Combine(uploadsPath, fileName);
+
+                    // Save file
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    // Store relative path
+                    filePaths.Add($"uploads/ideas/{fileName}");
+                    fileCounter++;
+                }
+            }
+
+            return filePaths;
+        }
+
+        // Keep the old method for backward compatibility if needed
         private async Task<List<string>> HandleFileUploadsAsync(List<IFormFile>? files)
         {
             var filePaths = new List<string>();

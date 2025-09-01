@@ -158,30 +158,42 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label asp-for="SavingCost" class="form-label">Saving Cost (USD) <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">USD</span>
-                                        <input type="text" class="form-control" id="savingCostInput" placeholder="Enter amount" />
-                                        <input type="hidden" id="savingCostHidden" name="SavingCost" />
-                                    </div>
-                                    <small class="form-text text-muted">Estimated cost savings (e.g., 1,000 or 1,000,000)</small>
-                                    <span asp-validation-for="SavingCost" class="text-danger"></span>
+                        <!-- Saving Cost -->
+                        <div class="mb-4">
+                            <label asp-for="SavingCost" class="form-label">Saving Cost (USD) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">USD</span>
+                                <input asp-for="SavingCost" type="text" class="form-control" id="savingCostInput" placeholder="Enter amount" data-val-required="Saving Cost is required" data-val-range="Saving Cost must be greater than 0" data-val-range-min="0.01" data-val-range-max="999999999999" />
+                            </div>
+                            <small class="form-text text-muted">Estimated cost savings (e.g., 1,000 or 1,000,000)</small>
+                            <span asp-validation-for="SavingCost" class="text-danger"></span>
+                        </div>
+
+                        <!-- Attachments -->
+                        <div class="mb-4">
+                            <label class="form-label">Attachments <span class="text-danger">*</span></label>
+                            
+                            <!-- Add File Button -->
+                            <div class="mb-3">
+                                <input type="file" id="fileInput" class="d-none" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png" />
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="bi bi-plus-circle me-2"></i>Add File
+                                </button>
+                                <small class="form-text text-muted d-block mt-1">Add files one by one. Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG</small>
+                            </div>
+                            
+                            <!-- Selected Files List -->
+                            <div id="filesList" class="border rounded p-3 bg-light">
+                                <div class="text-muted text-center" id="noFilesMessage">
+                                    <i class="bi bi-cloud-arrow-up fs-1 d-block mb-2"></i>
+                                    No files added yet
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label asp-for="AttachmentFiles" class="form-label">Attachments <span class="text-danger">*</span></label>
-                                    <input asp-for="AttachmentFiles" type="file" class="form-control" multiple accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png" />
-                                    <div class="file-info mt-2">
-                                        <span class="badge bg-light text-dark">No files selected</span>
-                                    </div>
-                                    <small class="form-text text-muted">You can add multiple files one by one</small>
-                                    <span asp-validation-for="AttachmentFiles" class="text-danger"></span>
-                                </div>
-                            </div>
+                            
+                            <!-- Hidden inputs for files -->
+                            <div id="hiddenFileInputs"></div>
+                            
+                            <span asp-validation-for="AttachmentFiles" class="text-danger"></span>
                         </div>
                     </div>
                 </div>
@@ -282,16 +294,20 @@
                     numericValue = parts[0] + '.' + parts.slice(1).join('');
                 }
                 
-                // Format with thousand separator
+                // Store the numeric value directly in the field for validation
                 if (numericValue) {
+                    // Set the raw numeric value temporarily for validation
+                    $(this).attr('data-numeric-value', numericValue);
+                    
+                    // Format with thousand separator for display
                     var formattedValue = formatNumberWithCommas(numericValue);
                     $(this).val(formattedValue);
-                    
-                    // Store the raw numeric value in hidden field
-                    $('#savingCostHidden').val(numericValue);
                 } else {
-                    $('#savingCostHidden').val('');
+                    $(this).removeAttr('data-numeric-value');
                 }
+                
+                // Trigger validation
+                $(this).valid();
             });
 
             // Function to format number with thousand separator
@@ -306,22 +322,13 @@
                 return integerPart + decimalPart;
             }
 
-            // Validation untuk saving cost
-            function validateSavingCost() {
-                var value = $('#savingCostHidden').val();
+            // Convert display value back to numeric before form submission
+            function prepareSavingCostForSubmission() {
                 var displayValue = $('#savingCostInput').val();
-                
-                if (!value || parseFloat(value) <= 0) {
-                    return false;
-                } else {
-                    return true;
-                }
+                var numericValue = displayValue.replace(/[^\d.]/g, '');
+                $('#savingCostInput').val(numericValue);
+                return numericValue;
             }
-
-            // Add validation check to saving cost field
-            $('#savingCostInput').on('blur', function() {
-                validateSavingCost();
-            });
 
             // Division-Department Cascade Dropdown
             $('#divisionSelect').change(function() {
@@ -357,46 +364,146 @@
                 }
             });
 
-            // File Upload Handler
-            $('input[type="file"]').change(function() {
-                var fileCount = this.files.length;
-                var fileInfo = $('.file-info');
+            // File Upload Handler - Add One by One
+            let selectedFiles = [];
+            let fileCounter = 0;
+            
+            $('#fileInput').change(function() {
+                const file = this.files[0];
+                if (!file) return;
                 
-                if (fileCount > 0) {
-                    var fileText = fileCount === 1 ? '1 file selected' : fileCount + ' files selected';
-                    fileInfo.html('<span class="badge bg-primary">' + fileText + '</span>');
-                } else {
-                    fileInfo.html('<span class="badge bg-light text-dark">No files selected</span>');
-                }
-            });
-
-            // Form Submission with SweetAlert
-            $('#createIdeaForm').submit(function(e) {
-                e.preventDefault();
-                
-                // Check custom validation for saving cost
-                if (!validateSavingCost()) {
+                // Check file size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Submission Failed',
-                        text: 'Please enter a valid saving cost amount.',
+                        title: 'File Too Large',
+                        text: 'File size must be less than 10MB',
                         confirmButtonText: 'OK'
                     });
                     return;
                 }
                 
-                // Check if form is valid (let browser handle field validation)
-                if (!this.checkValidity()) {
-                    // Show SweetAlert for validation failure
+                // Add file to array
+                const fileObj = {
+                    id: fileCounter++,
+                    file: file,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                };
+                
+                selectedFiles.push(fileObj);
+                addFileToList(fileObj);
+                createHiddenInput(fileObj);
+                updateFilesDisplay();
+                
+                // Reset input
+                this.value = '';
+            });
+            
+            function addFileToList(fileObj) {
+                const fileSize = formatFileSize(fileObj.size);
+                const fileIcon = getFileIcon(fileObj.name);
+                
+                const fileItem = `
+                    <div class="d-flex align-items-center justify-content-between p-2 border rounded mb-2 bg-white" id="file-${fileObj.id}">
+                        <div class="d-flex align-items-center">
+                            <i class="bi ${fileIcon} fs-4 me-3 text-primary"></i>
+                            <div>
+                                <div class="fw-medium">${fileObj.name}</div>
+                                <small class="text-muted">${fileSize}</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile(${fileObj.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                $('#filesList').append(fileItem);
+            }
+            
+            function removeFile(fileId) {
+                // Remove from array
+                selectedFiles = selectedFiles.filter(f => f.id !== fileId);
+                
+                // Remove from UI
+                $(`#file-${fileId}`).remove();
+                $(`#hiddenFile-${fileId}`).remove();
+                
+                updateFilesDisplay();
+            }
+            
+            function createHiddenInput(fileObj) {
+                const input = $(`<input type="file" name="AttachmentFiles" id="hiddenFile-${fileObj.id}" style="display:none" />`);
+                
+                // Create a DataTransfer object to set the file
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(fileObj.file);
+                input[0].files = dataTransfer.files;
+                
+                $('#hiddenFileInputs').append(input);
+            }
+            
+            function updateFilesDisplay() {
+                const noFilesMsg = $('#noFilesMessage');
+                
+                if (selectedFiles.length === 0) {
+                    noFilesMsg.show();
+                } else {
+                    noFilesMsg.hide();
+                }
+            }
+            
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            function getFileIcon(filename) {
+                const ext = filename.toLowerCase().split('.').pop();
+                const icons = {
+                    'pdf': 'bi-file-earmark-pdf',
+                    'doc': 'bi-file-earmark-word',
+                    'docx': 'bi-file-earmark-word',
+                    'xls': 'bi-file-earmark-excel',
+                    'xlsx': 'bi-file-earmark-excel',
+                    'ppt': 'bi-file-earmark-ppt',
+                    'pptx': 'bi-file-earmark-ppt',
+                    'jpg': 'bi-file-earmark-image',
+                    'jpeg': 'bi-file-earmark-image',
+                    'png': 'bi-file-earmark-image',
+                    'gif': 'bi-file-earmark-image'
+                };
+                return icons[ext] || 'bi-file-earmark';
+            }
+            
+            // Make removeFile global
+            window.removeFile = removeFile;
+
+            // Form Submission with SweetAlert
+            $('#createIdeaForm').submit(function(e) {
+                e.preventDefault();
+                
+                // Convert formatted saving cost back to numeric value for submission
+                prepareSavingCostForSubmission();
+                
+                // Check if at least one file is selected
+                if (selectedFiles.length === 0) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Submission Failed',
-                        text: 'Please fill in all required fields correctly.',
+                        title: 'Files Required',
+                        text: 'Please add at least one attachment file.',
                         confirmButtonText: 'OK'
                     });
-                    
-                    // Let browser show validation messages
-                    this.reportValidity();
+                    return;
+                }
+                
+                // Check if form is valid using ASP.NET Core client-side validation
+                if (!$(this).valid()) {
                     return;
                 }
                 
@@ -569,6 +676,38 @@
     .spinner-border-sm {
         width: 1rem;
         height: 1rem;
+    }
+    
+    #filesList {
+        min-height: 120px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    #filesList:empty:before {
+        content: '';
+    }
+    
+    .file-item {
+        transition: all 0.2s ease;
+    }
+    
+    .file-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    #noFilesMessage {
+        color: #6c757d;
+    }
+    
+    .btn-outline-primary {
+        transition: all 0.2s ease;
+    }
+    
+    .btn-outline-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,123,255,0.2);
     }
     
 </style>
