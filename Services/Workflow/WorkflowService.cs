@@ -46,9 +46,14 @@ namespace Ideku.Services.Workflow
 
         public async Task InitiateWorkflowAsync(Models.Entities.Idea idea)
         {
+            _logger.LogInformation("Initiating workflow for idea {IdeaId} - {IdeaName}", idea.Id, idea.IdeaName);
+            
             // Get approvers for the first stage of the workflow (stage 1)
             var targetStage = 1; // Idea at S0 needs approval from Stage 1 approvers
             var approvers = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
+            
+            _logger.LogInformation("Found {ApproverCount} approvers for idea {IdeaId} at stage {Stage}", 
+                approvers.Count(), idea.Id, targetStage);
 
             if (approvers.Any())
             {

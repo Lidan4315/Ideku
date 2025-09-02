@@ -259,8 +259,8 @@ namespace Ideku.Controllers
                 return Challenge();
             }
 
-            var idea = await _workflowService.GetIdeaForReview(id, username);
-            if (idea == null)
+            var ideaForReview = await _workflowService.GetIdeaForReview(id, username);
+            if (ideaForReview == null)
             {
                 return NotFound(); // Or a custom access denied page
             }
@@ -269,28 +269,28 @@ namespace Ideku.Controllers
             var user = await _userRepository.GetByUsernameAsync(username);
             bool canTakeAction = false;
             
-            if (user?.Role?.RoleName == "Superuser" && idea.CurrentStatus.StartsWith("Waiting Approval"))
+            if (user?.Role?.RoleName == "Superuser" && ideaForReview.CurrentStatus.StartsWith("Waiting Approval"))
             {
                 canTakeAction = true;
             }
             else if (user?.Role?.RoleName == "Workstream Leader" && 
-                     idea.CurrentStage == 0 && 
-                     idea.CurrentStatus == "Waiting Approval S1")
+                     ideaForReview.CurrentStage == 0 && 
+                     ideaForReview.CurrentStatus == "Waiting Approval S1")
             {
                 canTakeAction = true;
             }
 
             // Get workflow history for this idea
-            var workflowHistory = await _workflowRepository.GetByIdeaIdAsync(idea.Id);
+            var workflowHistory = await _workflowRepository.GetByIdeaIdAsync(ideaForReview.Id);
 
             // Get available divisions for related divisions dropdown
-            var availableDivisions = await _ideaRelationService.GetAvailableDivisionsAsync(idea.Id);
+            var availableDivisions = await _ideaRelationService.GetAvailableDivisionsAsync(ideaForReview.Id);
 
             var viewModel = new ApprovalReviewViewModel
             {
-                Idea = idea,
+                Idea = ideaForReview,
                 // Stage-based auto-fill: Stage 0 = empty, Stage 1+ = from previous approver
-                ValidatedSavingCost = idea.CurrentStage == 0 ? null : idea.SavingCostValidated,
+                ValidatedSavingCost = ideaForReview.CurrentStage == 0 ? null : ideaForReview.SavingCostValidated,
                 AvailableDivisions = availableDivisions.Select(d => new SelectListItem
                 {
                     Value = d.Id,
@@ -330,8 +330,8 @@ namespace Ideku.Controllers
                 }
 
                 // Get idea untuk check current stage
-                var idea = await _workflowService.GetIdeaForReview(id, username);
-                if (idea == null)
+                var ideaForApproval = await _workflowService.GetIdeaForReview(id, username);
+                if (ideaForApproval == null)
                 {
                     TempData["ErrorMessage"] = "Idea not found or access denied.";
                     return RedirectToAction(nameof(Index));
@@ -342,9 +342,9 @@ namespace Ideku.Controllers
                 {
                     IdeaId = id,
                     // For Stage 0: use original SavingCost, For Stage 1+: use ValidatedSavingCost
-                    ValidatedSavingCost = idea.CurrentStage == 0 
-                        ? idea.SavingCost 
-                        : (viewModel.ValidatedSavingCost ?? idea.SavingCost),
+                    ValidatedSavingCost = ideaForApproval.CurrentStage == 0 
+                        ? ideaForApproval.SavingCost 
+                        : (viewModel.ValidatedSavingCost ?? ideaForApproval.SavingCost),
                     ApprovalComments = viewModel.ApprovalComments,
                     RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
                     ApprovedBy = user.Id
