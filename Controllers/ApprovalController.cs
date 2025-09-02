@@ -341,10 +341,10 @@ namespace Ideku.Controllers
                 var approvalData = new ApprovalProcessDto
                 {
                     IdeaId = id,
-                    // For Stage 0: use original SavingCost, For Stage 1+: use ValidatedSavingCost
-                    ValidatedSavingCost = ideaForApproval.CurrentStage == 0 
-                        ? ideaForApproval.SavingCost 
-                        : (viewModel.ValidatedSavingCost ?? ideaForApproval.SavingCost),
+                    // Always use validated saving cost from approver input when provided
+                    ValidatedSavingCost = viewModel.ValidatedSavingCost.HasValue && viewModel.ValidatedSavingCost > 0
+                        ? viewModel.ValidatedSavingCost.Value
+                        : ideaForApproval.SavingCost,
                     ApprovalComments = viewModel.ApprovalComments,
                     RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
                     ApprovedBy = user.Id
