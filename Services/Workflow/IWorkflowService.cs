@@ -17,13 +17,37 @@ namespace Ideku.Services.Workflow
         
         Task<Models.Entities.Idea> GetIdeaForReview(int ideaId, string username);
         Task ProcessApprovalAsync(long ideaId, string username, string? comments, decimal? validatedSavingCost);
-        Task ProcessRejectionAsync(long ideaId, string username, string reason);
-        
+
         /// <summary>
-        /// Process approval with related divisions notification
+        /// Process approval database operations only (no email sending)
         /// </summary>
         /// <param name="approvalData">Complete approval data including related divisions</param>
-        /// <returns>Result of the approval process</returns>
-        Task<WorkflowResult> ProcessApprovalWithRelationsAsync(ApprovalProcessDto approvalData);
+        /// <returns>Result of the database operations</returns>
+        Task<WorkflowResult> ProcessApprovalDatabaseAsync(ApprovalProcessDto approvalData);
+
+        /// <summary>
+        /// Send approval notification emails only
+        /// </summary>
+        /// <param name="approvalData">Approval data for email context</param>
+        /// <returns>Task</returns>
+        Task SendApprovalNotificationsAsync(ApprovalProcessDto approvalData);
+
+        /// <summary>
+        /// Process rejection database operations only (no email sending)
+        /// </summary>
+        /// <param name="ideaId">ID of the idea to reject</param>
+        /// <param name="username">Username of the user rejecting</param>
+        /// <param name="reason">Rejection reason</param>
+        /// <returns>Task</returns>
+        Task ProcessRejectionDatabaseAsync(long ideaId, string username, string reason);
+
+        /// <summary>
+        /// Send rejection notification email only
+        /// </summary>
+        /// <param name="ideaId">ID of the rejected idea</param>
+        /// <param name="username">Username of the user who rejected</param>
+        /// <param name="reason">Rejection reason</param>
+        /// <returns>Task</returns>
+        Task SendRejectionNotificationAsync(long ideaId, string username, string reason);
     }
 }

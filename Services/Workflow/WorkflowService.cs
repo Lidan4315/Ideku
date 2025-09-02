@@ -417,60 +417,6 @@ namespace Ideku.Services.Workflow
                 ideaId, previousStage, nextStage, username, idea.CurrentStatus);
         }
 
-        public async Task ProcessRejectionAsync(long ideaId, string username, string reason)
-        {
-            var user = await _userRepository.GetByUsernameAsync(username);
-            var idea = await _ideaRepository.GetByIdAsync(ideaId);
-
-            if (user == null || idea == null)
-            {
-                _logger.LogError("User or Idea not found when processing rejection for IdeaId {IdeaId}", ideaId);
-                return; // Or throw an exception
-            }
-
-            idea.IsRejected = true;
-            idea.RejectedReason = reason;
-            idea.CurrentStatus = $"Rejected S{idea.CurrentStage}";
-            idea.UpdatedDate = DateTime.Now;
-            idea.CompletedDate = DateTime.Now; // Rejection also completes the workflow for this idea.
-
-            // Add a record to WorkflowHistory for rejection
-            var workflowHistory = new Models.Entities.WorkflowHistory
-            {
-                IdeaId = ideaId,
-                ActorUserId = user.Id,
-                FromStage = idea.CurrentStage,
-                ToStage = null, // Rejection doesn't move to next stage
-                Action = "Rejected",
-                Comments = reason,
-                Timestamp = DateTime.Now
-            };
-
-            // Save to WorkflowRepository
-            await _workflowRepository.CreateAsync(workflowHistory);
-
-            // Send rejection notification email to initiator
-            try
-            {
-                var emailMessage = new EmailMessage
-                {
-                    To = idea.InitiatorUser.Employee.EMAIL,
-                    Subject = $"[Ideku] Your Idea '{idea.IdeaName}' Has Been Rejected",
-                    Body = GenerateRejectionEmailBody(idea, user, reason),
-                    IsHtml = true
-                };
-
-                await _emailService.SendEmailAsync(emailMessage);
-                _logger.LogInformation("Rejection notification email sent to initiator {InitiatorEmail} for Idea {IdeaId}", 
-                    idea.InitiatorUser.Employee.EMAIL, ideaId);
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send rejection notification email for Idea {IdeaId}", ideaId);
-            }
-
-            await _ideaRepository.UpdateAsync(idea);
-        }
 
         private string GenerateApprovalEmailBody(Models.Entities.Idea idea, Models.Entities.User approver, int fromStage, int toStage)
         {
@@ -629,77 +575,6 @@ batu
 </html>";
         }
 
-        public async Task<WorkflowResult> ProcessApprovalWithRelationsAsync(ApprovalProcessDto approvalData)
-        {
-            try
-            {
-                _logger.LogInformation("Processing approval with relations for idea {IdeaId} by user {UserId}", 
-                    approvalData.IdeaId, approvalData.ApprovedBy);
-
-                // Get user info for reuse of existing method
-                var user = await _userRepository.GetByIdAsync(approvalData.ApprovedBy);
-                if (user == null)
-                {
-                    _logger.LogError("User {UserId} not found during approval processing", approvalData.ApprovedBy);
-                    return WorkflowResult.Failure("User not found");
-                }
-
-                // 1. REUSE existing proven approval functionality
-                await ProcessApprovalAsync(
-                    approvalData.IdeaId,
-                    user.Username,
-                    approvalData.ApprovalComments,
-                    approvalData.ValidatedSavingCost);
-
-                // 2. ADD new functionality - handle related divisions
-                if (approvalData.RelatedDivisions?.Any() == true)
-                {
-                    _logger.LogInformation("Processing related divisions for idea {IdeaId}: {DivisionIds}", 
-                        approvalData.IdeaId, string.Join(", ", approvalData.RelatedDivisions));
-                    
-                    // Get updated idea after standard approval
-                    var idea = await _ideaRepository.GetByIdAsync(approvalData.IdeaId);
-                    if (idea == null)
-                    {
-                        _logger.LogError("Idea {IdeaId} not found after approval processing", approvalData.IdeaId);
-                        return WorkflowResult.Failure("Idea not found after approval");
-                    }
-
-                    // Update related divisions in database
-                    await _ideaRelationService.UpdateIdeaRelatedDivisionsAsync(
-                        approvalData.IdeaId, 
-                        approvalData.RelatedDivisions);
-
-                    // Send notifications to related divisions' workstream leaders
-                    await _ideaRelationService.NotifyRelatedDivisionsAsync(
-                        idea, 
-                        approvalData.RelatedDivisions);
-
-                    _logger.LogInformation("Successfully processed {RelatedCount} related divisions for idea {IdeaId}", 
-                        approvalData.RelatedDivisions.Count, approvalData.IdeaId);
-                }
-                
-                // Get final idea state for result
-                var finalIdea = await _ideaRepository.GetByIdAsync(approvalData.IdeaId);
-                
-                _logger.LogInformation("Successfully processed approval with relations for idea {IdeaId}. " +
-                    "Status: {Status}, Related divisions: {RelatedCount}", 
-                    approvalData.IdeaId, finalIdea?.CurrentStatus, 
-                    approvalData.RelatedDivisions?.Count ?? 0);
-
-                return WorkflowResult.Success(
-                    approvalData.IdeaId, 
-                    finalIdea?.CurrentStage ?? 0, 
-                    finalIdea?.CurrentStatus ?? "Unknown",
-                    "Idea approved successfully and notifications sent to related divisions");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing approval with relations for idea {IdeaId}", 
-                    approvalData.IdeaId);
-                return WorkflowResult.Failure($"Error processing approval: {ex.Message}");
-            }
-        }
 
         private async Task SendApprovalNotificationToInitiatorAsync(Models.Entities.Idea idea)
         {
@@ -770,6 +645,212 @@ batu
     </div>
 </body>
 </html>";
+        }
+
+        public async Task<WorkflowResult> ProcessApprovalDatabaseAsync(ApprovalProcessDto approvalData)
+        {
+            try
+            {
+                _logger.LogInformation("Processing approval database operations for idea {IdeaId} by user {UserId}", 
+                    approvalData.IdeaId, approvalData.ApprovedBy);
+
+                var user = await _userRepository.GetByIdAsync(approvalData.ApprovedBy);
+                if (user == null)
+                {
+                    _logger.LogError("User {UserId} not found during approval processing", approvalData.ApprovedBy);
+                    return WorkflowResult.Failure("User not found");
+                }
+
+                var idea = await _ideaRepository.GetByIdAsync(approvalData.IdeaId);
+                if (idea == null)
+                {
+                    _logger.LogError("Idea {IdeaId} not found", approvalData.IdeaId);
+                    return WorkflowResult.Failure("Idea not found");
+                }
+
+                var previousStage = idea.CurrentStage;
+                var nextStage = idea.CurrentStage + 1;
+                
+                if (nextStage > idea.MaxStage)
+                {
+                    idea.CurrentStatus = "Approved";
+                    idea.CompletedDate = DateTime.Now;
+                }
+                else
+                {
+                    idea.CurrentStage = nextStage;
+                    if (nextStage == idea.MaxStage)
+                    {
+                        idea.CurrentStatus = "Approved";
+                        idea.CompletedDate = DateTime.Now;
+                    }
+                    else
+                    {
+                        idea.CurrentStatus = $"Waiting Approval S{nextStage + 1}";
+                    }
+                }
+                
+                idea.UpdatedDate = DateTime.Now;
+                idea.SavingCostValidated = approvalData.ValidatedSavingCost;
+
+                var workflowHistory = new Models.Entities.WorkflowHistory
+                {
+                    IdeaId = approvalData.IdeaId,
+                    ActorUserId = user.Id,
+                    FromStage = previousStage,
+                    ToStage = nextStage <= idea.MaxStage ? nextStage : (int?)null,
+                    Action = "Approved",
+                    Comments = approvalData.ApprovalComments,
+                    Timestamp = DateTime.Now
+                };
+
+                await _workflowRepository.CreateAsync(workflowHistory);
+                await _ideaRepository.UpdateAsync(idea);
+
+                if (approvalData.RelatedDivisions?.Any() == true)
+                {
+                    await _ideaRelationService.UpdateIdeaRelatedDivisionsAsync(
+                        approvalData.IdeaId, 
+                        approvalData.RelatedDivisions);
+                }
+
+                var finalIdea = await _ideaRepository.GetByIdAsync(approvalData.IdeaId);
+                
+                _logger.LogInformation("Successfully processed database approval for idea {IdeaId}. Status: {Status}", 
+                    approvalData.IdeaId, finalIdea?.CurrentStatus);
+
+                return WorkflowResult.Success(
+                    approvalData.IdeaId, 
+                    finalIdea?.CurrentStage ?? 0, 
+                    finalIdea?.CurrentStatus ?? "Unknown",
+                    "Idea approved successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing approval database operations for idea {IdeaId}", 
+                    approvalData.IdeaId);
+                return WorkflowResult.Failure($"Error processing approval: {ex.Message}");
+            }
+        }
+
+        public async Task SendApprovalNotificationsAsync(ApprovalProcessDto approvalData)
+        {
+            try
+            {
+                _logger.LogInformation("Sending approval notifications for idea {IdeaId}", approvalData.IdeaId);
+
+                var user = await _userRepository.GetByIdAsync(approvalData.ApprovedBy);
+                var idea = await _ideaRepository.GetByIdAsync(approvalData.IdeaId);
+
+                if (user == null || idea == null) return;
+
+                var emailMessage = new EmailMessage
+                {
+                    To = idea.InitiatorUser.Employee.EMAIL,
+                    Subject = $"[Ideku] Your Idea '{idea.IdeaName}' Has Been Approved!",
+                    Body = GenerateApprovalEmailBody(idea, user, idea.CurrentStage - 1, idea.CurrentStage),
+                    IsHtml = true
+                };
+
+                await _emailService.SendEmailAsync(emailMessage);
+                _logger.LogInformation("Approval confirmation email sent to initiator {InitiatorEmail} for Idea {IdeaId}", 
+                    idea.InitiatorUser.Employee.EMAIL, approvalData.IdeaId);
+
+                if (idea.CurrentStage < idea.MaxStage && idea.CurrentStatus != "Approved")
+                {
+                    var nextStageApprovers = await _workflowManagementService.GetApproversForWorkflowStageAsync(
+                        idea.WorkflowId, idea.CurrentStage + 1, idea.ToDivisionId, idea.ToDepartmentId);
+                    
+                    foreach (var nextApprover in nextStageApprovers)
+                    {
+                        var nextStageEmailMessage = new EmailMessage
+                        {
+                            To = nextApprover.Employee.EMAIL,
+                            Subject = $"[Ideku] Idea Requires Your Approval - {idea.IdeaName}",
+                            Body = GenerateValidationEmailBody(idea, nextApprover, idea.CurrentStage + 1),
+                            IsHtml = true
+                        };
+
+                        await _emailService.SendEmailAsync(nextStageEmailMessage);
+                        _logger.LogInformation("Next stage approval email sent to {ApproverEmail} for Idea {IdeaId} Stage {Stage}", 
+                            nextApprover.Employee.EMAIL, approvalData.IdeaId, idea.CurrentStage + 1);
+                    }
+                }
+
+                if (approvalData.RelatedDivisions?.Any() == true)
+                {
+                    await _ideaRelationService.NotifyRelatedDivisionsAsync(idea, approvalData.RelatedDivisions);
+                }
+
+                _logger.LogInformation("Successfully sent all approval notifications for idea {IdeaId}", approvalData.IdeaId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send approval notifications for idea {IdeaId}", approvalData.IdeaId);
+                throw;
+            }
+        }
+
+        public async Task ProcessRejectionDatabaseAsync(long ideaId, string username, string reason)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            var idea = await _ideaRepository.GetByIdAsync(ideaId);
+
+            if (user == null || idea == null)
+            {
+                _logger.LogError("User or Idea not found when processing rejection for IdeaId {IdeaId}", ideaId);
+                return;
+            }
+
+            idea.IsRejected = true;
+            idea.RejectedReason = reason;
+            idea.CurrentStatus = $"Rejected S{idea.CurrentStage}";
+            idea.UpdatedDate = DateTime.Now;
+            idea.CompletedDate = DateTime.Now;
+
+            var workflowHistory = new Models.Entities.WorkflowHistory
+            {
+                IdeaId = ideaId,
+                ActorUserId = user.Id,
+                FromStage = idea.CurrentStage,
+                ToStage = null,
+                Action = "Rejected",
+                Comments = reason,
+                Timestamp = DateTime.Now
+            };
+
+            await _workflowRepository.CreateAsync(workflowHistory);
+            await _ideaRepository.UpdateAsync(idea);
+
+            _logger.LogInformation("Successfully processed database rejection for idea {IdeaId}", ideaId);
+        }
+
+        public async Task SendRejectionNotificationAsync(long ideaId, string username, string reason)
+        {
+            try
+            {
+                var user = await _userRepository.GetByUsernameAsync(username);
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+
+                if (user == null || idea == null) return;
+
+                var emailMessage = new EmailMessage
+                {
+                    To = idea.InitiatorUser.Employee.EMAIL,
+                    Subject = $"[Ideku] Your Idea '{idea.IdeaName}' Has Been Rejected",
+                    Body = GenerateRejectionEmailBody(idea, user, reason),
+                    IsHtml = true
+                };
+
+                await _emailService.SendEmailAsync(emailMessage);
+                _logger.LogInformation("Rejection notification email sent to initiator {InitiatorEmail} for Idea {IdeaId}", 
+                    idea.InitiatorUser.Employee.EMAIL, ideaId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send rejection notification email for Idea {IdeaId}", ideaId);
+                throw;
+            }
         }
     }
 }
