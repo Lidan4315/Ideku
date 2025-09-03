@@ -347,10 +347,8 @@ namespace Ideku.Controllers
                 var approvalData = new ApprovalProcessDto
                 {
                     IdeaId = id,
-                    // Always use validated saving cost from approver input when provided
-                    ValidatedSavingCost = viewModel.ValidatedSavingCost.HasValue && viewModel.ValidatedSavingCost > 0
-                        ? viewModel.ValidatedSavingCost.Value
-                        : ideaForApproval.SavingCost,
+                    // Use validated saving cost from approver (required field, must be > 0)
+                    ValidatedSavingCost = viewModel.ValidatedSavingCost.Value,
                     ApprovalComments = viewModel.ApprovalComments,
                     RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
                     ApprovedBy = user.Id

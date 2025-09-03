@@ -12,7 +12,7 @@ namespace Ideku.ViewModels.Approval
         // Data from form inputs
         [Display(Name = "Validated Saving Cost (USD)")]
         [Required(ErrorMessage = "Validated saving cost is required")]
-        [Range(0, double.MaxValue, ErrorMessage = "Validated saving cost must be a positive number")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Validated saving cost must be greater than 0")]
         public decimal? ValidatedSavingCost { get; set; }
 
         [Display(Name = "Approval Comments")]
