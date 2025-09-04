@@ -29,6 +29,10 @@ namespace Ideku.ViewModels.Approval
         [Display(Name = "Related Divisions")]
         public List<string> SelectedRelatedDivisions { get; set; } = new List<string>();
 
+        // File Upload Feature
+        [Display(Name = "Additional Files")]
+        public List<IFormFile> ApprovalFiles { get; set; } = new List<IFormFile>();
+
         // Dropdown data for available divisions
         public List<SelectListItem> AvailableDivisions { get; set; } = new List<SelectListItem>();
 
@@ -44,5 +48,9 @@ namespace Ideku.ViewModels.Approval
         
         [Display(Name = "Current Stage")]
         public int CurrentStage => Idea?.CurrentStage ?? 0;
+
+        // File validation properties
+        public bool HasInitiatorFiles => !string.IsNullOrEmpty(Idea?.AttachmentFiles);
+        public bool IsFileRequired => !HasInitiatorFiles;
     }
 }

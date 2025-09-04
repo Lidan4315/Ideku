@@ -49,5 +49,23 @@ namespace Ideku.Services.Workflow
         /// <param name="reason">Rejection reason</param>
         /// <returns>Task</returns>
         Task SendRejectionNotificationAsync(long ideaId, string username, string reason);
+
+        /// <summary>
+        /// Save approval files with proper naming convention
+        /// </summary>
+        /// <param name="ideaId">ID of the idea</param>
+        /// <param name="files">Files to upload</param>
+        /// <param name="stage">Current approval stage</param>
+        /// <returns>Task</returns>
+        Task SaveApprovalFilesAsync(long ideaId, List<IFormFile> files, int stage);
+
+        /// <summary>
+        /// Rename existing files to match new stage
+        /// </summary>
+        /// <param name="ideaId">ID of the idea</param>
+        /// <param name="fromStage">Old stage number</param>
+        /// <param name="toStage">New stage number</param>
+        /// <returns>Task</returns>
+        Task RenameFilesToNewStageAsync(long ideaId, int fromStage, int toStage);
     }
 }

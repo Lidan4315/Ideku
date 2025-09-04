@@ -65,7 +65,6 @@ namespace Ideku.ViewModels
         public decimal SavingCost { get; set; }
 
         // Attachments Section
-        [Required(ErrorMessage = "At least one attachment file is required")]
         [Display(Name = "Attachments")]
         public List<IFormFile> AttachmentFiles { get; set; } = new List<IFormFile>();
 

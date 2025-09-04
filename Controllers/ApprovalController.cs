@@ -325,6 +325,19 @@ namespace Ideku.Controllers
             // Clean up ModelState for approval validation
             CleanupModelStateForApprove();
 
+            // Validate file requirement
+            var ideaForValidation = await _workflowService.GetIdeaForReview(id, username);
+            if (ideaForValidation != null)
+            {
+                var hasInitiatorFiles = !string.IsNullOrEmpty(ideaForValidation.AttachmentFiles);
+                var hasApprovalFiles = viewModel.ApprovalFiles?.Any() == true;
+
+                if (!hasInitiatorFiles && !hasApprovalFiles)
+                {
+                    ModelState.AddModelError("ApprovalFiles", "Files are required since initiator did not upload any files");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 // Get current user for approval process
@@ -347,14 +360,19 @@ namespace Ideku.Controllers
                 var approvalData = new ApprovalProcessDto
                 {
                     IdeaId = id,
-                    // Use validated saving cost from approver (required field, must be > 0)
                     ValidatedSavingCost = viewModel.ValidatedSavingCost.Value,
                     ApprovalComments = viewModel.ApprovalComments,
                     RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
                     ApprovedBy = user.Id
                 };
 
-                // Process approval database operations only (fast)
+                // Process approval files first
+                if (viewModel.ApprovalFiles?.Any() == true)
+                {
+                    await _workflowService.SaveApprovalFilesAsync(id, viewModel.ApprovalFiles, ideaForApproval.CurrentStage + 1);
+                }
+
+                // Process approval database operations
                 var result = await _workflowService.ProcessApprovalDatabaseAsync(approvalData);
                 
                 if (result.IsSuccess)

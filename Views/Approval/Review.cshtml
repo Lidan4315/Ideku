@@ -141,7 +141,7 @@
                 <h6 class="m-0 font-weight-bold text-primary">Validation Decision</h6>
             </div>
             <div class="card-body">
-                <form asp-action="Approve" asp-route-id="@Model.Idea.Id" method="post">
+                <form asp-action="Approve" asp-route-id="@Model.Idea.Id" method="post" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <div class="approve-section mb-4">
                         <h5><i class="fas fa-check-circle text-success"></i> Approve Idea</h5>
@@ -223,6 +223,45 @@
                             
                             <span asp-validation-for="SelectedRelatedDivisions" class="text-danger"></span>
                         </div>
+
+                        <!-- Additional Files Section -->
+                        <div class="form-group mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-paperclip me-1"></i>Additional Files
+                                @if (Model.IsFileRequired)
+                                {
+                                    <span class="text-danger">*</span>
+                                    <small class="text-danger">(Required - Initiator did not upload files)</small>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">(Optional)</small>
+                                }
+                            </label>
+                            
+                            <!-- Add File Button -->
+                            <div class="mb-3">
+                                <input type="file" id="approvalFileInput" class="d-none" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png" />
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('approvalFileInput').click()">
+                                    <i class="bi bi-plus-circle me-2"></i>Add File
+                                </button>
+                                <small class="form-text text-muted d-block mt-1">Add files one by one. Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG</small>
+                            </div>
+                            
+                            <!-- Selected Files List -->
+                            <div id="approvalFilesList" class="border rounded p-3 bg-light">
+                                <div class="text-muted text-center" id="noApprovalFilesMessage">
+                                    <i class="bi bi-cloud-arrow-up fs-1 d-block mb-2"></i>
+                                    No files added yet
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden inputs for files -->
+                            <div id="hiddenApprovalFileInputs"></div>
+                            
+                            <span asp-validation-for="ApprovalFiles" class="text-danger"></span>
+                        </div>
+
                         <button type="submit" class="btn btn-success" id="approveBtn"><i class="fas fa-check"></i> Approve Idea</button>
                     </div>
                 </form>
@@ -759,6 +798,9 @@
         // Initialize Validated Saving Cost Visual Feedback
         initializeValidatedSavingCostFeedback();
         
+        // Initialize file upload for approval
+        initializeApprovalFileUpload();
+
         // Handle Approve form
         const approveForm = document.querySelector('form[action*="Approve"]');
         if (approveForm) {
@@ -769,6 +811,19 @@
                 const validatedSavingCostHidden = document.getElementById('validatedCostHidden');
                 const validatedSavingCostDisplay = document.getElementById('validatedCostDisplay');
                 const approvalComments = document.querySelector('textarea[name="ApprovalComments"]').value;
+
+                // Validate conditional file requirement
+                const hasInitiatorFiles = @Html.Raw(Json.Serialize(Model.HasInitiatorFiles));
+                const hasApprovalFiles = selectedApprovalFiles.length > 0;
+                
+                if (!hasInitiatorFiles && !hasApprovalFiles) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Files Required',
+                        text: 'Please upload at least one file since initiator did not upload any files.'
+                    });
+                    return;
+                }
                 
                 // Validate Validated Saving Cost only if field exists (Stage 1+)
                 if (validatedSavingCostHidden && validatedSavingCostDisplay) {
@@ -1331,4 +1386,134 @@
         
         return integerPart + decimalPart;
     }
+
+    // Global variables for approval file upload
+    let selectedApprovalFiles = [];
+    let approvalFileCounter = 0;
+
+    // Approval File Upload Functions
+    function initializeApprovalFileUpload() {
+        const fileInput = document.getElementById('approvalFileInput');
+        if (!fileInput) return;
+
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            
+            // Check file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'File Too Large',
+                    text: 'File size must be less than 10MB',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+            
+            // Add file to array
+            const fileObj = {
+                id: approvalFileCounter++,
+                file: file,
+                name: file.name,
+                size: file.size,
+                type: file.type
+            };
+            
+            selectedApprovalFiles.push(fileObj);
+            addApprovalFileToList(fileObj);
+            createHiddenApprovalInput(fileObj);
+            updateApprovalFilesDisplay();
+            
+            // Reset input
+            this.value = '';
+        });
+    }
+
+    function addApprovalFileToList(fileObj) {
+        const fileSize = formatFileSize(fileObj.size);
+        const fileIcon = getFileIcon(fileObj.name);
+        
+        const fileItem = `
+            <div class="d-flex align-items-center justify-content-between p-2 border rounded mb-2 bg-white" id="approvalFile-${fileObj.id}">
+                <div class="d-flex align-items-center">
+                    <i class="bi ${fileIcon} fs-4 me-3 text-primary"></i>
+                    <div>
+                        <div class="fw-medium">${fileObj.name}</div>
+                        <small class="text-muted">${fileSize}</small>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeApprovalFile(${fileObj.id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        
+        document.getElementById('approvalFilesList').insertAdjacentHTML('beforeend', fileItem);
+    }
+    
+    function removeApprovalFile(fileId) {
+        // Remove from array
+        selectedApprovalFiles = selectedApprovalFiles.filter(f => f.id !== fileId);
+        
+        // Remove from UI
+        document.getElementById(`approvalFile-${fileId}`)?.remove();
+        document.getElementById(`hiddenApprovalFile-${fileId}`)?.remove();
+        
+        updateApprovalFilesDisplay();
+    }
+
+    function createHiddenApprovalInput(fileObj) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.name = 'ApprovalFiles';
+        input.id = `hiddenApprovalFile-${fileObj.id}`;
+        input.style.display = 'none';
+        
+        // Create a DataTransfer object to set the file
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(fileObj.file);
+        input.files = dataTransfer.files;
+        
+        document.getElementById('hiddenApprovalFileInputs').appendChild(input);
+    }
+    
+    function updateApprovalFilesDisplay() {
+        const noFilesMsg = document.getElementById('noApprovalFilesMessage');
+        
+        if (selectedApprovalFiles.length === 0) {
+            noFilesMsg.style.display = 'block';
+        } else {
+            noFilesMsg.style.display = 'none';
+        }
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    function getFileIcon(filename) {
+        const ext = filename.toLowerCase().split('.').pop();
+        const icons = {
+            'pdf': 'bi-file-earmark-pdf',
+            'doc': 'bi-file-earmark-word',
+            'docx': 'bi-file-earmark-word',
+            'xls': 'bi-file-earmark-excel',
+            'xlsx': 'bi-file-earmark-excel',
+            'ppt': 'bi-file-earmark-ppt',
+            'pptx': 'bi-file-earmark-ppt',
+            'jpg': 'bi-file-earmark-image',
+            'jpeg': 'bi-file-earmark-image',
+            'png': 'bi-file-earmark-image',
+            'gif': 'bi-file-earmark-image'
+        };
+        return icons[ext] || 'bi-file-earmark';
+    }
+
+    // Make functions global
+    window.removeApprovalFile = removeApprovalFile;
 </script>
