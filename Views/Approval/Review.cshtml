@@ -173,6 +173,44 @@
                                       placeholder="Please provide detailed approval comments"></textarea>
                             <span asp-validation-for="ApprovalComments" class="text-danger"></span>
                         </div>
+
+                        <!-- Additional Files Section -->
+                        <div class="form-group mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-paperclip me-1"></i>Attachments File
+                                @if (Model.IsFileRequired)
+                                {
+                                    <span class="text-danger">*</span>
+                                    <small class="text-danger">(Required - Initiator did not upload files)</small>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">(Optional)</small>
+                                }
+                            </label>
+                            
+                            <div class="additional-files-container">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <input type="file" id="approvalFileInput" class="d-none" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png" />
+                                    <button type="button" class="btn add-file-btn" onclick="document.getElementById('approvalFileInput').click()">
+                                        <i class="bi bi-plus-circle me-2"></i>Add File
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted d-block mt-1">Add files one by one. Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG</small>
+                                
+                                <!-- Selected Files List -->
+                                <div id="approvalFilesList">
+                                    <div class="text-muted text-center" id="noApprovalFilesMessage" style="display: none;">
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden inputs for files -->
+                                <div id="hiddenApprovalFileInputs"></div>
+                            </div>
+                            
+                            <span asp-validation-for="ApprovalFiles" class="text-danger"></span>
+                        </div>
+
                         <div class="form-group mb-3">
                             <label class="form-label">
                                 <i class="bi bi-building me-1"></i>Related Divisions
@@ -222,44 +260,6 @@
                             </div>
                             
                             <span asp-validation-for="SelectedRelatedDivisions" class="text-danger"></span>
-                        </div>
-
-                        <!-- Additional Files Section -->
-                        <div class="form-group mb-3">
-                            <label class="form-label">
-                                <i class="bi bi-paperclip me-1"></i>Additional Files
-                                @if (Model.IsFileRequired)
-                                {
-                                    <span class="text-danger">*</span>
-                                    <small class="text-danger">(Required - Initiator did not upload files)</small>
-                                }
-                                else
-                                {
-                                    <small class="text-muted">(Optional)</small>
-                                }
-                            </label>
-                            
-                            <!-- Add File Button -->
-                            <div class="mb-3">
-                                <input type="file" id="approvalFileInput" class="d-none" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png" />
-                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('approvalFileInput').click()">
-                                    <i class="bi bi-plus-circle me-2"></i>Add File
-                                </button>
-                                <small class="form-text text-muted d-block mt-1">Add files one by one. Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG</small>
-                            </div>
-                            
-                            <!-- Selected Files List -->
-                            <div id="approvalFilesList" class="border rounded p-3 bg-light">
-                                <div class="text-muted text-center" id="noApprovalFilesMessage">
-                                    <i class="bi bi-cloud-arrow-up fs-1 d-block mb-2"></i>
-                                    No files added yet
-                                </div>
-                            </div>
-                            
-                            <!-- Hidden inputs for files -->
-                            <div id="hiddenApprovalFileInputs"></div>
-                            
-                            <span asp-validation-for="ApprovalFiles" class="text-danger"></span>
                         </div>
 
                         <button type="submit" class="btn btn-success" id="approveBtn"><i class="fas fa-check"></i> Approve Idea</button>
@@ -642,6 +642,14 @@
         background-color: transparent;
     }
     
+    /* Additional Files Container - Same style as Related Divisions */
+    .additional-files-container {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        background-color: transparent;
+    }
+    
     .add-division-btn {
         border: 1px solid #6b7280;
         background-color: #ffffff;
@@ -660,6 +668,28 @@
     }
     
     .add-division-btn:focus {
+        box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25);
+        outline: none;
+    }
+    
+    .add-file-btn {
+        border: 1px solid #6b7280;
+        background-color: #ffffff;
+        color: #374151;
+        font-weight: 500;
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .add-file-btn:hover {
+        border-color: #4b5563;
+        background-color: #f3f4f6;
+        color: #1f2937;
+    }
+    
+    .add-file-btn:focus {
         box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25);
         outline: none;
     }
