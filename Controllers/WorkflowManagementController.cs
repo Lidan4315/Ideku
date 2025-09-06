@@ -121,6 +121,13 @@ namespace Ideku.Controllers
                     Text = dept.NameDepartment
                 }).ToList();
 
+                var events = await _workflowService.GetAllEventsAsync();
+                viewModel.EventList = events.Select(e => new SelectListItem
+                {
+                    Value = e.Id.ToString(),
+                    Text = e.EventName
+                }).ToList();
+
                 return View(viewModel);
             }
             catch (Exception ex)

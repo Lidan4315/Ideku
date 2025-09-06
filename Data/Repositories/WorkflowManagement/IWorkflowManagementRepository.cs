@@ -31,5 +31,6 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         Task<IEnumerable<Category>> GetAllCategoriesAsync();
         Task<IEnumerable<Division>> GetAllDivisionsAsync();
         Task<IEnumerable<Department>> GetAllDepartmentsAsync();
+        Task<IEnumerable<Event>> GetAllEventsAsync();
     }
 }
