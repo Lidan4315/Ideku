@@ -23,6 +23,8 @@ namespace Ideku.Controllers
         private readonly ILookupRepository _lookupRepository;
         private readonly IIdeaRelationService _ideaRelationService;
         private readonly IWebHostEnvironment _hostEnvironment;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly ILogger<ApprovalController> _logger;
 
         public ApprovalController(
             IWorkflowService workflowService, 
@@ -30,7 +32,9 @@ namespace Ideku.Controllers
             IWorkflowRepository workflowRepository, 
             ILookupRepository lookupRepository,
             IIdeaRelationService ideaRelationService,
-            IWebHostEnvironment hostEnvironment)
+            IWebHostEnvironment hostEnvironment,
+            IServiceScopeFactory serviceScopeFactory,
+            ILogger<ApprovalController> logger)
         {
             _workflowService = workflowService;
             _userRepository = userRepository;
@@ -38,6 +42,8 @@ namespace Ideku.Controllers
             _lookupRepository = lookupRepository;
             _ideaRelationService = ideaRelationService;
             _hostEnvironment = hostEnvironment;
+            _serviceScopeFactory = serviceScopeFactory;
+            _logger = logger;
         }
 
         // GET: /Approval or /Approval/Index
@@ -259,8 +265,8 @@ namespace Ideku.Controllers
                 return Challenge();
             }
 
-            var idea = await _workflowService.GetIdeaForReview(id, username);
-            if (idea == null)
+            var ideaForReview = await _workflowService.GetIdeaForReview(id, username);
+            if (ideaForReview == null)
             {
                 return NotFound(); // Or a custom access denied page
             }
@@ -269,28 +275,28 @@ namespace Ideku.Controllers
             var user = await _userRepository.GetByUsernameAsync(username);
             bool canTakeAction = false;
             
-            if (user?.Role?.RoleName == "Superuser" && idea.CurrentStatus.StartsWith("Waiting Approval"))
+            if (user?.Role?.RoleName == "Superuser" && ideaForReview.CurrentStatus.StartsWith("Waiting Approval"))
             {
                 canTakeAction = true;
             }
             else if (user?.Role?.RoleName == "Workstream Leader" && 
-                     idea.CurrentStage == 0 && 
-                     idea.CurrentStatus == "Waiting Approval S1")
+                     ideaForReview.CurrentStage == 0 && 
+                     ideaForReview.CurrentStatus == "Waiting Approval S1")
             {
                 canTakeAction = true;
             }
 
             // Get workflow history for this idea
-            var workflowHistory = await _workflowRepository.GetByIdeaIdAsync(idea.Id);
+            var workflowHistory = await _workflowRepository.GetByIdeaIdAsync(ideaForReview.Id);
 
             // Get available divisions for related divisions dropdown
-            var availableDivisions = await _ideaRelationService.GetAvailableDivisionsAsync(idea.Id);
+            var availableDivisions = await _ideaRelationService.GetAvailableDivisionsAsync(ideaForReview.Id);
 
             var viewModel = new ApprovalReviewViewModel
             {
-                Idea = idea,
+                Idea = ideaForReview,
                 // Stage-based auto-fill: Stage 0 = empty, Stage 1+ = from previous approver
-                ValidatedSavingCost = idea.CurrentStage == 0 ? null : idea.SavingCostVaidated,
+                ValidatedSavingCost = ideaForReview.CurrentStage == 0 ? null : ideaForReview.SavingCostValidated,
                 AvailableDivisions = availableDivisions.Select(d => new SelectListItem
                 {
                     Value = d.Id,
@@ -319,6 +325,19 @@ namespace Ideku.Controllers
             // Clean up ModelState for approval validation
             CleanupModelStateForApprove();
 
+            // Validate file requirement
+            var ideaForValidation = await _workflowService.GetIdeaForReview(id, username);
+            if (ideaForValidation != null)
+            {
+                var hasInitiatorFiles = !string.IsNullOrEmpty(ideaForValidation.AttachmentFiles);
+                var hasApprovalFiles = viewModel.ApprovalFiles?.Any() == true;
+
+                if (!hasInitiatorFiles && !hasApprovalFiles)
+                {
+                    ModelState.AddModelError("ApprovalFiles", "Files are required since initiator did not upload any files");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 // Get current user for approval process
@@ -330,8 +349,8 @@ namespace Ideku.Controllers
                 }
 
                 // Get idea untuk check current stage
-                var idea = await _workflowService.GetIdeaForReview(id, username);
-                if (idea == null)
+                var ideaForApproval = await _workflowService.GetIdeaForReview(id, username);
+                if (ideaForApproval == null)
                 {
                     TempData["ErrorMessage"] = "Idea not found or access denied.";
                     return RedirectToAction(nameof(Index));
@@ -341,20 +360,26 @@ namespace Ideku.Controllers
                 var approvalData = new ApprovalProcessDto
                 {
                     IdeaId = id,
-                    // For Stage 0: use original SavingCost, For Stage 1+: use ValidatedSavingCost
-                    ValidatedSavingCost = idea.CurrentStage == 0 
-                        ? idea.SavingCost 
-                        : (viewModel.ValidatedSavingCost ?? idea.SavingCost),
+                    ValidatedSavingCost = viewModel.ValidatedSavingCost.Value,
                     ApprovalComments = viewModel.ApprovalComments,
                     RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
                     ApprovedBy = user.Id
                 };
 
-                // Process approval with relations
-                var result = await _workflowService.ProcessApprovalWithRelationsAsync(approvalData);
+                // Process approval files first
+                if (viewModel.ApprovalFiles?.Any() == true)
+                {
+                    await _workflowService.SaveApprovalFilesAsync(id, viewModel.ApprovalFiles, ideaForApproval.CurrentStage + 1);
+                }
+
+                // Process approval database operations
+                var result = await _workflowService.ProcessApprovalDatabaseAsync(approvalData);
                 
                 if (result.IsSuccess)
                 {
+                    // Send email notifications in background (non-blocking)
+                    SendApprovalEmailInBackground(approvalData);
+                    
                     TempData["SuccessMessage"] = result.SuccessMessage;
                     return RedirectToAction(nameof(Index));
                 }
@@ -399,7 +424,14 @@ namespace Ideku.Controllers
 
             if (ModelState.IsValid)
             {
-                await _workflowService.ProcessRejectionAsync((long)id, username, viewModel.RejectionReason ?? "No reason provided");
+                var rejectionReason = viewModel.RejectionReason ?? "No reason provided";
+                
+                // Process rejection database operations only (fast)
+                await _workflowService.ProcessRejectionDatabaseAsync((long)id, username, rejectionReason);
+                
+                // Send rejection notification in background (non-blocking)
+                SendRejectionEmailInBackground((long)id, username, rejectionReason);
+                
                 TempData["SuccessMessage"] = "Idea has been successfully rejected!";
                 return RedirectToAction(nameof(Index));
             }
@@ -550,6 +582,50 @@ namespace Ideku.Controllers
         {
             ModelState.Remove("Idea");
             ModelState.Remove("RejectionReason");
+        }
+
+        private void SendApprovalEmailInBackground(ApprovalProcessDto approvalData)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Starting background approval email process for idea {IdeaId}", approvalData.IdeaId);
+
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
+
+                    await workflowService.SendApprovalNotificationsAsync(approvalData);
+                    
+                    _logger.LogInformation("Background approval email sent successfully for idea {IdeaId}", approvalData.IdeaId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send background approval email for idea {IdeaId}", approvalData.IdeaId);
+                }
+            });
+        }
+
+        private void SendRejectionEmailInBackground(long ideaId, string username, string reason)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Starting background rejection email process for idea {IdeaId}", ideaId);
+
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
+
+                    await workflowService.SendRejectionNotificationAsync(ideaId, username, reason);
+                    
+                    _logger.LogInformation("Background rejection email sent successfully for idea {IdeaId}", ideaId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send background rejection email for idea {IdeaId}", ideaId);
+                }
+            });
         }
     }
 }

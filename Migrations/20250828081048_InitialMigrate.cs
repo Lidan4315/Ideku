@@ -288,7 +288,7 @@ namespace Ideku.Migrations
                     IdeaIssueBackground = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
                     IdeaSolution = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
                     SavingCost = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    SavingCostVaidated = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
+                    SavingCostValidated = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
                     AttachmentFiles = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     WorkflowId = table.Column<int>(type: "int", nullable: false),
                     CurrentStage = table.Column<int>(type: "int", nullable: false),

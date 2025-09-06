@@ -12,7 +12,7 @@ namespace Ideku.ViewModels.Approval
         // Data from form inputs
         [Display(Name = "Validated Saving Cost (USD)")]
         [Required(ErrorMessage = "Validated saving cost is required")]
-        [Range(0, double.MaxValue, ErrorMessage = "Validated saving cost must be a positive number")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Validated saving cost must be greater than 0")]
         public decimal? ValidatedSavingCost { get; set; }
 
         [Display(Name = "Approval Comments")]
@@ -29,20 +29,28 @@ namespace Ideku.ViewModels.Approval
         [Display(Name = "Related Divisions")]
         public List<string> SelectedRelatedDivisions { get; set; } = new List<string>();
 
+        // File Upload Feature
+        [Display(Name = "Additional Files")]
+        public List<IFormFile> ApprovalFiles { get; set; } = new List<IFormFile>();
+
         // Dropdown data for available divisions
         public List<SelectListItem> AvailableDivisions { get; set; } = new List<SelectListItem>();
 
         // Context properties untuk validation history
         [Display(Name = "Has Previous Validation")]
-        public bool HasPreviousValidation => Idea?.SavingCostVaidated.HasValue ?? false;
+        public bool HasPreviousValidation => Idea?.SavingCostValidated.HasValue ?? false;
         
         [Display(Name = "Original Amount")]
         public decimal OriginalAmount => Idea?.SavingCost ?? 0;
         
         [Display(Name = "Previously Validated Amount")]
-        public decimal? PreviouslyValidatedAmount => Idea?.SavingCostVaidated;
+        public decimal? PreviouslyValidatedAmount => Idea?.SavingCostValidated;
         
         [Display(Name = "Current Stage")]
         public int CurrentStage => Idea?.CurrentStage ?? 0;
+
+        // File validation properties
+        public bool HasInitiatorFiles => !string.IsNullOrEmpty(Idea?.AttachmentFiles);
+        public bool IsFileRequired => !HasInitiatorFiles;
     }
 }

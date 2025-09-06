@@ -170,7 +170,7 @@
 
                         <!-- Attachments -->
                         <div class="mb-4">
-                            <label class="form-label">Attachments <span class="text-danger">*</span></label>
+                            <label class="form-label">Attachments <span class="text-muted">(Optional)</span></label>
                             
                             <!-- Add File Button -->
                             <div class="mb-3">
@@ -512,16 +512,7 @@
                 // Convert formatted saving cost back to numeric value for submission
                 $('#savingCostInput').val(savingCostValue);
                 
-                // Check if at least one file is selected
-                if (selectedFiles.length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Files Required',
-                        text: 'Please add at least one attachment file.',
-                        confirmButtonText: 'OK'
-                    });
-                    return;
-                }
+                // Files are now optional - no validation needed
                 
                 // Check if form is valid using ASP.NET Core client-side validation
                 if (!$(this).valid()) {

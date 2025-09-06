@@ -12,11 +12,19 @@ namespace Ideku.Controllers
     {
         private readonly IIdeaService _ideaService;
         private readonly IWorkflowService _workflowService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly ILogger<IdeaController> _logger;
 
-        public IdeaController(IIdeaService ideaService, IWorkflowService workflowService)
+        public IdeaController(
+            IIdeaService ideaService, 
+            IWorkflowService workflowService,
+            IServiceScopeFactory serviceScopeFactory,
+            ILogger<IdeaController> logger)
         {
             _ideaService = ideaService;
             _workflowService = workflowService;
+            _serviceScopeFactory = serviceScopeFactory;
+            _logger = logger;
         }
 
         // GET: Idea/Create
@@ -55,20 +63,11 @@ namespace Ideku.Controllers
                 
                 if (result.Success && result.CreatedIdea != null)
                 {
-                    // Start workflow and email notifications in background
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await _workflowService.InitiateWorkflowAsync(result.CreatedIdea);
-                        }
-                        catch (Exception ex)
-                        {
-                            // Log error silently - don't affect user experience
-                            // TODO: Add logging here if logger is available
-                            Console.WriteLine($"Background email error: {ex.Message}");
-                        }
-                    });
+                    _logger.LogInformation("Idea {IdeaId} - {IdeaName} created successfully by user {Username}", 
+                        result.CreatedIdea.Id, result.CreatedIdea.IdeaName, User.Identity?.Name);
+
+                    // Send notification emails in background
+                    SendEmailInBackground(result.CreatedIdea);
 
                     return Json(new { 
                         success = true, 
@@ -78,6 +77,9 @@ namespace Ideku.Controllers
                 }
                 else
                 {
+                    _logger.LogWarning("Failed to create idea for user {Username}: {ErrorMessage}", 
+                        User.Identity?.Name, result.Message);
+                    
                     return Json(new { 
                         success = false, 
                         message = result.Message 
@@ -91,6 +93,38 @@ namespace Ideku.Controllers
                 success = false, 
                 message = "Please check your input", 
                 errors = errors 
+            });
+        }
+
+        /// <summary>
+        /// Helper method to send emails in background with proper scope management
+        /// </summary>
+        private void SendEmailInBackground(Models.Entities.Idea idea)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Starting background email process for idea {IdeaId} - {IdeaName}", 
+                        idea.Id, idea.IdeaName);
+
+                    // Create new scope for background task
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
+                    
+                    // Send notification emails
+                    await workflowService.InitiateWorkflowAsync(idea);
+                    
+                    _logger.LogInformation("Background email sent successfully for idea {IdeaId}", idea.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send background email for idea {IdeaId}: {ErrorMessage}", 
+                        idea.Id, ex.Message);
+                    
+                    // Future: Could add retry mechanism or admin notification
+                    // await _retryService.AddToRetryQueueAsync(idea.Id);
+                }
             });
         }
 

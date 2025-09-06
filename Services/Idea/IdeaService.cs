@@ -214,7 +214,13 @@ namespace Ideku.Services.Idea
                 Directory.CreateDirectory(uploadsPath);
             }
 
-            int fileCounter = 1;
+            // Get existing files count for sequential numbering (ALL files from this idea)
+            var ideaPattern = $"{ideaCode}_";
+            var existingFiles = Directory.GetFiles(uploadsPath)
+                .Where(f => Path.GetFileName(f).StartsWith(ideaPattern))
+                .ToList();
+
+            int fileCounter = existingFiles.Count + 1;
             foreach (var file in files)
             {
                 if (file.Length > 0)

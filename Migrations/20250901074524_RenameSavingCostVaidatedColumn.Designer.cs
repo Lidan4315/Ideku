@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250828081048_InitialMigrate")]
-    partial class InitialMigrate
+    [Migration("20250901074524_RenameSavingCostVaidatedColumn")]
+    partial class RenameSavingCostVaidatedColumn
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

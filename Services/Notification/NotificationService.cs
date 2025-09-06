@@ -215,7 +215,7 @@ namespace Ideku.Services.Notification
                 <li><strong>Idea:</strong> {idea.IdeaName}</li>
                 <li><strong>Code:</strong> {idea.IdeaCode}</li>
                 <li><strong>Completed Date:</strong> {idea.CompletedDate:dd/MM/yyyy}</li>
-                <li><strong>Final Saving Cost:</strong> {idea.SavingCostVaidated:C}</li>
+                <li><strong>Final Saving Cost:</strong> {idea.SavingCostValidated:C}</li>
             </ul>
             <p>Thank you for your valuable contribution to our organization!</p>
             <p>Best regards,<br>Ideku System</p>";
@@ -318,7 +318,7 @@ namespace Ideku.Services.Notification
                 <p><strong>Initiator:</strong> {idea.InitiatorUser?.Name}</p>
                 <p><strong>Target Division:</strong> {idea.TargetDivision?.NameDivision}</p>
                 <p><strong>Category:</strong> {idea.Category?.CategoryName}</p>
-                <p><strong>Validated Saving Cost:</strong> {idea.SavingCostVaidated:C}</p>
+                <p><strong>Validated Saving Cost:</strong> {idea.SavingCostValidated:C}</p>
                 <p><strong>Current Status:</strong> {idea.CurrentStatus}</p>
             </div>
             

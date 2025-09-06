@@ -209,7 +209,7 @@ namespace Ideku.Data.Context
                 .HasPrecision(18, 2);
 
             modelBuilder.Entity<Idea>()
-                .Property(i => i.SavingCostVaidated)
+                .Property(i => i.SavingCostValidated)
                 .HasColumnType("decimal(18,2)")
                 .HasPrecision(18, 2);
 
