@@ -20,7 +20,7 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         Task<bool> DeleteWorkflowConditionAsync(int workflowConditionId);
 
         // Workflow Selection
-        Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, decimal savingCost, int? eventId);
+        Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, long savingCost, int? eventId);
 
         // Stage & Approver Management
         Task<IEnumerable<User>> GetApproversForWorkflowStageAsync(int workflowId, int targetStage, string? targetDivisionId, string? targetDepartmentId);

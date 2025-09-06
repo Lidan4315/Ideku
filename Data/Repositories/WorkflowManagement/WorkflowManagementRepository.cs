@@ -128,7 +128,7 @@ namespace Ideku.Data.Repositories.WorkflowManagement
                 .ToListAsync();
         }
 
-        public async Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, decimal savingCost, int? eventId)
+        public async Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, long savingCost, int? eventId)
         {
             // Get all active workflows with their conditions, ordered by priority (highest first)
             var workflows = await _context.Workflows
@@ -178,9 +178,9 @@ namespace Ideku.Data.Repositories.WorkflowManagement
             return workflows.FirstOrDefault(w => !w.WorkflowConditions.Any());
         }
 
-        private bool EvaluateNumericCondition(decimal actualValue, string operatorType, string conditionValue)
+        private bool EvaluateNumericCondition(long actualValue, string operatorType, string conditionValue)
         {
-            if (!decimal.TryParse(conditionValue, out decimal targetValue))
+            if (!long.TryParse(conditionValue, out long targetValue))
                 return false;
 
             return operatorType switch

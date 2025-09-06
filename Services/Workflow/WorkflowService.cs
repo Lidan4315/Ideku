@@ -284,7 +284,7 @@ namespace Ideku.Services.Workflow
             return idea;
         }
 
-        public async Task ProcessApprovalAsync(long ideaId, string username, string? comments, decimal? validatedSavingCost)
+        public async Task ProcessApprovalAsync(long ideaId, string username, string? comments, long? validatedSavingCost)
         {
             var user = await _userRepository.GetByUsernameAsync(username);
             var idea = await _ideaRepository.GetByIdAsync(ideaId);

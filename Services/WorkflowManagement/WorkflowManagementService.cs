@@ -141,7 +141,7 @@ namespace Ideku.Services.WorkflowManagement
             return await _workflowRepository.GetAllEventsAsync();
         }
 
-        public async Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, decimal savingCost, int? eventId)
+        public async Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, long savingCost, int? eventId)
         {
             return await _workflowRepository.GetApplicableWorkflowAsync(categoryId, divisionId, departmentId, savingCost, eventId);
         }

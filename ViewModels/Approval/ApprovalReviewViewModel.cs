@@ -12,8 +12,8 @@ namespace Ideku.ViewModels.Approval
         // Data from form inputs
         [Display(Name = "Validated Saving Cost (USD)")]
         [Required(ErrorMessage = "Validated saving cost is required")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Validated saving cost must be greater than 0")]
-        public decimal? ValidatedSavingCost { get; set; }
+        [Range(1, long.MaxValue, ErrorMessage = "Validated saving cost must be greater than 0")]
+        public long? ValidatedSavingCost { get; set; }
 
         [Display(Name = "Approval Comments")]
         [Required(ErrorMessage = "Approval comments are required")]
@@ -41,10 +41,10 @@ namespace Ideku.ViewModels.Approval
         public bool HasPreviousValidation => Idea?.SavingCostValidated.HasValue ?? false;
         
         [Display(Name = "Original Amount")]
-        public decimal OriginalAmount => Idea?.SavingCost ?? 0;
+        public long OriginalAmount => Idea?.SavingCost ?? 0;
         
         [Display(Name = "Previously Validated Amount")]
-        public decimal? PreviouslyValidatedAmount => Idea?.SavingCostValidated;
+        public long? PreviouslyValidatedAmount => Idea?.SavingCostValidated;
         
         [Display(Name = "Current Stage")]
         public int CurrentStage => Idea?.CurrentStage ?? 0;

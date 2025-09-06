@@ -96,7 +96,7 @@ namespace Ideku.Services.Idea
                     model.CategoryId,
                     model.ToDivisionId,
                     model.ToDepartmentId,
-                    model.SavingCost,
+                    model.SavingCost ?? 0,
                     model.EventId
                 );
 
@@ -120,7 +120,7 @@ namespace Ideku.Services.Idea
                     IdeaName = model.IdeaName,
                     IdeaIssueBackground = model.IdeaDescription,
                     IdeaSolution = model.Solution,
-                    SavingCost = model.SavingCost,
+                    SavingCost = model.SavingCost ?? 0,
                     AttachmentFiles = "", // Will be updated after file upload with proper naming
                     IdeaCode = "TMP", // Temporary code
                     WorkflowId = applicableWorkflow.Id, // Assign determined workflow

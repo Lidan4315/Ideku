@@ -201,18 +201,6 @@ namespace Ideku.Data.Context
                 .HasForeignKey(i => i.EventId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // =================== DECIMAL PRECISION ===================
-            
-            modelBuilder.Entity<Idea>()
-                .Property(i => i.SavingCost)
-                .HasColumnType("decimal(18,2)")
-                .HasPrecision(18, 2);
-
-            modelBuilder.Entity<Idea>()
-                .Property(i => i.SavingCostValidated)
-                .HasColumnType("decimal(18,2)")
-                .HasPrecision(18, 2);
-
             // =================== CASCADE DELETE BEHAVIORS ===================
             
             modelBuilder.Entity<WorkflowHistory>()
