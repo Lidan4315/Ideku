@@ -907,7 +907,7 @@ batu
             {
                 if (file.Length > 0)
                 {
-                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xlsx", ".jpg", ".jpeg", ".png" };
+                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png" };
                     var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
                     
                     if (!allowedExtensions.Contains(fileExtension))

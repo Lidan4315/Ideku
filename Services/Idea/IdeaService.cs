@@ -226,7 +226,7 @@ namespace Ideku.Services.Idea
                 if (file.Length > 0)
                 {
                     // Validate file type
-                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xlsx", ".jpg", ".jpeg", ".png" };
+                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png" };
                     var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
                     
                     if (!allowedExtensions.Contains(fileExtension))
@@ -279,7 +279,7 @@ namespace Ideku.Services.Idea
                 if (file.Length > 0)
                 {
                     // Validate file type (optional)
-                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xlsx", ".jpg", ".jpeg", ".png" };
+                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png" };
                     var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
                     
                     if (!allowedExtensions.Contains(fileExtension))
