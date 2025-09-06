@@ -120,6 +120,14 @@ namespace Ideku.Data.Repositories.WorkflowManagement
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Event>> GetAllEventsAsync()
+        {
+            return await _context.Events
+                .Where(e => e.IsActive)
+                .OrderBy(e => e.EventName)
+                .ToListAsync();
+        }
+
         public async Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, decimal savingCost, int? eventId)
         {
             // Get all active workflows with their conditions, ordered by priority (highest first)

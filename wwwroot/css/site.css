@@ -362,6 +362,32 @@ body.modern-page {
 }
 
 /* =============================================================================
+   PAGE HEADER STYLES (Global)
+   ============================================================================= */
+.page-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 2rem;
+    border-radius: 1rem;
+    border: 1px solid #e5e7eb;
+}
+
+.page-title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Responsive Page Header */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem;
+    }
+}
+
+/* =============================================================================
    UTILITY CLASSES
    ============================================================================= */
 .text-gradient {
