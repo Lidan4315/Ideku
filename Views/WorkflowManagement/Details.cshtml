@@ -585,6 +585,25 @@
             } else if (conditionType === 'SAVING_COST') {
                 conditionValueHelp.textContent = 'Enter amount (e.g., 1000000 for 1 million)';
             }
+            
+            // Update help text when operator changes
+            setTimeout(() => {
+                const operatorSelect = document.getElementById('operatorType');
+                operatorSelect.addEventListener('change', function() {
+                    if (this.value === 'IN' || this.value === 'NOT_IN') {
+                        if (conditionType === 'CATEGORY' || conditionType === 'DIVISION' || conditionType === 'DEPARTMENT' || conditionType === 'EVENT') {
+                            conditionValueHelp.textContent = 'Select multiple values from dropdown, or enter comma-separated values (e.g., "1,2,3")';
+                        }
+                    } else {
+                        // Reset to default help text
+                        if (conditionType === 'SAVING_COST') {
+                            conditionValueHelp.textContent = 'Enter amount (e.g., 1000000 for 1 million)';
+                        } else {
+                            conditionValueHelp.textContent = 'Enter the value for this condition';
+                        }
+                    }
+                });
+            }, 100);
         }
         
         // Define all available operators
@@ -605,14 +624,18 @@
             operatorSelect.innerHTML = '<option value="">Select Operator</option>';
             
             if (conditionType === 'CATEGORY' || conditionType === 'DIVISION' || conditionType === 'DEPARTMENT' || conditionType === 'EVENT') {
-                console.log('Setting equality operators only for categorical data');
-                // For categorical data, only allow equality operators
+                console.log('Setting list operators for categorical data');
+                // For categorical/list data, allow equality and list operators
                 operatorSelect.innerHTML += '<option value="=">=</option>';
                 operatorSelect.innerHTML += '<option value="!=">!=</option>';
+                operatorSelect.innerHTML += '<option value="IN">IN</option>';
+                operatorSelect.innerHTML += '<option value="NOT_IN">NOT IN</option>';
             } else if (conditionType === 'SAVING_COST') {
-                // For numerical data, allow all operators
+                // For numerical data, allow all numeric operators
                 operatorSelect.innerHTML += '<option value=">=">&gt;=</option>';
                 operatorSelect.innerHTML += '<option value="<=">&lt;=</option>';
+                operatorSelect.innerHTML += '<option value=">">&gt;</option>';
+                operatorSelect.innerHTML += '<option value="<">&lt;</option>';
                 operatorSelect.innerHTML += '<option value="=">=</option>';
                 operatorSelect.innerHTML += '<option value="!=">!=</option>';
             } else {
