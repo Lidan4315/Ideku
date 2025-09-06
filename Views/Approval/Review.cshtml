@@ -91,7 +91,7 @@
             </div>
             <div class="form-group-view mb-3">
                 <label>Saving Cost (USD)</label>
-                <p>@Model.Idea.SavingCost.ToString("C")</p>
+                <p>@Model.Idea.SavingCost.ToString("C0")</p>
             </div>
             <div class="form-group-view mb-3">
                 <label>Attachments</label>
@@ -1383,14 +1383,8 @@
         displayInput.addEventListener('input', function() {
             var value = this.value;
             
-            // Remove all non-digit characters except decimal point
-            var numericValue = value.replace(/[^\d.]/g, '');
-            
-            // Ensure only one decimal point
-            var parts = numericValue.split('.');
-            if (parts.length > 2) {
-                numericValue = parts[0] + '.' + parts.slice(1).join('');
-            }
+            // Remove all non-digit characters (integers only)
+            var numericValue = value.replace(/[^\d]/g, '');
             
             // Format display field dengan thousand separator
             if (numericValue) {
@@ -1405,16 +1399,10 @@
         });
     }
     
-    // Currency formatting function (sama seperti di Create.cshtml)
+    // Currency formatting function (integers only)
     function formatNumberWithCommas(value) {
-        var parts = value.split('.');
-        var integerPart = parts[0];
-        var decimalPart = parts.length > 1 ? '.' + parts[1] : '';
-        
         // Add commas to integer part
-        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        
-        return integerPart + decimalPart;
+        return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
     // Global variables for approval file upload

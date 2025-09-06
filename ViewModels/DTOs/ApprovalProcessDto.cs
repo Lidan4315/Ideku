@@ -11,8 +11,8 @@ namespace Ideku.ViewModels.DTOs
         public long IdeaId { get; set; }
 
         [Required]
-        [Range(0, double.MaxValue, ErrorMessage = "Validated saving cost must be a positive number")]
-        public decimal ValidatedSavingCost { get; set; }
+        [Range(0, long.MaxValue, ErrorMessage = "Validated saving cost must be a positive number")]
+        public long ValidatedSavingCost { get; set; }
 
         [Required]
         [StringLength(1000, ErrorMessage = "Comments cannot exceed 1000 characters")]

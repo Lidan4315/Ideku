@@ -16,7 +16,7 @@ namespace Ideku.Services.Workflow
         Task<IQueryable<Models.Entities.Idea>> GetPendingApprovalsQueryAsync(string username);
         
         Task<Models.Entities.Idea> GetIdeaForReview(int ideaId, string username);
-        Task ProcessApprovalAsync(long ideaId, string username, string? comments, decimal? validatedSavingCost);
+        Task ProcessApprovalAsync(long ideaId, string username, string? comments, long? validatedSavingCost);
 
         /// <summary>
         /// Process approval database operations only (no email sending)

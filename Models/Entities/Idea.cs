@@ -63,11 +63,11 @@ namespace Ideku.Models.Entities
         public string IdeaSolution { get; set; } = string.Empty;
 
         [Required]
-        [Column("SavingCost", TypeName = "decimal(18,2)")]
-        public decimal SavingCost { get; set; }
+        [Column("SavingCost")]
+        public long SavingCost { get; set; }
 
-        [Column("SavingCostValidated", TypeName = "decimal(18,2)")]
-        public decimal? SavingCostValidated { get; set; }
+        [Column("SavingCostValidated")]
+        public long? SavingCostValidated { get; set; }
 
         [Required]
         [Column("AttachmentFiles")]

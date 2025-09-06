@@ -366,14 +366,12 @@ namespace Ideku.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("RelatedDivisions");
 
-                    b.Property<decimal>("SavingCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
+                    b.Property<long>("SavingCost")
+                        .HasColumnType("bigint")
                         .HasColumnName("SavingCost");
 
-                    b.Property<decimal?>("SavingCostValidated")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)")
+                    b.Property<long?>("SavingCostValidated")
+                        .HasColumnType("bigint")
                         .HasColumnName("SavingCostValidated");
 
                     b.Property<DateTime>("SubmittedDate")
