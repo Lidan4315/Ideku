@@ -172,20 +172,24 @@
                         <div class="mb-4">
                             <label class="form-label">Attachments <span class="text-muted">(Optional)</span></label>
                             
-                            <!-- Add File Button -->
-                            <div class="mb-3">
-                                <input type="file" id="fileInput" class="d-none" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png" />
-                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
-                                    <i class="bi bi-plus-circle me-2"></i>Add File
-                                </button>
-                                <small class="form-text text-muted d-block mt-1">Add files one by one. Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG</small>
-                            </div>
-                            
-                            <!-- Selected Files List -->
-                            <div id="filesList" class="border rounded p-3 bg-light">
-                                <div class="text-muted text-center" id="noFilesMessage">
-                                    <i class="bi bi-cloud-arrow-up fs-1 d-block mb-2"></i>
-                                    No files added yet
+                            <!-- File Upload Container with Dashed Border -->
+                            <div class="file-upload-container">
+                                <input type="file" id="fileInput" class="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" />
+                                
+                                <!-- Add File Button -->
+                                <div class="file-upload-header">
+                                    <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                        <i class="bi bi-plus-circle me-2"></i>Add File
+                                    </button>
+                                    <small class="form-text text-muted ms-3">Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG</small>
+                                </div>
+                                
+                                <!-- Selected Files List -->
+                                <div id="filesList" class="files-list-container">
+                                    <div class="text-muted text-center" id="noFilesMessage">
+                                        <i class="bi bi-cloud-arrow-up fs-1 d-block mb-2"></i>
+                                        No files added yet
+                                    </div>
                                 </div>
                             </div>
                             
@@ -708,6 +712,27 @@
     .btn-outline-primary:hover {
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0,123,255,0.2);
+    }
+    
+    /* File Upload Container Styling */
+    .file-upload-container {
+        border: 2px dashed #d1d5db;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        background-color: #fafbfc;
+        margin-top: 0.5rem;
+    }
+    
+    .file-upload-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .files-list-container {
+        min-height: 60px;
     }
     
 </style>
