@@ -1,0 +1,364 @@
+@model Ideku.ViewModels.IdeaList.IdeaListViewModel
+@{
+    ViewData["Title"] = "All Ideas";
+}
+
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title text-gradient">
+            <i class="bi bi-lightbulb me-2"></i>All Ideas
+        </h2>
+        <p class="text-muted">Complete list of all ideas in the system for superuser review.</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Integrated Filter and Table Card -->
+    <div class="card filter-card">
+        <div class="card-body p-4">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <!-- Search Input with Clear Button -->
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <div class="input-group flex-grow-1">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" 
+                                       id="searchTerm"
+                                       name="searchTerm" 
+                                       value="@Model.SearchTerm"
+                                       class="form-control" 
+                                       placeholder="Search by Idea ID, Title, Employee Name, or Badge Number...">
+                            </div>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary text-nowrap clear-all-btn">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Clear All
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Filters in Horizontal Layout -->
+                    
+                    <!-- Division -->
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Division</label>
+                        <select id="selectedDivision" name="selectedDivision" class="form-select">
+                            <option value="">All Divisions</option>
+                            @if (ViewBag.Divisions != null)
+                            {
+                                @foreach (var division in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Divisions)
+                                {
+                                    if (!string.IsNullOrEmpty(division.Value))
+                                    {
+                                        <option value="@division.Value" selected="@(Model.SelectedDivision == division.Value)">@division.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Department -->
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Department</label>
+                        <select id="selectedDepartment" name="selectedDepartment" class="form-select">
+                            <option value="">Please select Division first</option>
+                        </select>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Category</label>
+                        <select id="selectedCategory" name="selectedCategory" class="form-select">
+                            <option value="">All Categories</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                @foreach (var category in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories)
+                                {
+                                    if (!string.IsNullOrEmpty(category.Value))
+                                    {
+                                        <option value="@category.Value" selected="@(Model.SelectedCategory.ToString() == category.Value)">@category.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Stage -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Stage</label>
+                        <select id="selectedStage" name="selectedStage" class="form-select">
+                            <option value="">All Stages</option>
+                            <option value="0" selected="@(Model.SelectedStage == 0)">Stage S0</option>
+                            <option value="1" selected="@(Model.SelectedStage == 1)">Stage S1</option>
+                            <option value="2" selected="@(Model.SelectedStage == 2)">Stage S2</option>
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Status</label>
+                        <select id="selectedStatus" name="selectedStatus" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="Waiting Approval S1" selected="@(Model.SelectedStatus == "Waiting Approval S1")">Waiting Approval S1</option>
+                            <option value="Waiting Approval S2" selected="@(Model.SelectedStatus == "Waiting Approval S2")">Waiting Approval S2</option>
+                            <option value="Rejected S0" selected="@(Model.SelectedStatus == "Rejected S0")">Rejected S0</option>
+                            <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Approved</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Table Section -->
+        <div class="card-body border-top">
+            @if (Model.Ideas.Any())
+            {
+                <div class="table-responsive-custom">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Idea ID</th>
+                                <th style="min-width: 250px;">Idea Title</th>
+                                <th style="min-width: 150px;">Initiator</th>
+                                <th style="min-width: 200px;">Division</th>
+                                <th style="min-width: 200px;">Department</th>
+                                <th>Category</th>
+                                <th>Event</th>
+                                <th>Stage</th>
+                                <th>Saving Cost</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ideas-table-body">
+                            @foreach (var idea in Model.Ideas)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
+                                    <td>
+                                        <div class="truncate-title" title="@idea.IdeaName">
+                                            @idea.IdeaName
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.InitiatorUser?.Employee?.NAME</strong>
+                                        <br><small class="text-muted">@idea.InitiatorUser?.Employee?.EMP_ID</small>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.TargetDivision?.NameDivision</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@idea.TargetDepartment?.NameDepartment</small>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var categoryClass = idea.Category?.CategoryName switch
+                                            {
+                                                "Cost Reduction (CR)" => "bg-success",
+                                                "Digitalization" => "bg-primary",
+                                                "General Transformation" => "bg-info text-dark",
+                                                "Increase Revenue" => "bg-warning text-dark",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @categoryClass">@idea.Category?.CategoryName</span>
+                                    </td>
+                                    <td>
+                                        @if (idea.Event != null)
+                                        {
+                                            var eventClass = idea.Event.EventName switch
+                                            {
+                                                "CI Academy" => "bg-purple text-white",
+                                                "Hackathon" => "bg-orange text-white",
+                                                _ => "bg-light text-dark"
+                                            };
+                                            <span class="badge @eventClass">@idea.Event.EventName</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">@idea.SavingCost.ToString("C0")</span>
+                                        @if (idea.SavingCostValidated.HasValue)
+                                        {
+                                            <br><small class="text-success">Validated: @idea.SavingCostValidated.Value.ToString("C0")</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @{
+                                            var statusClass = idea.CurrentStatus switch
+                                            {
+                                                var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
+                                                var s when s.StartsWith("Rejected S") => "bg-danger",
+                                                "Approved" => "bg-success",
+                                                "Rejected" => "bg-danger",
+                                                "Completed" => "bg-primary",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @statusClass">@idea.CurrentStatus</span>
+                                    </td>
+                                    <td>
+                                        <div>@idea.SubmittedDate.ToString("MMM dd")</div>
+                                        <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            <a href="@Url.Action("Details", new { id = idea.Id })" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-5">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <h4 class="mt-3">No Ideas Found</h4>
+                    <p class="text-muted">No ideas match your current filters.</p>
+                </div>
+            }
+            
+            <!-- Pagination Controls -->
+            @if (Model.ShowPagination)
+            {
+                @await Html.PartialAsync("_PaginationPartial", Model.PagedIdeas)
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 2rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .page-title {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 1rem;
+    }
+    
+    .table thead th {
+        background: #f8fafc;
+        border: none;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .text-gradient {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .table-responsive-custom {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive-custom > .table > thead > tr > th,
+    .table-responsive-custom > .table > tbody > tr > td {
+        white-space: nowrap;
+    }
+
+    .truncate-title {
+        max-width: 250px; /* Adjust as needed */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Hover effects for clickable rows */
+    tbody tr {
+        transition: all 0.2s ease-in-out;
+    }
+
+    tbody tr:hover {
+        background-color: #f8fafc !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+
+    tbody tr:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .bg-purple {
+        background-color: #8b5cf6 !important;
+    }
+
+    .bg-orange {
+        background-color: #f97316 !important;
+    }
+
+    /* Simplified Integrated Card Styling */
+    .filter-card {
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+
+
+    /* Table section styling */
+    .card-body.border-top {
+        border-top: 1px solid #e5e7eb !important;
+        padding: 1.5rem;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    /* Clear All button styling */
+    .clear-all-btn {
+        padding: 0.375rem 0.75rem;
+        height: auto;
+        min-height: calc(1.5em + 0.75rem + 2px);
+        display: flex;
+        align-items: center;
+        border-radius: 0.375rem;
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa !important;
+        border-color: #6c757d !important;
+        color: #6c757d !important;
+    }
+</style>

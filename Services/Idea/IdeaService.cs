@@ -312,5 +312,54 @@ namespace Ideku.Services.Idea
         }
 
         #endregion
+
+        #region Idea List Methods
+
+        public async Task<IQueryable<Models.Entities.Idea>> GetAllIdeasQueryAsync(string username)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            if (user == null)
+            {
+                return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+            }
+
+            // Get base queryable for ideas with all necessary includes
+            var baseQuery = _ideaRepository.GetQueryableWithIncludes();
+
+            // Apply role-based filtering
+            if (user.Role.RoleName == "Superuser")
+            {
+                // Superuser can see ALL ideas regardless of status or ownership
+                return baseQuery.OrderByDescending(idea => idea.SubmittedDate)
+                    .ThenByDescending(idea => idea.Id);
+            }
+            else if (user.Role.RoleName == "Workstream Leader")
+            {
+                var userDivision = user.Employee?.DIVISION;
+                var userDepartment = user.Employee?.DEPARTEMENT;
+
+                if (string.IsNullOrEmpty(userDivision))
+                {
+                    return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+                }
+
+                // Workstream Leader can see:
+                // 1. Ideas for their division and department
+                // 2. Ideas where RelatedDivisions contains their division
+                return baseQuery.Where(idea => 
+                    // Ideas targeted to their division/department
+                    (idea.ToDivisionId == userDivision && 
+                     (string.IsNullOrEmpty(userDepartment) || idea.ToDepartmentId == userDepartment)) ||
+                    // Ideas where their division is in RelatedDivisions
+                    (idea.RelatedDivisions != null && idea.RelatedDivisions.Contains(userDivision))
+                ).OrderByDescending(idea => idea.SubmittedDate)
+                .ThenByDescending(idea => idea.Id);
+            }
+
+            // For other roles, return empty for now (will be implemented later)
+            return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+        }
+
+        #endregion
     }
 }
