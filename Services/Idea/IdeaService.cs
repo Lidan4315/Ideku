@@ -160,7 +160,7 @@ namespace Ideku.Services.Idea
             }
         }
 
-        public async Task<IEnumerable<Models.Entities.Idea>> GetUserIdeasAsync(string username)
+        public async Task<IQueryable<Models.Entities.Idea>> GetUserIdeasAsync(string username)
         {
             if (string.IsNullOrEmpty(username))
                 throw new UnauthorizedAccessException("User not authenticated");
@@ -169,7 +169,11 @@ namespace Ideku.Services.Idea
             if (user == null)
                 throw new UnauthorizedAccessException("User not found");
 
-            return await _ideaRepository.GetByInitiatorAsync(user.Id);
+            // Get base queryable with all necessary includes
+            return _ideaRepository.GetQueryableWithIncludes()
+                .Where(idea => idea.InitiatorUserId == user.Id)
+                .OrderByDescending(idea => idea.SubmittedDate)
+                .ThenByDescending(idea => idea.Id);
         }
 
         public async Task<List<object>> GetDepartmentsByDivisionAsync(string divisionId)
@@ -360,6 +364,25 @@ namespace Ideku.Services.Idea
             return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
         }
 
+        #endregion
+        
+        #region Additional Helper Methods
+        
+        public async Task<User?> GetUserByUsernameAsync(string username)
+        {
+            return await _userRepository.GetByUsernameAsync(username);
+        }
+        
+        public async Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetDivisionsAsync()
+        {
+            return await _lookupRepository.GetDivisionsAsync();
+        }
+        
+        public async Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetCategoriesAsync()
+        {
+            return await _lookupRepository.GetCategoriesAsync();
+        }
+        
         #endregion
     }
 }

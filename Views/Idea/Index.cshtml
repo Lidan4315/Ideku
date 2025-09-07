@@ -1,188 +1,328 @@
-@model IEnumerable<Ideku.Models.Entities.Idea>
+@model Ideku.ViewModels.IdeaList.MyIdeasViewModel
 @{
     ViewData["Title"] = "My Ideas";
 }
 
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="page-header mb-4">
-                <h2 class="page-title text-gradient">
-                    <i class="bi bi-list-task me-2"></i>My Ideas
-                </h2>
-                <p class="text-muted">Track and manage your submitted ideas</p>
-            </div>
+    <div class="page-header mb-4">
+        <h2 class="page-title text-gradient">
+            <i class="bi bi-list-task me-2"></i>My Ideas
+        </h2>
+        <p class="text-muted">Track and manage your submitted ideas.</p>
+    </div>
 
-            <div class="card">
-                <div class="card-body">
-                    @if (Model.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Title</th>
-                                        <th>Saving Cost</th>
-                                        <th>Saving Cost Validated</th>
-                                        <th>Stage</th>
-                                        <th>Status</th>
-                                        <th>Progress</th>
-                                        <th>Submission Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var idea in Model)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <span class="badge bg-light text-dark fw-bold">@idea.IdeaCode</span>
-                                            </td>
-                                            <td>
-                                                <div class="fw-semibold text-dark">@idea.IdeaName</div>
-                                                <small class="text-muted">@idea.TargetDivision.NameDivision</small>
-                                            </td>
-                                            <td>
-                                                <span class="text-success fw-bold">@idea.SavingCost.ToString("N0")</span>
-                                            </td>
-                                            <td>
-                                                @if (idea.SavingCostValidated.HasValue)
-                                                {
-                                                    <span class="text-primary fw-bold">@idea.SavingCostValidated.Value.ToString("N0")</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-muted">-</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
-                                            </td>
-                                            <td>
-                                                @{
-                                                    var statusClass = idea.CurrentStatus switch
-                                                    {
-                                                        var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
-                                                        var s when s.StartsWith("Rejected S") => "bg-danger",
-                                                        "Approved" => "bg-success",
-                                                        "Rejected" => "bg-danger",
-                                                        "Completed" => "bg-primary",
-                                                        _ => "bg-secondary"
-                                                    };
-                                                }
-                                                <span class="badge @statusClass">@idea.CurrentStatus</span>
-                                            </td>
-                                            <td>
-                                                @{
-                                                    // Calculate progress percentage based on stage (dummy calculation)
-                                                    var progressPercent = idea.CurrentStage switch
-                                                    {
-                                                        0 => 10,
-                                                        1 => 25,
-                                                        2 => 50,
-                                                        3 => 75,
-                                                        4 => 90,
-                                                        5 => 100,
-                                                        _ => 50
-                                                    };
-                                                    
-                                                    var progressClass = progressPercent switch
-                                                    {
-                                                        <= 25 => "bg-danger",
-                                                        <= 50 => "bg-warning",
-                                                        <= 75 => "bg-info",
-                                                        _ => "bg-success"
-                                                    };
-                                                }
-                                                <div class="progress-container">
-                                                    <div class="progress" style="height: 8px; width: 80px;">
-                                                        <div class="progress-bar @progressClass" 
-                                                             role="progressbar" 
-                                                             style="width: @(progressPercent)%" 
-                                                             aria-valuenow="@progressPercent" 
-                                                             aria-valuemin="0" 
-                                                             aria-valuemax="100">
-                                                        </div>
-                                                    </div>
-                                                    <small class="text-muted ms-2">@(progressPercent)%</small>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="text-dark fw-semibold">@idea.SubmittedDate.ToString("MMM dd, yyyy")</div>
-                                                <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-outline-primary btn-sm" title="View Details">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm" title="Edit" 
-                                                            @(idea.CurrentStatus == "Waiting Approval S1" ? "" : "disabled")>
-                                                        <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-info btn-sm" title="History">
-                                                        <i class="bi bi-clock-history"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-5">
-                            <div class="empty-state">
-                                <i class="bi bi-lightbulb display-1 text-muted mb-3"></i>
-                                <h4 class="text-muted">No Ideas Yet</h4>
-                                <p class="text-muted mb-4">You haven't submitted any ideas yet. Start sharing your innovative thoughts!</p>
-                                <a asp-action="Create" class="btn btn-primary">
-                                    <i class="bi bi-plus-circle me-2"></i>Submit Your First Idea
-                                </a>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-            @if (Model.Any())
-            {
-                <div class="card mt-4">
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-md-3">
-                                <div class="stat-item">
-                                    <h3 class="text-primary">@Model.Count()</h3>
-                                    <p class="text-muted mb-0">Total Ideas</p>
-                                </div>
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Integrated Filter and Table Card -->
+    <div class="card filter-card">
+        <div class="card-body p-4">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <!-- Search Input with Clear Button -->
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <div class="input-group flex-grow-1">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" 
+                                       id="searchTerm"
+                                       name="searchTerm" 
+                                       value="@Model.SearchTerm"
+                                       class="form-control" 
+                                       placeholder="Search by Idea ID or Title...">
                             </div>
-                            <div class="col-md-3">
-                                <div class="stat-item">
-                                    <h3 class="text-warning">@Model.Count(i => i.CurrentStatus.StartsWith("Waiting Approval"))</h3>
-                                    <p class="text-muted mb-0">In Progress</p>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="stat-item">
-                                    <h3 class="text-success">@Model.Count(i => i.CurrentStatus == "Completed")</h3>
-                                    <p class="text-muted mb-0">Completed</p>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="stat-item">
-                                    <h3 class="text-info">@Model.Sum(i => i.SavingCost).ToString("C0", new System.Globalization.CultureInfo("en-US"))</h3>
-                                    <p class="text-muted mb-0">Total Saving</p>
-                                </div>
-                            </div>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary text-nowrap clear-all-btn">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Clear All
+                            </a>
                         </div>
                     </div>
+
+                    <!-- Filters in Horizontal Layout -->
+                    
+                    <!-- Division -->
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Division</label>
+                        <select id="selectedDivision" name="selectedDivision" class="form-select">
+                            <option value="">All Divisions</option>
+                            @if (ViewBag.Divisions != null)
+                            {
+                                @foreach (var division in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Divisions)
+                                {
+                                    if (!string.IsNullOrEmpty(division.Value))
+                                    {
+                                        <option value="@division.Value" selected="@(Model.SelectedDivision == division.Value)">@division.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Department -->
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Department</label>
+                        <select id="selectedDepartment" name="selectedDepartment" class="form-select">
+                            <option value="">Please select Division first</option>
+                        </select>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Category</label>
+                        <select id="selectedCategory" name="selectedCategory" class="form-select">
+                            <option value="">All Categories</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                @foreach (var category in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories)
+                                {
+                                    if (!string.IsNullOrEmpty(category.Value))
+                                    {
+                                        <option value="@category.Value" selected="@(Model.SelectedCategory.ToString() == category.Value)">@category.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Stage -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Stage</label>
+                        <select id="selectedStage" name="selectedStage" class="form-select">
+                            <option value="">All Stages</option>
+                            <option value="0" selected="@(Model.SelectedStage == 0)">Stage S0</option>
+                            <option value="1" selected="@(Model.SelectedStage == 1)">Stage S1</option>
+                            <option value="2" selected="@(Model.SelectedStage == 2)">Stage S2</option>
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Status</label>
+                        <select id="selectedStatus" name="selectedStatus" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="Waiting Approval S1" selected="@(Model.SelectedStatus == "Waiting Approval S1")">Waiting Approval S1</option>
+                            <option value="Waiting Approval S2" selected="@(Model.SelectedStatus == "Waiting Approval S2")">Waiting Approval S2</option>
+                            <option value="Rejected S0" selected="@(Model.SelectedStatus == "Rejected S0")">Rejected S0</option>
+                            <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Approved</option>
+                        </select>
+                    </div>
                 </div>
+            </form>
+        </div>
+        
+        <!-- Table Section -->
+        <div class="card-body border-top">
+            @if (Model.Ideas.Any())
+            {
+                <div class="table-responsive-custom">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Idea ID</th>
+                                <th style="min-width: 250px;">Idea Title</th>
+                                <th style="min-width: 200px;">Division</th>
+                                <th style="min-width: 200px;">Department</th>
+                                <th>Category</th>
+                                <th>Event</th>
+                                <th>Stage</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Saving Cost</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ideas-table-body">
+                            @foreach (var idea in Model.Ideas)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
+                                    <td>
+                                        <div class="truncate-title" title="@idea.IdeaName">
+                                            @idea.IdeaName
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.TargetDivision?.NameDivision</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@idea.TargetDepartment?.NameDepartment</small>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var categoryClass = idea.Category?.CategoryName switch
+                                            {
+                                                "Cost Reduction (CR)" => "bg-success",
+                                                "Digitalization" => "bg-primary",
+                                                "General Transformation" => "bg-info text-dark",
+                                                "Increase Revenue" => "bg-warning text-dark",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @categoryClass">@idea.Category?.CategoryName</span>
+                                    </td>
+                                    <td>
+                                        @if (idea.Event != null)
+                                        {
+                                            var eventClass = idea.Event.EventName switch
+                                            {
+                                                "CI Academy" => "bg-purple text-white",
+                                                "Hackathon" => "bg-orange text-white",
+                                                _ => "bg-light text-dark"
+                                            };
+                                            <span class="badge @eventClass">@idea.Event.EventName</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var statusClass = idea.CurrentStatus switch
+                                            {
+                                                var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
+                                                var s when s.StartsWith("Rejected S") => "bg-danger",
+                                                "Approved" => "bg-success",
+                                                "Rejected" => "bg-danger",
+                                                "Completed" => "bg-primary",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @statusClass">@idea.CurrentStatus</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            // Calculate progress percentage based on stage (hardcode)
+                                            var progressPercent = idea.CurrentStage switch
+                                            {
+                                                0 => 10,
+                                                1 => 25,
+                                                2 => 50,
+                                                3 => 75,
+                                                4 => 90,
+                                                5 => 100,
+                                                _ => 50
+                                            };
+                                            
+                                            var progressClass = progressPercent switch
+                                            {
+                                                <= 25 => "bg-danger",
+                                                <= 50 => "bg-warning",
+                                                <= 75 => "bg-info",
+                                                _ => "bg-success"
+                                            };
+                                        }
+                                        <div class="progress-container">
+                                            <div class="progress" style="height: 8px; width: 80px;">
+                                                <div class="progress-bar @progressClass" 
+                                                     role="progressbar" 
+                                                     style="width: @(progressPercent)%" 
+                                                     aria-valuenow="@progressPercent" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted ms-2">@(progressPercent)%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">@idea.SavingCost.ToString("C0")</span>
+                                        @if (idea.SavingCostValidated.HasValue)
+                                        {
+                                            <br><small class="text-success">Validated: @idea.SavingCostValidated.Value.ToString("C0")</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div>@idea.SubmittedDate.ToString("MMM dd")</div>
+                                        <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" title="View Details">
+                                                <i class="bi bi-eye"></i> View
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" title="Edit" 
+                                                    @(idea.CurrentStatus == "Waiting Approval S1" ? "" : "disabled")>
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-5">
+                    <i class="bi bi-lightbulb fs-1 text-muted"></i>
+                    <h4 class="mt-3">No Ideas Yet</h4>
+                    <p class="text-muted">You haven't submitted any ideas yet. Start sharing your innovative thoughts!</p>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Submit Your First Idea
+                    </a>
+                </div>
+            }
+            
+            <!-- Pagination Controls -->
+            @if (Model.ShowPagination)
+            {
+                @await Html.PartialAsync("_PaginationPartial", Model.PagedIdeas)
             }
         </div>
     </div>
+
+    <!-- Statistics Card -->
+    @if (Model.HasIdeas)
+    {
+        <div class="card mt-4">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <h3 class="text-primary">@Model.TotalItems</h3>
+                            <p class="text-muted mb-0">Total Ideas</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <h3 class="text-warning">@Model.Ideas.Count(i => i.CurrentStatus.StartsWith("Waiting Approval"))</h3>
+                            <p class="text-muted mb-0">In Progress</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <h3 class="text-success">@Model.Ideas.Count(i => i.CurrentStatus == "Completed")</h3>
+                            <p class="text-muted mb-0">Completed</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <h3 class="text-info">@Model.Ideas.Sum(i => i.SavingCost).ToString("C0")</h3>
+                            <p class="text-muted mb-0">Total Saving</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 <style>
@@ -204,29 +344,64 @@
         border-radius: 1rem;
     }
     
-    .table {
-        margin-bottom: 0;
-    }
-    
     .table thead th {
         background: #f8fafc;
         border: none;
         font-weight: 600;
         color: #374151;
-        padding: 1rem;
-        border-bottom: 2px solid #e5e7eb;
     }
     
-    .table tbody td {
-        padding: 1rem;
-        border-bottom: 1px solid #f1f5f9;
-        vertical-align: middle;
+    .text-gradient {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
-    
-    .table tbody tr:hover {
-        background-color: #f8fafc;
+
+    .table-responsive-custom {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
-    
+
+    .table-responsive-custom > .table > thead > tr > th,
+    .table-responsive-custom > .table > tbody > tr > td {
+        white-space: nowrap;
+    }
+
+    .truncate-title {
+        max-width: 250px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Hover effects for clickable rows */
+    tbody tr {
+        transition: all 0.2s ease-in-out;
+    }
+
+    tbody tr:hover {
+        background-color: #f8fafc !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+
+    tbody tr:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .bg-purple {
+        background-color: #8b5cf6 !important;
+    }
+
+    .bg-orange {
+        background-color: #f97316 !important;
+    }
+
+    /* Progress bar styling */
     .progress-container {
         display: flex;
         align-items: center;
@@ -240,23 +415,40 @@
     .progress-bar {
         border-radius: 10px;
     }
-    
-    .badge {
-        font-size: 0.75rem;
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.5rem;
+
+    /* Simplified Integrated Card Styling */
+    .filter-card {
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        margin-bottom: 2rem;
     }
-    
-    .btn-sm {
+
+    /* Table section styling */
+    .card-body.border-top {
+        border-top: 1px solid #e5e7eb !important;
+        padding: 1.5rem;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    /* Clear All button styling */
+    .clear-all-btn {
         padding: 0.375rem 0.75rem;
-        font-size: 0.875rem;
+        height: auto;
+        min-height: calc(1.5em + 0.75rem + 2px);
+        display: flex;
+        align-items: center;
         border-radius: 0.375rem;
     }
-    
-    .empty-state {
-        padding: 3rem 1rem;
+
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa !important;
+        border-color: #6c757d !important;
+        color: #6c757d !important;
     }
-    
+
+    /* Statistics styling */
     .stat-item {
         padding: 1rem;
     }
@@ -266,60 +458,4 @@
         font-weight: 700;
         margin-bottom: 0.5rem;
     }
-    
-    .text-gradient {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    .btn-group .btn {
-        margin-right: 0;
-    }
-    
-    @@media (max-width: 768px) {
-        .page-header {
-            padding: 1.5rem;
-        }
-        
-        .table-responsive {
-            border-radius: 0.5rem;
-        }
-        
-        .progress-container {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .progress {
-            width: 100%;
-            margin-bottom: 0.25rem;
-        }
-    }
 </style>
-
-@section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Initialize tooltips for action buttons
-            $('[data-bs-toggle="tooltip"]').tooltip();
-            
-            // Add click handlers for action buttons (placeholder)
-            $('.btn-outline-primary').click(function() {
-                // View details functionality
-                console.log('View details clicked');
-            });
-            
-            $('.btn-outline-secondary').click(function() {
-                // Edit functionality  
-                console.log('Edit clicked');
-            })
-            
-            $('.btn-outline-info').click(function() {
-                // History functionality
-                console.log('History clicked');
-            });
-        });
-    </script>
-}

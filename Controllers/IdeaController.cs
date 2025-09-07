@@ -4,6 +4,7 @@ using Ideku.Services.Idea;
 using Ideku.ViewModels;
 using Ideku.Services.Workflow;
 using Ideku.Models;
+using Ideku.Extensions;
 
 namespace Ideku.Controllers
 {
@@ -149,7 +150,15 @@ namespace Ideku.Controllers
         }
 
         // GET: Idea/Index (My Ideas)
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            string? selectedDivision = null,
+            string? selectedDepartment = null,
+            int? selectedCategory = null,
+            int? selectedStage = null,
+            string? selectedStatus = null)
         {
             try
             {
@@ -159,8 +168,75 @@ namespace Ideku.Controllers
                     return RedirectToAction("Login", "Auth");
                 }
 
-                var myIdeas = await _ideaService.GetUserIdeasAsync(username);
-                return View(myIdeas);
+                // Validate and normalize pagination parameters
+                pageSize = Ideku.Helpers.PaginationHelper.ValidatePageSize(pageSize);
+                page = Math.Max(1, page);
+
+                // Get base queryable for user's own ideas
+                var user = await _ideaService.GetUserByUsernameAsync(username);
+                if (user == null)
+                {
+                    return RedirectToAction("Login", "Auth");
+                }
+
+                var ideasQuery = await _ideaService.GetUserIdeasAsync(username);
+
+                // Apply filters
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    ideasQuery = ideasQuery.Where(i => 
+                        i.IdeaCode.Contains(searchTerm) ||
+                        i.IdeaName.Contains(searchTerm));
+                }
+
+                if (!string.IsNullOrWhiteSpace(selectedDivision))
+                {
+                    ideasQuery = ideasQuery.Where(i => i.ToDivisionId == selectedDivision);
+                }
+
+                if (!string.IsNullOrWhiteSpace(selectedDepartment))
+                {
+                    ideasQuery = ideasQuery.Where(i => i.ToDepartmentId == selectedDepartment);
+                }
+
+                if (selectedCategory.HasValue)
+                {
+                    ideasQuery = ideasQuery.Where(i => i.CategoryId == selectedCategory.Value);
+                }
+
+                if (selectedStage.HasValue)
+                {
+                    ideasQuery = ideasQuery.Where(i => i.CurrentStage == selectedStage.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(selectedStatus))
+                {
+                    ideasQuery = ideasQuery.Where(i => i.CurrentStatus == selectedStatus);
+                }
+
+                // Apply pagination
+                var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
+
+                // Get lookup data for filters
+                var divisions = await _ideaService.GetDivisionsAsync();
+                var categories = await _ideaService.GetCategoriesAsync();
+                
+                var viewModel = new Ideku.ViewModels.IdeaList.MyIdeasViewModel
+                {
+                    PagedIdeas = pagedResult,
+                    SearchTerm = searchTerm,
+                    SelectedDivision = selectedDivision,
+                    SelectedDepartment = selectedDepartment,
+                    SelectedCategory = selectedCategory,
+                    SelectedStage = selectedStage,
+                    SelectedStatus = selectedStatus
+                };
+
+                // Pass lookup data to view
+                ViewBag.Divisions = divisions;
+                ViewBag.Categories = categories;
+
+                return View(viewModel);
             }
             catch (UnauthorizedAccessException)
             {
