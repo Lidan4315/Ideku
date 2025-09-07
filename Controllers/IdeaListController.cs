@@ -1,6 +1,7 @@
 using Ideku.Data.Repositories;
 using Ideku.Services.Idea;
 using Ideku.Services.IdeaRelation;
+using Ideku.Services.Lookup;
 using Ideku.ViewModels.IdeaList;
 using Ideku.Extensions;
 using Ideku.Helpers;
@@ -18,20 +19,20 @@ namespace Ideku.Controllers
     {
         private readonly IIdeaService _ideaService;
         private readonly IUserRepository _userRepository;
-        private readonly ILookupRepository _lookupRepository;
+        private readonly ILookupService _lookupService;
         private readonly IIdeaRelationService _ideaRelationService;
         private readonly ILogger<IdeaListController> _logger;
 
         public IdeaListController(
             IIdeaService ideaService, 
             IUserRepository userRepository, 
-            ILookupRepository lookupRepository,
+            ILookupService lookupService,
             IIdeaRelationService ideaRelationService,
             ILogger<IdeaListController> logger)
         {
             _ideaService = ideaService;
             _userRepository = userRepository;
-            _lookupRepository = lookupRepository;
+            _lookupService = lookupService;
             _ideaRelationService = ideaRelationService;
             _logger = logger;
         }
@@ -103,8 +104,8 @@ namespace Ideku.Controllers
             var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
 
             // Get lookup data for filters
-            var divisions = await _lookupRepository.GetDivisionsAsync();
-            var categories = await _lookupRepository.GetCategoriesAsync();
+            var divisions = await _lookupService.GetDivisionsAsync();
+            var categories = await _lookupService.GetCategoriesAsync();
             
             var viewModel = new IdeaListViewModel
             {

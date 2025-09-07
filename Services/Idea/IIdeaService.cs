@@ -13,7 +13,6 @@ namespace Ideku.Services.Idea
         /// <param name="username">Username of the user</param>
         /// <returns>IQueryable of Ideas by the user</returns>
         Task<IQueryable<Models.Entities.Idea>> GetUserIdeasAsync(string username);
-        Task<List<object>> GetDepartmentsByDivisionAsync(string divisionId);
         Task<object?> GetEmployeeByBadgeNumberAsync(string badgeNumber);
         
         /// <summary>
@@ -32,17 +31,5 @@ namespace Ideku.Services.Idea
         /// <param name="username">Username</param>
         /// <returns>User entity</returns>
         Task<User?> GetUserByUsernameAsync(string username);
-        
-        /// <summary>
-        /// Gets all divisions for dropdown
-        /// </summary>
-        /// <returns>List of divisions</returns>
-        Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetDivisionsAsync();
-        
-        /// <summary>
-        /// Gets all categories for dropdown
-        /// </summary>
-        /// <returns>List of categories</returns>
-        Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetCategoriesAsync();
     }
 }

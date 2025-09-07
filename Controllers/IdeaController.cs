@@ -5,6 +5,7 @@ using Ideku.ViewModels;
 using Ideku.Services.Workflow;
 using Ideku.Models;
 using Ideku.Extensions;
+using Ideku.Services.Lookup;
 
 namespace Ideku.Controllers
 {
@@ -13,17 +14,20 @@ namespace Ideku.Controllers
     {
         private readonly IIdeaService _ideaService;
         private readonly IWorkflowService _workflowService;
+        private readonly ILookupService _lookupService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<IdeaController> _logger;
 
         public IdeaController(
             IIdeaService ideaService, 
             IWorkflowService workflowService,
+            ILookupService lookupService,
             IServiceScopeFactory serviceScopeFactory,
             ILogger<IdeaController> logger)
         {
             _ideaService = ideaService;
             _workflowService = workflowService;
+            _lookupService = lookupService;
             _serviceScopeFactory = serviceScopeFactory;
             _logger = logger;
         }
@@ -133,7 +137,7 @@ namespace Ideku.Controllers
         [HttpGet]
         public async Task<JsonResult> GetDepartmentsByDivision(string divisionId)
         {
-            var departments = await _ideaService.GetDepartmentsByDivisionAsync(divisionId);
+            var departments = await _lookupService.GetDepartmentsByDivisionForAjaxAsync(divisionId);
             return Json(departments);
         }
 
@@ -218,8 +222,8 @@ namespace Ideku.Controllers
                 var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
 
                 // Get lookup data for filters
-                var divisions = await _ideaService.GetDivisionsAsync();
-                var categories = await _ideaService.GetCategoriesAsync();
+                var divisions = await _lookupService.GetDivisionsAsync();
+                var categories = await _lookupService.GetCategoriesAsync();
                 
                 var viewModel = new Ideku.ViewModels.IdeaList.MyIdeasViewModel
                 {

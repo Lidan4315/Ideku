@@ -2,6 +2,7 @@ using Ideku.Data.Repositories;
 using Ideku.ViewModels;
 using Ideku.Models.Entities;
 using Ideku.Services.WorkflowManagement;
+using Ideku.Services.Lookup;
 
 namespace Ideku.Services.Idea
 {
@@ -9,7 +10,7 @@ namespace Ideku.Services.Idea
     {
         private readonly IIdeaRepository _ideaRepository;
         private readonly IUserRepository _userRepository;
-        private readonly ILookupRepository _lookupRepository;
+        private readonly ILookupService _lookupService;
         private readonly IWorkflowRepository _workflowRepository;
         private readonly IWorkflowManagementService _workflowManagementService;
         private readonly IEmployeeRepository _employeeRepository;
@@ -18,7 +19,7 @@ namespace Ideku.Services.Idea
         public IdeaService(
             IIdeaRepository ideaRepository,
             IUserRepository userRepository,
-            ILookupRepository lookupRepository,
+            ILookupService lookupService,
             IWorkflowRepository workflowRepository,
             IWorkflowManagementService workflowManagementService,
             IEmployeeRepository employeeRepository,
@@ -26,7 +27,7 @@ namespace Ideku.Services.Idea
         {
             _ideaRepository = ideaRepository;
             _userRepository = userRepository;
-            _lookupRepository = lookupRepository;
+            _lookupService = lookupService;
             _workflowRepository = workflowRepository;
             _workflowManagementService = workflowManagementService;
             _employeeRepository = employeeRepository;
@@ -55,10 +56,10 @@ namespace Ideku.Services.Idea
                 EmployeeId = "",
 
                 // Populate dropdown lists
-                DivisionList = await _lookupRepository.GetDivisionsAsync(),
-                CategoryList = await _lookupRepository.GetCategoriesAsync(),
-                EventList = await _lookupRepository.GetEventsAsync(),
-                DepartmentList = await _lookupRepository.GetDepartmentsByDivisionAsync("")
+                DivisionList = await _lookupService.GetDivisionsAsync(),
+                CategoryList = await _lookupService.GetCategoriesAsync(),
+                EventList = await _lookupService.GetEventsAsync(),
+                DepartmentList = await _lookupService.GetDepartmentsByDivisionAsync("")
             };
         }
 
@@ -176,11 +177,6 @@ namespace Ideku.Services.Idea
                 .ThenByDescending(idea => idea.Id);
         }
 
-        public async Task<List<object>> GetDepartmentsByDivisionAsync(string divisionId)
-        {
-            var departments = await _lookupRepository.GetDepartmentsByDivisionAsync(divisionId);
-            return departments.Select(d => new { value = d.Value, text = d.Text }).ToList<object>();
-        }
 
         public async Task<object?> GetEmployeeByBadgeNumberAsync(string badgeNumber)
         {
@@ -371,16 +367,6 @@ namespace Ideku.Services.Idea
         public async Task<User?> GetUserByUsernameAsync(string username)
         {
             return await _userRepository.GetByUsernameAsync(username);
-        }
-        
-        public async Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetDivisionsAsync()
-        {
-            return await _lookupRepository.GetDivisionsAsync();
-        }
-        
-        public async Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> GetCategoriesAsync()
-        {
-            return await _lookupRepository.GetCategoriesAsync();
         }
         
         #endregion
