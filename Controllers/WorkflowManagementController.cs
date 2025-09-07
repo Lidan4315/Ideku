@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Ideku.Services.WorkflowManagement;
 using Ideku.Services.Approver;
+using Ideku.Services.Lookup;
 using Ideku.ViewModels.WorkflowManagement;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -12,11 +13,13 @@ namespace Ideku.Controllers
     {
         private readonly IWorkflowManagementService _workflowService;
         private readonly IApproverService _approverService;
+        private readonly ILookupService _lookupService;
 
-        public WorkflowManagementController(IWorkflowManagementService workflowService, IApproverService approverService)
+        public WorkflowManagementController(IWorkflowManagementService workflowService, IApproverService approverService, ILookupService lookupService)
         {
             _workflowService = workflowService;
             _approverService = approverService;
+            _lookupService = lookupService;
         }
 
         // GET: WorkflowManagement - List semua workflow
@@ -100,33 +103,10 @@ namespace Ideku.Controllers
                     Text = a.ApproverName
                 }).ToList();
 
-                var categories = await _workflowService.GetAllCategoriesAsync();
-                viewModel.CategoryList = categories.Select(c => new SelectListItem
-                {
-                    Value = c.Id.ToString(),
-                    Text = c.CategoryName
-                }).ToList();
-
-                var divisions = await _workflowService.GetAllDivisionsAsync();
-                viewModel.DivisionList = divisions.Select(d => new SelectListItem
-                {
-                    Value = d.Id,
-                    Text = d.NameDivision
-                }).ToList();
-
-                var departments = await _workflowService.GetAllDepartmentsAsync();
-                viewModel.DepartmentList = departments.Select(dept => new SelectListItem
-                {
-                    Value = dept.Id,
-                    Text = dept.NameDepartment
-                }).ToList();
-
-                var events = await _workflowService.GetAllEventsAsync();
-                viewModel.EventList = events.Select(e => new SelectListItem
-                {
-                    Value = e.Id.ToString(),
-                    Text = e.EventName
-                }).ToList();
+                viewModel.CategoryList = await _lookupService.GetCategoriesAsync();
+                viewModel.DivisionList = await _lookupService.GetDivisionsAsync();
+                viewModel.DepartmentList = await _lookupService.GetDepartmentsByDivisionAsync("");
+                viewModel.EventList = await _lookupService.GetEventsAsync();
 
                 return View(viewModel);
             }

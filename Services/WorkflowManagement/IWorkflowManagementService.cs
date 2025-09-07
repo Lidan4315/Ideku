@@ -21,13 +21,6 @@ namespace Ideku.Services.WorkflowManagement
         Task<WorkflowCondition> AddWorkflowConditionAsync(WorkflowCondition workflowCondition);
         Task<bool> DeleteWorkflowConditionAsync(int workflowConditionId);
 
-        //Helper methods
-        Task<IEnumerable<Models.Entities.Approver>> GetAllApproversAsync();
-        Task<IEnumerable<Category>> GetAllCategoriesAsync();
-        Task<IEnumerable<Division>> GetAllDivisionsAsync();
-        Task<IEnumerable<Department>> GetAllDepartmentsAsync();
-        Task<IEnumerable<Event>> GetAllEventsAsync();
-
         // Workflow Selection
         Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, long savingCost, int? eventId);
 

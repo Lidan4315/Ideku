@@ -115,31 +115,6 @@ namespace Ideku.Services.WorkflowManagement
             return await _workflowRepository.DeleteWorkflowConditionAsync(workflowConditionId);
         }
 
-        // Helper methods - untuk dropdown/select options
-        public async Task<IEnumerable<Models.Entities.Approver>> GetAllApproversAsync()
-        {
-            return await _workflowRepository.GetAllApproversAsync();
-        }
-
-        public async Task<IEnumerable<Category>> GetAllCategoriesAsync()
-        {
-            return await _workflowRepository.GetAllCategoriesAsync();
-        }
-
-        public async Task<IEnumerable<Division>> GetAllDivisionsAsync()
-        {
-            return await _workflowRepository.GetAllDivisionsAsync();
-        }
-
-        public async Task<IEnumerable<Department>> GetAllDepartmentsAsync()
-        {
-            return await _workflowRepository.GetAllDepartmentsAsync();
-        }
-
-        public async Task<IEnumerable<Event>> GetAllEventsAsync()
-        {
-            return await _workflowRepository.GetAllEventsAsync();
-        }
 
         public async Task<Models.Entities.Workflow?> GetApplicableWorkflowAsync(int categoryId, string divisionId, string departmentId, long savingCost, int? eventId)
         {
