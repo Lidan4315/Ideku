@@ -81,6 +81,7 @@ builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IApproverService, ApproverService>();
 builder.Services.AddScoped<IWorkflowManagementService, WorkflowManagementService>();
 builder.Services.AddScoped<IIdeaRelationService, IdeaRelationService>();
+builder.Services.AddScoped<Ideku.Services.Lookup.ILookupService, Ideku.Services.Lookup.LookupService>();
 
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();

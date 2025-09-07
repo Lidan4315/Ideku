@@ -2,6 +2,7 @@ using Ideku.Data.Repositories;
 using Ideku.ViewModels;
 using Ideku.Models.Entities;
 using Ideku.Services.WorkflowManagement;
+using Ideku.Services.Lookup;
 
 namespace Ideku.Services.Idea
 {
@@ -9,7 +10,7 @@ namespace Ideku.Services.Idea
     {
         private readonly IIdeaRepository _ideaRepository;
         private readonly IUserRepository _userRepository;
-        private readonly ILookupRepository _lookupRepository;
+        private readonly ILookupService _lookupService;
         private readonly IWorkflowRepository _workflowRepository;
         private readonly IWorkflowManagementService _workflowManagementService;
         private readonly IEmployeeRepository _employeeRepository;
@@ -18,7 +19,7 @@ namespace Ideku.Services.Idea
         public IdeaService(
             IIdeaRepository ideaRepository,
             IUserRepository userRepository,
-            ILookupRepository lookupRepository,
+            ILookupService lookupService,
             IWorkflowRepository workflowRepository,
             IWorkflowManagementService workflowManagementService,
             IEmployeeRepository employeeRepository,
@@ -26,7 +27,7 @@ namespace Ideku.Services.Idea
         {
             _ideaRepository = ideaRepository;
             _userRepository = userRepository;
-            _lookupRepository = lookupRepository;
+            _lookupService = lookupService;
             _workflowRepository = workflowRepository;
             _workflowManagementService = workflowManagementService;
             _employeeRepository = employeeRepository;
@@ -55,10 +56,10 @@ namespace Ideku.Services.Idea
                 EmployeeId = "",
 
                 // Populate dropdown lists
-                DivisionList = await _lookupRepository.GetDivisionsAsync(),
-                CategoryList = await _lookupRepository.GetCategoriesAsync(),
-                EventList = await _lookupRepository.GetEventsAsync(),
-                DepartmentList = await _lookupRepository.GetDepartmentsByDivisionAsync("")
+                DivisionList = await _lookupService.GetDivisionsAsync(),
+                CategoryList = await _lookupService.GetCategoriesAsync(),
+                EventList = await _lookupService.GetEventsAsync(),
+                DepartmentList = await _lookupService.GetDepartmentsByDivisionAsync("")
             };
         }
 
@@ -160,7 +161,7 @@ namespace Ideku.Services.Idea
             }
         }
 
-        public async Task<IEnumerable<Models.Entities.Idea>> GetUserIdeasAsync(string username)
+        public async Task<IQueryable<Models.Entities.Idea>> GetUserIdeasAsync(string username)
         {
             if (string.IsNullOrEmpty(username))
                 throw new UnauthorizedAccessException("User not authenticated");
@@ -169,14 +170,13 @@ namespace Ideku.Services.Idea
             if (user == null)
                 throw new UnauthorizedAccessException("User not found");
 
-            return await _ideaRepository.GetByInitiatorAsync(user.Id);
+            // Get base queryable with all necessary includes
+            return _ideaRepository.GetQueryableWithIncludes()
+                .Where(idea => idea.InitiatorUserId == user.Id)
+                .OrderByDescending(idea => idea.SubmittedDate)
+                .ThenByDescending(idea => idea.Id);
         }
 
-        public async Task<List<object>> GetDepartmentsByDivisionAsync(string divisionId)
-        {
-            var departments = await _lookupRepository.GetDepartmentsByDivisionAsync(divisionId);
-            return departments.Select(d => new { value = d.Value, text = d.Text }).ToList<object>();
-        }
 
         public async Task<object?> GetEmployeeByBadgeNumberAsync(string badgeNumber)
         {
@@ -311,6 +311,64 @@ namespace Ideku.Services.Idea
             return filePaths;
         }
 
+        #endregion
+
+        #region Idea List Methods
+
+        public async Task<IQueryable<Models.Entities.Idea>> GetAllIdeasQueryAsync(string username)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            if (user == null)
+            {
+                return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+            }
+
+            // Get base queryable for ideas with all necessary includes
+            var baseQuery = _ideaRepository.GetQueryableWithIncludes();
+
+            // Apply role-based filtering
+            if (user.Role.RoleName == "Superuser")
+            {
+                // Superuser can see ALL ideas regardless of status or ownership
+                return baseQuery.OrderByDescending(idea => idea.SubmittedDate)
+                    .ThenByDescending(idea => idea.Id);
+            }
+            else if (user.Role.RoleName == "Workstream Leader")
+            {
+                var userDivision = user.Employee?.DIVISION;
+                var userDepartment = user.Employee?.DEPARTEMENT;
+
+                if (string.IsNullOrEmpty(userDivision))
+                {
+                    return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+                }
+
+                // Workstream Leader can see:
+                // 1. Ideas for their division and department
+                // 2. Ideas where RelatedDivisions contains their division
+                return baseQuery.Where(idea => 
+                    // Ideas targeted to their division/department
+                    (idea.ToDivisionId == userDivision && 
+                     (string.IsNullOrEmpty(userDepartment) || idea.ToDepartmentId == userDepartment)) ||
+                    // Ideas where their division is in RelatedDivisions
+                    (idea.RelatedDivisions != null && idea.RelatedDivisions.Contains(userDivision))
+                ).OrderByDescending(idea => idea.SubmittedDate)
+                .ThenByDescending(idea => idea.Id);
+            }
+
+            // For other roles, return empty for now (will be implemented later)
+            return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+        }
+
+        #endregion
+        
+        #region Additional Helper Methods
+        
+        public async Task<User?> GetUserByUsernameAsync(string username)
+        {
+            return await _userRepository.GetByUsernameAsync(username);
+        }
+        
         #endregion
     }
 }

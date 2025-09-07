@@ -1,14 +1,14 @@
-@model Ideku.ViewModels.IdeaList.MyIdeasViewModel
+@model Ideku.ViewModels.IdeaList.IdeaListViewModel
 @{
-    ViewData["Title"] = "My Ideas";
+    ViewData["Title"] = "All Ideas";
 }
 
 <div class="container-fluid">
     <div class="page-header mb-4">
         <h2 class="page-title text-gradient">
-            <i class="bi bi-list-task me-2"></i>My Ideas
+            <i class="bi bi-lightbulb me-2"></i>All Ideas
         </h2>
-        <p class="text-muted">Track and manage your submitted ideas.</p>
+        <p class="text-muted">Complete list of all ideas in the system for superuser review.</p>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -46,7 +46,7 @@
                                        name="searchTerm" 
                                        value="@Model.SearchTerm"
                                        class="form-control" 
-                                       placeholder="Search by Idea ID or Title...">
+                                       placeholder="Search by Idea ID, Title, Employee Name, or Badge Number...">
                             </div>
                             <a href="@Url.Action("Index")" class="btn btn-outline-secondary text-nowrap clear-all-btn">
                                 <i class="bi bi-arrow-clockwise me-1"></i>Clear All
@@ -136,14 +136,14 @@
                             <tr>
                                 <th>Idea ID</th>
                                 <th style="min-width: 250px;">Idea Title</th>
+                                <th style="min-width: 150px;">Initiator</th>
                                 <th style="min-width: 200px;">Division</th>
                                 <th style="min-width: 200px;">Department</th>
                                 <th>Category</th>
                                 <th>Event</th>
                                 <th>Stage</th>
-                                <th>Status</th>
-                                <th>Progress</th>
                                 <th>Saving Cost</th>
+                                <th>Status</th>
                                 <th>Submitted</th>
                                 <th>Actions</th>
                             </tr>
@@ -157,6 +157,10 @@
                                         <div class="truncate-title" title="@idea.IdeaName">
                                             @idea.IdeaName
                                         </div>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.InitiatorUser?.Employee?.NAME</strong>
+                                        <br><small class="text-muted">@idea.InitiatorUser?.Employee?.EMP_ID</small>
                                     </td>
                                     <td>
                                         <strong>@idea.TargetDivision?.NameDivision</strong>
@@ -193,6 +197,13 @@
                                         <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
                                     </td>
                                     <td>
+                                        <span class="fw-bold text-success">@idea.SavingCost.ToString("C0")</span>
+                                        @if (idea.SavingCostValidated.HasValue)
+                                        {
+                                            <br><small class="text-success">Validated: @idea.SavingCostValidated.Value.ToString("C0")</small>
+                                        }
+                                    </td>
+                                    <td>
                                         @{
                                             var statusClass = idea.CurrentStatus switch
                                             {
@@ -207,60 +218,15 @@
                                         <span class="badge @statusClass">@idea.CurrentStatus</span>
                                     </td>
                                     <td>
-                                        @{
-                                            // Calculate progress percentage based on stage (hardcode)
-                                            var progressPercent = idea.CurrentStage switch
-                                            {
-                                                0 => 10,
-                                                1 => 25,
-                                                2 => 50,
-                                                3 => 75,
-                                                4 => 90,
-                                                5 => 100,
-                                                _ => 50
-                                            };
-                                            
-                                            var progressClass = progressPercent switch
-                                            {
-                                                <= 25 => "bg-danger",
-                                                <= 50 => "bg-warning",
-                                                <= 75 => "bg-info",
-                                                _ => "bg-success"
-                                            };
-                                        }
-                                        <div class="progress-container">
-                                            <div class="progress" style="height: 8px; width: 80px;">
-                                                <div class="progress-bar @progressClass" 
-                                                     role="progressbar" 
-                                                     style="width: @(progressPercent)%" 
-                                                     aria-valuenow="@progressPercent" 
-                                                     aria-valuemin="0" 
-                                                     aria-valuemax="100">
-                                                </div>
-                                            </div>
-                                            <small class="text-muted ms-2">@(progressPercent)%</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="fw-bold text-success">@idea.SavingCost.ToString("C0")</span>
-                                        @if (idea.SavingCostValidated.HasValue)
-                                        {
-                                            <br><small class="text-success">Validated: @idea.SavingCostValidated.Value.ToString("C0")</small>
-                                        }
-                                    </td>
-                                    <td>
                                         <div>@idea.SubmittedDate.ToString("MMM dd")</div>
                                         <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
                                     </td>
                                     <td>
                                         <div class="btn-group-vertical btn-group-sm">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" title="View Details">
+                                            <a href="@Url.Action("Details", new { id = idea.Id })" 
+                                               class="btn btn-outline-primary btn-sm">
                                                 <i class="bi bi-eye"></i> View
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" title="Edit" 
-                                                    @(idea.CurrentStatus == "Waiting Approval S1" ? "" : "disabled")>
-                                                <i class="bi bi-pencil"></i> Edit
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -272,12 +238,9 @@
             else
             {
                 <div class="text-center p-5">
-                    <i class="bi bi-lightbulb fs-1 text-muted"></i>
-                    <h4 class="mt-3">No Ideas Yet</h4>
-                    <p class="text-muted">You haven't submitted any ideas yet. Start sharing your innovative thoughts!</p>
-                    <a asp-action="Create" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-2"></i>Submit Your First Idea
-                    </a>
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <h4 class="mt-3">No Ideas Found</h4>
+                    <p class="text-muted">No ideas match your current filters.</p>
                 </div>
             }
             
@@ -288,41 +251,6 @@
             }
         </div>
     </div>
-
-    <!-- Statistics Card -->
-    @if (Model.HasIdeas)
-    {
-        <div class="card mt-4">
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="stat-item">
-                            <h3 class="text-primary">@Model.TotalItems</h3>
-                            <p class="text-muted mb-0">Total Ideas</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-item">
-                            <h3 class="text-warning">@Model.Ideas.Count(i => i.CurrentStatus.StartsWith("Waiting Approval"))</h3>
-                            <p class="text-muted mb-0">In Progress</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-item">
-                            <h3 class="text-success">@Model.Ideas.Count(i => i.CurrentStatus == "Completed")</h3>
-                            <p class="text-muted mb-0">Completed</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-item">
-                            <h3 class="text-info">@Model.Ideas.Sum(i => i.SavingCost).ToString("C0")</h3>
-                            <p class="text-muted mb-0">Total Saving</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
 </div>
 
 <style>
@@ -371,7 +299,7 @@
     }
 
     .truncate-title {
-        max-width: 250px;
+        max-width: 250px; /* Adjust as needed */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -401,21 +329,6 @@
         background-color: #f97316 !important;
     }
 
-    /* Progress bar styling */
-    .progress-container {
-        display: flex;
-        align-items: center;
-    }
-    
-    .progress {
-        border-radius: 10px;
-        background-color: #e9ecef;
-    }
-    
-    .progress-bar {
-        border-radius: 10px;
-    }
-
     /* Simplified Integrated Card Styling */
     .filter-card {
         border: none;
@@ -423,6 +336,7 @@
         border-radius: 8px;
         margin-bottom: 2rem;
     }
+
 
     /* Table section styling */
     .card-body.border-top {
@@ -446,16 +360,5 @@
         background-color: #f8f9fa !important;
         border-color: #6c757d !important;
         color: #6c757d !important;
-    }
-
-    /* Statistics styling */
-    .stat-item {
-        padding: 1rem;
-    }
-    
-    .stat-item h3 {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
     }
 </style>

@@ -65,6 +65,12 @@
                             <span>Milestone</span>
                         </a>
                     </li>
+                    <li>
+                        <a asp-controller="IdeaList" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaList" ? "active" : "")">
+                            <i class="bi bi-clipboard-data-fill"></i>
+                            <span>All Ideas</span>
+                        </a>
+                    </li>
                 }
                 
                 @if (User.Identity.IsAuthenticated && (User.IsInRole("Superuser") || User.IsInRole("Admin")))
