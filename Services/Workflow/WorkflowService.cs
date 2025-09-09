@@ -1,12 +1,11 @@
 using Ideku.Data.Repositories;
 using Ideku.Data.Context;
-using Ideku.Models;
-using Ideku.Services.Email;
+using Ideku.Models.Entities;
+using Ideku.Services.Notification;
 using Ideku.Services.WorkflowManagement;
 using Ideku.Services.IdeaRelation;
 using Ideku.ViewModels.DTOs;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,145 +14,58 @@ namespace Ideku.Services.Workflow
 {
     public class WorkflowService : IWorkflowService
     {
-        private readonly IEmailService _emailService;
+        private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepository;
         private readonly IIdeaRepository _ideaRepository;
         private readonly IWorkflowRepository _workflowRepository;
         private readonly IWorkflowManagementService _workflowManagementService;
         private readonly IIdeaRelationService _ideaRelationService;
         private readonly ILogger<WorkflowService> _logger;
-        private readonly EmailSettings _emailSettings;
 
         public WorkflowService(
-            IEmailService emailService, 
+            INotificationService notificationService,
             IUserRepository userRepository, 
             IIdeaRepository ideaRepository, 
             IWorkflowRepository workflowRepository, 
             IWorkflowManagementService workflowManagementService,
             IIdeaRelationService ideaRelationService,
-            ILogger<WorkflowService> logger, 
-            IOptions<EmailSettings> emailSettings)
+            ILogger<WorkflowService> logger)
         {
-            _emailService = emailService;
+            _notificationService = notificationService;
             _userRepository = userRepository;
             _ideaRepository = ideaRepository;
             _workflowRepository = workflowRepository;
             _workflowManagementService = workflowManagementService;
             _ideaRelationService = ideaRelationService;
             _logger = logger;
-            _emailSettings = emailSettings.Value;
         }
 
         public async Task InitiateWorkflowAsync(Models.Entities.Idea idea)
         {
             _logger.LogInformation("Initiating workflow for idea {IdeaId} - {IdeaName}", idea.Id, idea.IdeaName);
             
-            // Get approvers for the first stage of the workflow (stage 1)
-            var targetStage = 1; // Idea at S0 needs approval from Stage 1 approvers
-            var approvers = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
-            
-            _logger.LogInformation("Found {ApproverCount} approvers for idea {IdeaId} at stage {Stage}", 
-                approvers.Count(), idea.Id, targetStage);
-
-            if (approvers.Any())
+            try
             {
-                // Send email to all approvers for this stage
-                foreach (var approver in approvers)
+                var approvers = await GetApproversForNextStageAsync(idea);
+                
+                if (!approvers.Any())
                 {
-                    var emailMessage = new EmailMessage
-                    {
-                        To = approver.Employee.EMAIL,
-                        Subject = $"[Ideku] New Idea Submission Requires Approval - {idea.IdeaName}",
-                        Body = GenerateValidationEmailBody(idea, approver, targetStage),
-                        IsHtml = true
-                    };
-
-                    try
-                    {
-                        await _emailService.SendEmailAsync(emailMessage);
-                        _logger.LogInformation("Workflow initiated for Idea {IdeaId}. Approval email sent to {ApproverEmail} for Stage {Stage}", 
-                            idea.Id, approver.Employee.EMAIL, targetStage);
-                    }
-                    catch (System.Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to send workflow initiation email to {ApproverEmail} for Idea {IdeaId}", 
-                            approver.Employee.EMAIL, idea.Id);
-                    }
+                    _logger.LogWarning("No approvers found for idea {IdeaId} at next stage", idea.Id);
+                    return;
                 }
+                
+                // Send notification to approvers using NotificationService
+                await _notificationService.NotifyIdeaSubmitted(idea, approvers);
+                _logger.LogInformation("Workflow initiated successfully for Idea {IdeaId} - notification sent to {ApproverCount} approvers", 
+                    idea.Id, approvers.Count);
             }
-            else
+            catch (Exception ex)
             {
-                _logger.LogWarning("No approvers found for Idea {IdeaId} at Stage {Stage}. WorkflowId: {WorkflowId}", 
-                    idea.Id, targetStage, idea.WorkflowId);
+                _logger.LogError(ex, "Failed to send workflow initiation notification for Idea {IdeaId}", idea.Id);
+                throw; // Re-throw to maintain error handling contract
             }
         }
 
-        private string GenerateValidationEmailBody(Models.Entities.Idea idea, Models.Entities.User approver, int targetStage)
-        {
-            var approvalUrl = $"{_emailSettings.BaseUrl}/Approval/Review/{idea.Id}";
-
-            return $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #1b6ec2, #0077cc); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
-        .header h1 {{ margin: 0; font-size: 28px; }}
-        .content {{ line-height: 1.6; color: #333; }}
-        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
-        .action-button {{ display: inline-block; background-color: #1b6ec2; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
-        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
-        @media screen and (max-width: 768px) {{ 
-            .container {{ max-width: 95%; padding: 20px; }} 
-            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
-            .header h1 {{ font-size: 24px; }}
-            .idea-details {{ padding: 20px; }}
-            .action-button {{ padding: 12px 24px; font-size: 14px; }}
-        }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>💡 New Idea Requires Approval</h1>
-        </div>
-        
-        <div class='content'>
-            <p>Hello {approver.Employee.NAME},</p>
-            
-            <p>A new idea has been submitted in the Ideku system and requires your approval at <strong>Stage {targetStage}</strong>:</p>
-            
-            <div class='idea-details'>
-                <h3>{idea.IdeaName}</h3>
-                <p><strong>Submitted by:</strong> {idea.InitiatorUser?.Name} ({idea.InitiatorUser?.EmployeeId})</p>
-                <p><strong>Submission Date:</strong> {idea.SubmittedDate:MMMM dd, yyyy HH:mm}</p>
-                <p><strong>Idea ID:</strong> #{idea.IdeaCode}</p>
-            </div>
-            
-            <p>Please review the idea submission and provide your approval decision:</p>
-            
-            <a href='{approvalUrl}' class='action-button' style='color: white !important;'>Review & Approval Idea</a>
-            
-            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
-            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{approvalUrl}</p>
-            
-            <p>Thank you for your time and contribution to the innovation process.</p>
-            
-            <p>Best regards,<br>
-            The Ideku Team</p>
-        </div>
-        
-        <div class='footer'>
-            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
-        </div>
-    </div>
-</body>
-</html>";
-        }
 
         public async Task<IEnumerable<Models.Entities.Idea>> GetPendingApprovalsForUserAsync(string username)
         {
@@ -257,10 +169,7 @@ namespace Ideku.Services.Workflow
             else
             {
                 // Check if user is an approver for the current stage or has history with this idea
-                var targetStage = idea.CurrentStage + 1; // Next stage that needs approval
-                
-                // Get approvers for the target stage
-                var approversForCurrentStage = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
+                var approversForCurrentStage = await GetApproversForNextStageAsync(idea);
                 
                 // User can view if:
                 // 1. They are an approver for the current stage that needs approval
@@ -296,8 +205,7 @@ namespace Ideku.Services.Workflow
             }
 
             // Authorization check: User must be authorized approver for the target stage
-            var targetStage = idea.CurrentStage + 1; // Stage that needs approval
-            var authorizedApprovers = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
+            var authorizedApprovers = await GetApproversForNextStageAsync(idea);
             
             bool isAuthorized = user.Role.RoleName == "Superuser" || 
                                authorizedApprovers.Any(a => a.Id == user.Id);
@@ -305,7 +213,7 @@ namespace Ideku.Services.Workflow
             if (!isAuthorized)
             {
                 _logger.LogWarning("User {Username} with role {RoleName} is not authorized to approve idea {IdeaId} at target stage {TargetStage}", 
-                    username, user.Role.RoleName, ideaId, targetStage);
+                    username, user.Role.RoleName, ideaId, idea.CurrentStage + 1);
                 return;
             }
 
@@ -366,15 +274,7 @@ namespace Ideku.Services.Workflow
             // Send approval confirmation email to initiator
             try
             {
-                var emailMessage = new EmailMessage
-                {
-                    To = idea.InitiatorUser.Employee.EMAIL,
-                    Subject = $"[Ideku] Your Idea '{idea.IdeaName}' Has Been Approved!",
-                    Body = GenerateApprovalEmailBody(idea, user, previousStage, nextStage),
-                    IsHtml = true
-                };
-
-                await _emailService.SendEmailAsync(emailMessage);
+                await _notificationService.NotifyIdeaApproved(idea, user);
                 _logger.LogInformation("Approval confirmation email sent to initiator {InitiatorEmail} for Idea {IdeaId}", 
                     idea.InitiatorUser.Employee.EMAIL, ideaId);
             }
@@ -386,29 +286,20 @@ namespace Ideku.Services.Workflow
             // If idea moved to next stage (not completed), send emails to next stage approvers
             if (nextStage <= idea.MaxStage && idea.CurrentStatus != "Approved")
             {
-                var nextStageApprovers = await _workflowManagementService.GetApproversForWorkflowStageAsync(idea.WorkflowId, nextStage + 1, idea.ToDivisionId, idea.ToDepartmentId);
-                
-                foreach (var nextApprover in nextStageApprovers)
+                try
                 {
-                    try
+                    var nextStageApprovers = await GetApproversForNextStageAsync(idea);
+                    
+                    if (nextStageApprovers.Any())
                     {
-                        var nextStageEmailMessage = new EmailMessage
-                        {
-                            To = nextApprover.Employee.EMAIL,
-                            Subject = $"[Ideku] Idea Requires Your Approval - {idea.IdeaName}",
-                            Body = GenerateValidationEmailBody(idea, nextApprover, nextStage + 1),
-                            IsHtml = true
-                        };
-
-                        await _emailService.SendEmailAsync(nextStageEmailMessage);
-                        _logger.LogInformation("Next stage approval email sent to {ApproverEmail} for Idea {IdeaId} Stage {Stage}", 
-                            nextApprover.Employee.EMAIL, ideaId, nextStage + 1);
+                        await _notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers);
+                        _logger.LogInformation("Next stage approval emails sent for Idea {IdeaId} to {ApproverCount} approvers", 
+                            ideaId, nextStageApprovers.Count);
                     }
-                    catch (System.Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to send next stage approval email to {ApproverEmail} for Idea {IdeaId}", 
-                            nextApprover.Employee.EMAIL, ideaId);
-                    }
+                }
+                catch (System.Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send next stage approval emails for Idea {IdeaId}", ideaId);
                 }
             }
 
@@ -418,186 +309,29 @@ namespace Ideku.Services.Workflow
         }
 
 
-        private string GenerateApprovalEmailBody(Models.Entities.Idea idea, Models.Entities.User approver, int fromStage, int toStage)
-        {
-            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
 
-            return $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #16a085, #27ae60); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
-        .header h1 {{ margin: 0; font-size: 28px; }}
-        .content {{ line-height: 1.6; color: #333; }}
-        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
-        .approval-info {{ background-color: #d4edda; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #28a745; }}
-        .action-button {{ display: inline-block; background-color: #16a085; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
-        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
-        @media screen and (max-width: 768px) {{ 
-            .container {{ max-width: 95%; padding: 20px; }} 
-            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
-            .header h1 {{ font-size: 24px; }}
-            .idea-details {{ padding: 20px; }}
-            .approval-info {{ padding: 15px; }}
-            .action-button {{ padding: 12px 24px; font-size: 14px; }}
-        }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>🎉 Great News! Your Idea Has Been Approved</h1>
-        </div>
-        
-        <div class='content'>
-            <p>Hello {idea.InitiatorUser?.Name},</p>
-            
-            <p>Congratulations! Your idea has been approved and is moving forward in the review process.</p>
-            
-            <div class='idea-details'>
-                <h3>{idea.IdeaName}</h3>
-                <p><strong>Idea ID:</strong> #{idea.IdeaCode}</p>
-                <p><strong>Submitted on:</strong> {idea.SubmittedDate:MMMM dd, yyyy HH:mm}</p>
-                <p><strong>Saving Cost:</strong> {idea.SavingCost:C}</p>
-            </div>
-            
-            <div class='approval-info'>
-                <h4>✅ Approval Details</h4>
-                <p><strong>Approved by:</strong> {approver?.Name} ({approver?.Role?.RoleName})</p>
-                <p><strong>Stage Progress:</strong> S{fromStage} → S{toStage}</p>
-                <p><strong>Status:</strong> {idea.CurrentStatus}</p>
-                <p><strong>Approved on:</strong> {DateTime.Now:MMMM dd, yyyy HH:mm}</p>
-            </div>
-            
-            <p>Your idea is now progressing to the next stage of the approval process. You will receive updates as it moves through the system.</p>
-            
-            <a href='{ideaUrl}' class='action-button' style='color: white !important;'>View Idea Status</a>
-            
-            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
-            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{ideaUrl}</p>
-            
-            <p>Thank you for your innovative contribution to our organization!</p>
-            
-            <p>Best regards,<br>
-            The Ideku Team</p>
-        </div>
-        
-        <div class='footer'>
-            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
-        </div>
-    </div>
-</body>
-</html>";
-        }
-
-        private string GenerateRejectionEmailBody(Models.Entities.Idea idea, Models.Entities.User reviewer, string reason)
-        {
-            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
-
-            return $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
-        .header h1 {{ margin: 0; font-size: 28px; }}
-        .content {{ line-height: 1.6; color: #333; }}
-        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
-        .feedback-info {{ background-color: #f8d7da; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc3545; }}
-        .action-button {{ display: inline-block; background-color: #e74c3c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
-        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
-        @media screen and (max-width: 768px) {{ 
-            .container {{ max-width: 95%; padding: 20px; }} 
-            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
-            .header h1 {{ font-size: 24px; }}
-            .idea-details {{ padding: 20px; }}
-            .feedback-info {{ padding: 15px; }}
-            .action-button {{ padding: 12px 24px; font-size: 14px; }}
-        }}
-    </style>
-</head>
-batu
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>❌ Your Idea Has Been Rejected</h1>
-        </div>
-        
-        <div class='content'>
-            <p>Hello {idea.InitiatorUser?.Name},</p>
-            
-            <p>Thank you for submitting your idea. After careful review, your idea has been rejected.</p>
-            
-            <div class='idea-details'>
-                <h3>{idea.IdeaName}</h3>
-                <p><strong>Idea ID:</strong> #{idea.IdeaCode}</p>
-                <p><strong>Submitted on:</strong> {idea.SubmittedDate:MMMM dd, yyyy HH:mm}</p>
-                <p><strong>Current Status:</strong> {idea.CurrentStatus}</p>
-            </div>
-            
-            <div class='feedback-info'>
-                <h4>💡 Reviewer Feedback</h4>
-                <p><strong>Reviewed by:</strong> {reviewer?.Name} ({reviewer?.Role?.RoleName})</p>
-                <p><strong>Review Date:</strong> {DateTime.Now:MMMM dd, yyyy HH:mm}</p>
-                <p><strong>Feedback:</strong></p>
-                <div style='background-color: white; padding: 15px; border-radius: 4px; font-style: italic;'>
-                    {reason}
-                </div>
-            </div>
-            
-            <p>You can view the details and feedback by clicking the link below.</p>
-            
-            <a href='{ideaUrl}' class='action-button' style='color: white !important;'>View Rejection Details</a>
-            
-            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
-            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{ideaUrl}</p>
-            
-            <p><small>Thank you for your participation in our innovation process.</small></p>
-            
-            <p>Best regards,<br>
-            The Ideku Team</p>
-        </div>
-        
-        <div class='footer'>
-            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
-        </div>
-    </div>
-</body>
-</html>";
-        }
 
 
         private async Task SendApprovalNotificationToInitiatorAsync(Models.Entities.Idea idea)
         {
             try
             {
-                var initiatorEmail = idea.InitiatorUser?.Employee?.EMAIL;
-                if (string.IsNullOrEmpty(initiatorEmail))
+                if (idea.InitiatorUser?.Employee?.EMAIL == null)
                 {
                     _logger.LogWarning("No email found for idea {IdeaId} initiator", idea.Id);
                     return;
                 }
 
-                var emailMessage = new EmailMessage
-                {
-                    To = initiatorEmail,
-                    Subject = $"[Ideku] Your Idea Has Been Approved - {idea.IdeaName}",
-                    Body = GenerateApprovalNotificationEmail(idea),
-                    IsHtml = true
+                // Need to create a dummy user for NotifyIdeaApproved - in this case it's a general approval notification
+                var systemUser = new Models.Entities.User 
+                { 
+                    Name = "System", 
+                    Role = new Models.Entities.Role { RoleName = "System" } 
                 };
 
-                await _emailService.SendEmailAsync(emailMessage);
+                await _notificationService.NotifyIdeaApproved(idea, systemUser);
                 _logger.LogInformation("Approval notification sent to initiator {Email} for idea {IdeaId}", 
-                    initiatorEmail, idea.Id);
+                    idea.InitiatorUser.Employee.EMAIL, idea.Id);
             }
             catch (Exception ex)
             {
@@ -606,46 +340,6 @@ batu
             }
         }
 
-        private string GenerateApprovalNotificationEmail(Models.Entities.Idea idea)
-        {
-            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
-            
-            return $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-        .container {{ max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; }}
-        .header {{ background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 20px; border-radius: 8px; text-align: center; }}
-        .content {{ padding: 20px 0; line-height: 1.6; }}
-        .action-button {{ display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>🎉 Your Idea Has Been Approved!</h1>
-        </div>
-        <div class='content'>
-            <p>Dear {idea.InitiatorUser?.Name},</p>
-            
-            <p>Great news! Your idea <strong>{idea.IdeaName}</strong> (ID: {idea.IdeaCode}) has been approved and is moving forward in the process.</p>
-            
-            <p><strong>Current Status:</strong> {idea.CurrentStatus}</p>
-            <p><strong>Validated Saving Cost:</strong> {idea.SavingCostValidated:C}</p>
-            
-            <a href='{ideaUrl}' class='action-button'>View Your Idea</a>
-            
-            <p>Thank you for your innovation and contribution!</p>
-            
-            <p>Best regards,<br>The Ideku Team</p>
-        </div>
-    </div>
-</body>
-</html>";
-        }
 
         public async Task<WorkflowResult> ProcessApprovalDatabaseAsync(ApprovalProcessDto approvalData)
         {
@@ -751,39 +445,25 @@ batu
 
                 if (user == null || idea == null) return;
 
-                var emailMessage = new EmailMessage
-                {
-                    To = idea.InitiatorUser.Employee.EMAIL,
-                    Subject = $"[Ideku] Your Idea '{idea.IdeaName}' Has Been Approved!",
-                    Body = GenerateApprovalEmailBody(idea, user, idea.CurrentStage - 1, idea.CurrentStage),
-                    IsHtml = true
-                };
-
-                await _emailService.SendEmailAsync(emailMessage);
+                // Send approval notification to initiator
+                await _notificationService.NotifyIdeaApproved(idea, user);
                 _logger.LogInformation("Approval confirmation email sent to initiator {InitiatorEmail} for Idea {IdeaId}", 
                     idea.InitiatorUser.Employee.EMAIL, approvalData.IdeaId);
 
+                // Send notifications to next stage approvers if needed
                 if (idea.CurrentStage < idea.MaxStage && idea.CurrentStatus != "Approved")
                 {
-                    var nextStageApprovers = await _workflowManagementService.GetApproversForWorkflowStageAsync(
-                        idea.WorkflowId, idea.CurrentStage + 1, idea.ToDivisionId, idea.ToDepartmentId);
+                    var nextStageApprovers = await GetApproversForNextStageAsync(idea);
                     
-                    foreach (var nextApprover in nextStageApprovers)
+                    if (nextStageApprovers.Any())
                     {
-                        var nextStageEmailMessage = new EmailMessage
-                        {
-                            To = nextApprover.Employee.EMAIL,
-                            Subject = $"[Ideku] Idea Requires Your Approval - {idea.IdeaName}",
-                            Body = GenerateValidationEmailBody(idea, nextApprover, idea.CurrentStage + 1),
-                            IsHtml = true
-                        };
-
-                        await _emailService.SendEmailAsync(nextStageEmailMessage);
-                        _logger.LogInformation("Next stage approval email sent to {ApproverEmail} for Idea {IdeaId} Stage {Stage}", 
-                            nextApprover.Employee.EMAIL, approvalData.IdeaId, idea.CurrentStage + 1);
+                        await _notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers);
+                        _logger.LogInformation("Next stage approval emails sent for Idea {IdeaId} to {ApproverCount} approvers", 
+                            approvalData.IdeaId, nextStageApprovers.Count);
                     }
                 }
 
+                // Notify related divisions
                 if (approvalData.RelatedDivisions?.Any() == true)
                 {
                     await _ideaRelationService.NotifyRelatedDivisionsAsync(idea, approvalData.RelatedDivisions);
@@ -841,15 +521,7 @@ batu
 
                 if (user == null || idea == null) return;
 
-                var emailMessage = new EmailMessage
-                {
-                    To = idea.InitiatorUser.Employee.EMAIL,
-                    Subject = $"[Ideku] Your Idea '{idea.IdeaName}' Has Been Rejected",
-                    Body = GenerateRejectionEmailBody(idea, user, reason),
-                    IsHtml = true
-                };
-
-                await _emailService.SendEmailAsync(emailMessage);
+                await _notificationService.NotifyIdeaRejected(idea, user, reason);
                 _logger.LogInformation("Rejection notification email sent to initiator {InitiatorEmail} for Idea {IdeaId}", 
                     idea.InitiatorUser.Employee.EMAIL, ideaId);
             }
@@ -1008,6 +680,37 @@ batu
                 _logger.LogError(ex, "Failed to rename files from S{FromStage} to S{ToStage} for idea {IdeaId}", 
                     fromStage, toStage, ideaId);
                 throw;
+            }
+        }
+
+        private async Task<List<User>> GetApproversForNextStageAsync(Models.Entities.Idea idea)
+        {
+            return await GetApproversForStageAsync(idea, idea.CurrentStage + 1);
+        }
+
+        private async Task<List<User>> GetApproversForStageAsync(Models.Entities.Idea idea, int targetStage)
+        {
+            try
+            {
+                if (targetStage > idea.MaxStage)
+                {
+                    _logger.LogInformation("Idea {IdeaId} target stage {TargetStage} exceeds max stage {MaxStage}, no approvers needed", 
+                        idea.Id, targetStage, idea.MaxStage);
+                    return new List<User>();
+                }
+                
+                var approvers = await _workflowManagementService.GetApproversForWorkflowStageAsync(
+                    idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
+                
+                _logger.LogInformation("Found {ApproverCount} approvers for idea {IdeaId} at stage {Stage}", 
+                    approvers.Count(), idea.Id, targetStage);
+                
+                return approvers.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get approvers for stage {TargetStage} for idea {IdeaId}", targetStage, idea.Id);
+                return new List<User>();
             }
         }
     }
