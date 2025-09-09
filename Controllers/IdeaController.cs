@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Ideku.Services.Idea;
 using Ideku.ViewModels;
+using Ideku.ViewModels.IdeaList;
 using Ideku.Services.Workflow;
 using Ideku.Models;
 using Ideku.Extensions;
@@ -225,7 +226,7 @@ namespace Ideku.Controllers
                 var divisions = await _lookupService.GetDivisionsAsync();
                 var categories = await _lookupService.GetCategoriesAsync();
                 
-                var viewModel = new Ideku.ViewModels.IdeaList.MyIdeasViewModel
+                var viewModel = new MyIdeasViewModel
                 {
                     PagedIdeas = pagedResult,
                     SearchTerm = searchTerm,
@@ -250,6 +251,121 @@ namespace Ideku.Controllers
             {
                 TempData["ErrorMessage"] = $"Error loading ideas: {ex.Message}";
                 return RedirectToAction("Index", "Home");
+            }
+        }
+
+        // AJAX endpoint for real-time filtering
+        [HttpGet]
+        public async Task<IActionResult> FilterMyIdeas(
+            int page = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            string? selectedDivision = null,
+            string? selectedDepartment = null,
+            int? selectedCategory = null,
+            int? selectedStage = null,
+            string? selectedStatus = null)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+
+            // Validate pagination parameters
+            pageSize = Ideku.Helpers.PaginationHelper.ValidatePageSize(pageSize);
+            page = Math.Max(1, page);
+
+            // Get base queryable with role-based filtering
+            var ideasQuery = await _ideaService.GetUserIdeasAsync(username);
+
+            // Apply filters (same logic as Index method)
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                ideasQuery = ideasQuery.Where(i => 
+                    i.IdeaCode.Contains(searchTerm) ||
+                    i.IdeaName.Contains(searchTerm)
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                ideasQuery = ideasQuery.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDepartment))
+            {
+                ideasQuery = ideasQuery.Where(i => i.ToDepartmentId == selectedDepartment);
+            }
+
+            if (selectedCategory.HasValue)
+            {
+                ideasQuery = ideasQuery.Where(i => i.CategoryId == selectedCategory.Value);
+            }
+
+            if (selectedStage.HasValue)
+            {
+                ideasQuery = ideasQuery.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                ideasQuery = ideasQuery.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            // Apply pagination
+            var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
+            
+            // Return JSON with paginated results
+            return Json(new { 
+                success = true, 
+                ideas = pagedResult.Items.Select(i => new {
+                    ideaCode = i.IdeaCode,
+                    ideaName = i.IdeaName,
+                    divisionName = i.TargetDivision?.NameDivision,
+                    departmentName = i.TargetDepartment?.NameDepartment,
+                    categoryName = i.Category?.CategoryName,
+                    eventName = i.Event?.EventName,
+                    currentStage = i.CurrentStage,
+                    savingCost = i.SavingCost,
+                    savingCostValidated = i.SavingCostValidated,
+                    currentStatus = i.CurrentStatus,
+                    submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    viewUrl = Url.Action("View", new { id = i.Id }),
+                    editUrl = Url.Action("Edit", new { id = i.Id })
+                }),
+                pagination = new {
+                    currentPage = pagedResult.Page,
+                    pageSize = pagedResult.PageSize,
+                    totalCount = pagedResult.TotalCount,
+                    totalPages = pagedResult.TotalPages,
+                    hasPrevious = pagedResult.HasPrevious,
+                    hasNext = pagedResult.HasNext,
+                    firstItemIndex = pagedResult.FirstItemIndex,
+                    lastItemIndex = pagedResult.LastItemIndex
+                }
+            });
+        }
+
+        // AJAX endpoint for cascading dropdown
+        [HttpGet]
+        public async Task<JsonResult> GetDepartmentsByDivisionForMyIdeas(string divisionId)
+        {
+            if (string.IsNullOrWhiteSpace(divisionId))
+            {
+                return Json(new { success = true, departments = new List<object>() });
+            }
+
+            try
+            {
+                // Use real data from LookupService (returns List<object>)
+                var departments = await _lookupService.GetDepartmentsByDivisionForAjaxAsync(divisionId);
+                
+                return Json(new { success = true, departments });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
             }
         }
     }
