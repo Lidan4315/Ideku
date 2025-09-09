@@ -2,7 +2,9 @@ using Ideku.Models;
 using Ideku.Models.Entities;
 using Ideku.Data.Context;
 using Ideku.Services.Email;
+using Ideku.Services.WorkflowManagement;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Ideku.Services.Notification
 {
@@ -10,21 +12,37 @@ namespace Ideku.Services.Notification
     {
         private readonly IEmailService _emailService;
         private readonly AppDbContext _context;
+        private readonly IWorkflowManagementService _workflowManagementService;
         private readonly ILogger<NotificationService> _logger;
+        private readonly EmailSettings _emailSettings;
 
-        public NotificationService(IEmailService emailService, AppDbContext context, ILogger<NotificationService> logger)
+        public NotificationService(
+            IEmailService emailService, 
+            AppDbContext context, 
+            IWorkflowManagementService workflowManagementService,
+            ILogger<NotificationService> logger,
+            IOptions<EmailSettings> emailSettings)
         {
             _emailService = emailService;
             _context = context;
+            _workflowManagementService = workflowManagementService;
             _logger = logger;
+            _emailSettings = emailSettings.Value;
         }
 
-        public async Task NotifyIdeaSubmitted(Models.Entities.Idea idea)
+        public async Task NotifyIdeaSubmitted(Models.Entities.Idea idea, List<User> approvers)
         {
             try
             {
-                // Get approvers based on target division/department
-                var approvers = await GetApproversForIdea(idea);
+                _logger.LogInformation("Sending idea submitted notification for idea {IdeaId} to {ApproverCount} approvers", 
+                    idea.Id, approvers.Count);
+                
+                if (!approvers.Any())
+                {
+                    _logger.LogWarning("No approvers provided for idea {IdeaId} at stage {CurrentStage}", 
+                        idea.Id, idea.CurrentStage);
+                    return;
+                }
                 
                 var emailMessages = new List<EmailMessage>();
                 
@@ -43,7 +61,8 @@ namespace Ideku.Services.Notification
                 if (emailMessages.Any())
                 {
                     await _emailService.SendBulkEmailAsync(emailMessages);
-                    _logger.LogInformation("Sent idea submission notifications for Idea ID: {IdeaId}", idea.Id);
+                    _logger.LogInformation("Sent idea submission notifications for Idea ID: {IdeaId} to {ApproverCount} approvers", 
+                        idea.Id, approvers.Count);
                 }
             }
             catch (Exception ex)
@@ -140,69 +159,235 @@ namespace Ideku.Services.Notification
             }
         }
 
-        private async Task<List<User>> GetApproversForIdea(Models.Entities.Idea idea)
-        {
-            // Simple logic: get users with specific roles in target division/department
-            // You can customize this based on your approval workflow
-            return await _context.Users
-                .Include(u => u.Employee)
-                .Include(u => u.Role)
-                .Where(u => u.Employee.DIVISION == idea.ToDivisionId && 
-                           u.Role.RoleName.Contains("Manager")) // Adjust role criteria
-                .ToListAsync();
-        }
 
         private string GenerateIdeaSubmittedEmailBody(Models.Entities.Idea idea, User approver)
         {
+            var approvalUrl = $"{_emailSettings.BaseUrl}/Approval/Review/{idea.Id}";
+
             return $@"
-            <h2>New Idea Submission</h2>
-            <p>Dear {approver.Name},</p>
-            <p>A new idea has been submitted and requires your review:</p>
-            <ul>
-                <li><strong>Idea:</strong> {idea.IdeaName}</li>
-                <li><strong>Code:</strong> {idea.IdeaCode}</li>
-                <li><strong>Initiator:</strong> {idea.InitiatorUser.Name}</li>
-                <li><strong>Category:</strong> {idea.Category.CategoryName}</li>
-                <li><strong>Estimated Saving:</strong> {idea.SavingCost:C}</li>
-            </ul>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
+        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .header {{ background: linear-gradient(135deg, #1b6ec2, #0077cc); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
+        .header h1 {{ margin: 0; font-size: 28px; }}
+        .content {{ line-height: 1.6; color: #333; }}
+        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
+        .action-button {{ display: inline-block; background-color: #1b6ec2; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
+        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
+        @media screen and (max-width: 768px) {{ 
+            .container {{ max-width: 95%; padding: 20px; }} 
+            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
+            .header h1 {{ font-size: 24px; }}
+            .idea-details {{ padding: 20px; }}
+            .action-button {{ padding: 12px 24px; font-size: 14px; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>💡 New Idea Requires Approval</h1>
+        </div>
+        
+        <div class='content'>
+            <p>Hello {approver.Employee.NAME},</p>
+            
+            <p>A new idea has been submitted in the Ideku system and requires your approval:</p>
+            
+            <div class='idea-details'>
+                <h3>{idea.IdeaName}</h3>
+                <p><strong>Submitted by:</strong> {idea.InitiatorUser?.Name} ({idea.InitiatorUser?.EmployeeId})</p>
+                <p><strong>Submission Date:</strong> {idea.SubmittedDate:MMMM dd, yyyy HH:mm}</p>
+                <p><strong>Idea ID:</strong> #{idea.IdeaCode}</p>
+                <p><strong>Category:</strong> {idea.Category?.CategoryName}</p>
+                <p><strong>Estimated Saving:</strong> {idea.SavingCost:C}</p>
+            </div>
+            
             <p><strong>Idea Description:</strong></p>
-            <p>{idea.IdeaIssueBackground}</p>
-            <p><strong>Idea Solution:</strong></p>
-            <p>{idea.IdeaSolution}</p>
-            <p>Please log in to the system to review and approve this idea.</p>
-            <p>Best regards,<br>Ideku System</p>";
+            <p style='background-color: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0;'>{idea.IdeaIssueBackground}</p>
+            
+            <p><strong>Proposed Solution:</strong></p>
+            <p style='background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #28a745;'>{idea.IdeaSolution}</p>
+            
+            <p>Please review the idea submission and provide your approval decision:</p>
+            
+            <a href='{approvalUrl}' class='action-button' style='color: white !important;'>Review & Approve Idea</a>
+            
+            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
+            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{approvalUrl}</p>
+            
+            <p>Thank you for your time and contribution to the innovation process.</p>
+            
+            <p>Best regards,<br>
+            The Ideku Team</p>
+        </div>
+        
+        <div class='footer'>
+            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>";
         }
 
         private string GenerateIdeaApprovedEmailBody(Models.Entities.Idea idea, User approver)
         {
+            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
+
             return $@"
-            <h2>Idea Approved</h2>
-            <p>Dear {idea.InitiatorUser.Name},</p>
-            <p>Great news! Your idea has been approved:</p>
-            <ul>
-                <li><strong>Idea:</strong> {idea.IdeaName}</li>
-                <li><strong>Code:</strong> {idea.IdeaCode}</li>
-                <li><strong>Approved by:</strong> {approver.Name}</li>
-                <li><strong>Current Status:</strong> {idea.CurrentStatus}</li>
-            </ul>
-            <p>The implementation process will begin soon.</p>
-            <p>Best regards,<br>Ideku System</p>";
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
+        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .header {{ background: linear-gradient(135deg, #16a085, #27ae60); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
+        .header h1 {{ margin: 0; font-size: 28px; }}
+        .content {{ line-height: 1.6; color: #333; }}
+        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
+        .approval-info {{ background-color: #d4edda; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #28a745; }}
+        .action-button {{ display: inline-block; background-color: #16a085; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
+        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
+        @media screen and (max-width: 768px) {{ 
+            .container {{ max-width: 95%; padding: 20px; }} 
+            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
+            .header h1 {{ font-size: 24px; }}
+            .idea-details {{ padding: 20px; }}
+            .approval-info {{ padding: 15px; }}
+            .action-button {{ padding: 12px 24px; font-size: 14px; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>🎉 Great News! Your Idea Has Been Approved</h1>
+        </div>
+        
+        <div class='content'>
+            <p>Hello {idea.InitiatorUser?.Name},</p>
+            
+            <p>Congratulations! Your idea has been approved and is moving forward in the review process.</p>
+            
+            <div class='idea-details'>
+                <h3>{idea.IdeaName}</h3>
+                <p><strong>Idea ID:</strong> #{idea.IdeaCode}</p>
+                <p><strong>Submitted on:</strong> {idea.SubmittedDate:MMMM dd, yyyy HH:mm}</p>
+                <p><strong>Saving Cost:</strong> {idea.SavingCost:C}</p>
+            </div>
+            
+            <div class='approval-info'>
+                <h4>✅ Approval Details</h4>
+                <p><strong>Approved by:</strong> {approver?.Name} ({approver?.Role?.RoleName})</p>
+                <p><strong>Status:</strong> {idea.CurrentStatus}</p>
+                <p><strong>Approved on:</strong> {DateTime.Now:MMMM dd, yyyy HH:mm}</p>
+            </div>
+            
+            <p>Your idea is now progressing to the next stage of the approval process. You will receive updates as it moves through the system.</p>
+            
+            <a href='{ideaUrl}' class='action-button' style='color: white !important;'>View Idea Status</a>
+            
+            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
+            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{ideaUrl}</p>
+            
+            <p>Thank you for your innovative contribution to our organization!</p>
+            
+            <p>Best regards,<br>
+            The Ideku Team</p>
+        </div>
+        
+        <div class='footer'>
+            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>";
         }
 
         private string GenerateIdeaRejectedEmailBody(Models.Entities.Idea idea, User rejector, string reason)
         {
+            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
+
             return $@"
-            <h2>Idea Rejected</h2>
-            <p>Dear {idea.InitiatorUser.Name},</p>
-            <p>We regret to inform you that your idea has been rejected:</p>
-            <ul>
-                <li><strong>Idea:</strong> {idea.IdeaName}</li>
-                <li><strong>Code:</strong> {idea.IdeaCode}</li>
-                <li><strong>Rejected by:</strong> {rejector.Name}</li>
-                <li><strong>Reason:</strong> {reason}</li>
-            </ul>
-            <p>You may revise and resubmit your idea addressing the concerns mentioned above.</p>
-            <p>Best regards,<br>Ideku System</p>";
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
+        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .header {{ background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
+        .header h1 {{ margin: 0; font-size: 28px; }}
+        .content {{ line-height: 1.6; color: #333; }}
+        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
+        .feedback-info {{ background-color: #f8d7da; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc3545; }}
+        .action-button {{ display: inline-block; background-color: #e74c3c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
+        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
+        @media screen and (max-width: 768px) {{ 
+            .container {{ max-width: 95%; padding: 20px; }} 
+            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
+            .header h1 {{ font-size: 24px; }}
+            .idea-details {{ padding: 20px; }}
+            .feedback-info {{ padding: 15px; }}
+            .action-button {{ padding: 12px 24px; font-size: 14px; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>❌ Your Idea Has Been Rejected</h1>
+        </div>
+        
+        <div class='content'>
+            <p>Hello {idea.InitiatorUser?.Name},</p>
+            
+            <p>Thank you for submitting your idea. After careful review, your idea has been rejected.</p>
+            
+            <div class='idea-details'>
+                <h3>{idea.IdeaName}</h3>
+                <p><strong>Idea ID:</strong> #{idea.IdeaCode}</p>
+                <p><strong>Submitted on:</strong> {idea.SubmittedDate:MMMM dd, yyyy HH:mm}</p>
+                <p><strong>Current Status:</strong> {idea.CurrentStatus}</p>
+            </div>
+            
+            <div class='feedback-info'>
+                <h4>💡 Reviewer Feedback</h4>
+                <p><strong>Reviewed by:</strong> {rejector?.Name} ({rejector?.Role?.RoleName})</p>
+                <p><strong>Review Date:</strong> {DateTime.Now:MMMM dd, yyyy HH:mm}</p>
+                <p><strong>Feedback:</strong></p>
+                <div style='background-color: white; padding: 15px; border-radius: 4px; font-style: italic;'>
+                    {reason}
+                </div>
+            </div>
+            
+            <p>You may revise and resubmit your idea addressing the concerns mentioned above. Please feel free to contact the reviewer for clarification if needed.</p>
+            
+            <a href='{ideaUrl}' class='action-button' style='color: white !important;'>View Rejection Details</a>
+            
+            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
+            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{ideaUrl}</p>
+            
+            <p>Thank you for your participation in our innovation process. We encourage you to continue contributing your ideas.</p>
+            
+            <p>Best regards,<br>
+            The Ideku Team</p>
+        </div>
+        
+        <div class='footer'>
+            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>";
         }
 
         private string GenerateIdeaCompletedEmailBody(Models.Entities.Idea idea)

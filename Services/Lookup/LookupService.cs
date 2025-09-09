@@ -3,10 +3,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Ideku.Services.Lookup
 {
-    /// <summary>
-    /// Implementation of ILookupService
     /// Handles all lookup data operations (dropdowns, reference data)
-    /// </summary>
     public class LookupService : ILookupService
     {
         private readonly ILookupRepository _lookupRepository;
