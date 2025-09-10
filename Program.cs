@@ -82,6 +82,7 @@ builder.Services.AddScoped<IApproverService, ApproverService>();
 builder.Services.AddScoped<IWorkflowManagementService, WorkflowManagementService>();
 builder.Services.AddScoped<IIdeaRelationService, IdeaRelationService>();
 builder.Services.AddScoped<Ideku.Services.Lookup.ILookupService, Ideku.Services.Lookup.LookupService>();
+builder.Services.AddScoped<Ideku.Services.Roles.IRolesService, Ideku.Services.Roles.RolesService>();
 
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();
@@ -91,6 +92,7 @@ builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IApproverRepository, ApproverRepository>();
 builder.Services.AddScoped<IWorkflowManagementRepository, WorkflowManagementRepository>();
+builder.Services.AddScoped<Ideku.Data.Repositories.IRolesRepository, Ideku.Data.Repositories.RolesRepository>();
 
 var app = builder.Build();
 

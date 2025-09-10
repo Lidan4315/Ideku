@@ -10,6 +10,11 @@ function navigateToApprover() {
     window.location.href = '/Settings/ApproverManagement';
 }
 
+function navigateToRoleManagement() {
+    // Navigate to role management page
+    window.location.href = '/Settings/RoleManagement';
+}
+
 function showComingSoon(featureName) {
     Swal.fire({
         icon: 'info',

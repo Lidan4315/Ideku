@@ -1,0 +1,285 @@
+@model Ideku.ViewModels.RoleManagement.RoleIndexViewModel
+@{
+    ViewData["Title"] = "Role Management";
+}
+
+@section Styles {
+    <link href="~/css/pages/role-management.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header dengan Back Button dan Title -->
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <!-- Back to Settings Button -->
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-secondary me-3" title="Back to Settings">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <!-- Page Title -->
+                            <h2 class="page-title text-gradient mb-0">
+                                <i class="bi bi-person-badge me-2"></i>Role Management
+                            </h2>
+                        </div>
+                        <p class="text-muted">Manage system roles and permissions</p>
+                    </div>
+                    <div>
+                        <!-- Add Role Button yang trigger modal -->
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+                            <i class="bi bi-plus-circle me-2"></i>Add Role
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Card -->
+            <div class="card">
+                <div class="card-body">
+                    @if (Model.Roles.Any())
+                    {
+                        <!-- Roles Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Role Name</th>
+                                        <th>Description</th>
+                                        <th>Created Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var role in Model.Roles)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-light text-dark fw-bold">@role.Id</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@role.RoleName</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted">@(role.Desc ?? "No description")</span>
+                                            </td>
+                                            <td>
+                                                <div class="text-dark fw-semibold">@role.CreatedAt.ToString("MMM dd, yyyy")</div>
+                                                <small class="text-muted">@role.CreatedAt.ToString("HH:mm")</small>
+                                            </td>
+                                            <td>
+                                                <!-- Action Buttons -->
+                                                <div class="d-flex gap-2">
+                                                    <button type="button" class="btn role-action-btn edit-role-btn" 
+                                                            data-role-id="@role.Id" 
+                                                            title="Edit Role">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button type="button" class="btn role-action-btn delete-role-btn" 
+                                                            data-role-id="@role.Id" 
+                                                            data-role-name="@role.RoleName"
+                                                            title="Delete Role">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Empty State -->
+                        <div class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-person-badge display-1 text-muted mb-3"></i>
+                                <h4 class="text-muted">No Roles Configured</h4>
+                                <p class="text-muted mb-4">You haven't created any system roles yet. Start by adding your first role!</p>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+                                    <i class="bi bi-plus-circle me-2"></i>Add Your First Role
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.Roles.Any())
+            {
+                <!-- Statistics Cards -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-primary">@Model.Statistics.TotalRoles</h3>
+                                    <p class="text-muted mb-0">Total Roles</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-success">@Model.Statistics.TotalUsersAssigned</h3>
+                                    <p class="text-muted mb-0">Users Assigned</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-warning">@Model.Statistics.RolesWithNoUsers</h3>
+                                    <p class="text-muted mb-0">Unused Roles</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-info">@Model.Statistics.MostUsedRoleName</h3>
+                                    <p class="text-muted mb-0">Most Used Role</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add Role Modal -->
+<div class="modal fade" id="addRoleModal" tabindex="-1" aria-labelledby="addRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="addRoleModalLabel">Add New Role</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addRoleForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body app-modal-body">
+                    <!-- Role Name Field -->
+                    <div class="mb-4">
+                        <label for="roleName" class="form-label">Role Name <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <input type="text" class="form-control form-control-enhanced" id="roleName" name="roleName" required 
+                                   placeholder="E.g., Manager, Employee, Administrator" maxlength="100">
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter a descriptive name for this role (max 100 characters)
+                        </div>
+                    </div>
+                    
+                    <!-- Description Field -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-card-text"></i>
+                            </span>
+                            <textarea class="form-control form-control-enhanced" id="description" name="description" 
+                                      placeholder="Optional description of this role's responsibilities" maxlength="100" rows="3"></textarea>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Optional description to clarify the role's purpose
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Save Role
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-pencil"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="editRoleModalLabel">Edit Role</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editRoleForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editRoleId" name="id">
+                <div class="modal-body app-modal-body">
+                    <!-- Warning untuk users assigned -->
+                    <div class="alert alert-warning d-none" id="editRoleWarning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="editRoleWarningText"></span>
+                    </div>
+                    
+                    <!-- Role Name Field -->
+                    <div class="mb-4">
+                        <label for="editRoleName" class="form-label">Role Name <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <input type="text" class="form-control form-control-enhanced" id="editRoleName" name="roleName" required 
+                                   maxlength="100">
+                        </div>
+                    </div>
+                    
+                    <!-- Description Field -->
+                    <div class="mb-3">
+                        <label for="editDescription" class="form-label">Description</label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-card-text"></i>
+                            </span>
+                            <textarea class="form-control form-control-enhanced" id="editDescription" name="description" 
+                                      maxlength="100" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Update Role
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Set up URLs untuk role management operations
+        window.roleManagementUrls = {
+            create: '@Url.Action("Create", "RoleManagement")',
+            edit: '@Url.Action("Edit", "RoleManagement")',
+            getRole: '@Url.Action("GetRole", "RoleManagement")',
+            delete: '@Url.Action("Delete", "RoleManagement")'
+        };
+    </script>
+    <script src="~/js/pages/role-management.js" asp-append-version="true"></script>
+}
