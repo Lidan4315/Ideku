@@ -83,6 +83,7 @@ builder.Services.AddScoped<IWorkflowManagementService, WorkflowManagementService
 builder.Services.AddScoped<IIdeaRelationService, IdeaRelationService>();
 builder.Services.AddScoped<Ideku.Services.Lookup.ILookupService, Ideku.Services.Lookup.LookupService>();
 builder.Services.AddScoped<Ideku.Services.Roles.IRolesService, Ideku.Services.Roles.RolesService>();
+builder.Services.AddScoped<Ideku.Services.UserManagement.IUserManagementService, Ideku.Services.UserManagement.UserManagementService>();
 
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();

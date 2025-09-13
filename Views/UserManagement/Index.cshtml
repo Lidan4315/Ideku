@@ -1,0 +1,395 @@
+@model Ideku.ViewModels.UserManagement.UserIndexViewModel
+@{
+    ViewData["Title"] = "User Management";
+}
+
+@section Styles {
+    <link href="~/css/pages/user-management.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header dengan Back Button dan Title -->
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <!-- Back to Settings Button -->
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-secondary me-3" title="Back to Settings">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <!-- Page Title -->
+                            <h2 class="page-title text-gradient mb-0">
+                                <i class="bi bi-people me-2"></i>User Management
+                            </h2>
+                        </div>
+                        <p class="text-muted">Manage system users and their access</p>
+                    </div>
+                    <div>
+                        <!-- Add User Button yang trigger modal -->
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="bi bi-person-plus me-2"></i>Add User
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+
+            <!-- Main Content Card -->
+            <div class="card">
+                <div class="card-body">
+                    @if (Model.Users.Any())
+                    {
+                        <!-- Users Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="white-space: nowrap;">ID USER</th>
+                                        <th>NAME</th>
+                                        <th>DIVISI</th>
+                                        <th>DEPARTEMEN</th>
+                                        <th>STATUS</th>
+                                        <th>ROLE</th>
+                                        <th>ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in Model.Users)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-light text-dark fw-bold">@user.Id</span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="user-avatar me-3">
+                                                        <i class="bi bi-person-circle fs-2 text-secondary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-semibold">@user.Name</div>
+                                                        <small class="text-muted">@user.Username</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="fw-bold text-dark">@(user.Employee.DivisionNavigation?.NameDivision ?? "N/A")</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted">@(user.Employee.DepartmentNavigation?.NameDepartment ?? "N/A")</span>
+                                            </td>
+                                            <td>
+                                                @if (user.IsActing)
+                                                {
+                                                    <span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i>Acting</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success"><i class="bi bi-person me-1"></i>Regular</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@user.Role.RoleName</span>
+                                            </td>
+                                            <td>
+                                                <!-- Action Buttons -->
+                                                <div class="d-flex gap-2">
+                                                    <button type="button" class="btn user-action-btn edit-user-btn" 
+                                                            data-user-id="@user.Id" 
+                                                            title="Edit User">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button type="button" class="btn user-action-btn delete-user-btn" 
+                                                            data-user-id="@user.Id" 
+                                                            data-user-name="@user.Name"
+                                                            title="Delete User">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Empty State -->
+                        <div class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-people display-1 text-muted mb-3"></i>
+                                <h4 class="text-muted">No Users Configured</h4>
+                                <p class="text-muted mb-4">You haven't created any user accounts yet. Start by adding your first user!</p>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                    <i class="bi bi-person-plus me-2"></i>Add Your First User
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="addUserModalLabel">Add New User</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addUserForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body app-modal-body">
+                    <!-- Employee ID Input -->
+                    <div class="mb-4">
+                        <label for="employeeId" class="form-label">Employee ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-enhanced" id="employeeId" name="employeeId" required 
+                               placeholder="Enter Badge Number" maxlength="20" style="text-transform: uppercase;">
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter badge number to auto-populate employee info
+                        </div>
+                    </div>
+                    
+                    <!-- Auto-populated Employee Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="employeeName" class="form-label">Employee Name</label>
+                            <input type="text" class="form-control" id="employeeName" readonly 
+                                   placeholder="Name">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="employeePosition" class="form-label">Position</label>
+                            <input type="text" class="form-control" id="employeePosition" readonly 
+                                   placeholder="Position">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="employeeDivision" class="form-label">Division</label>
+                            <input type="text" class="form-control" id="employeeDivision" readonly 
+                                   placeholder="Division">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="employeeDepartment" class="form-label">Department</label>
+                            <input type="text" class="form-control" id="employeeDepartment" readonly 
+                                   placeholder="Department">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="employeeEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="employeeEmail" readonly 
+                               placeholder="Email">
+                    </div>
+                    
+                    <!-- Username Field -->
+                    <div class="mb-4">
+                        <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-circle"></i>
+                            </span>
+                            <input type="text" class="form-control form-control-enhanced" id="username" name="username" required 
+                                   placeholder="e.g., john.doe, jane.smith" maxlength="100" pattern="^[a-zA-Z0-9._-]+$">
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            3-100 characters, letters, numbers, dots, hyphens, and underscores only
+                        </div>
+                    </div>
+                    
+                    <!-- Role Selection -->
+                    <div class="mb-4">
+                        <label for="roleId" class="form-label">Role <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <select class="form-select form-control-enhanced" id="roleId" name="roleId" required>
+                                <option value="">Choose Role...</option>
+                                @foreach (var role in Model.AvailableRoles)
+                                {
+                                    <option value="@role.Value">@role.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Select the appropriate role for this user
+                        </div>
+                    </div>
+
+                    <!-- Status Settings -->
+                    <div class="mb-4">
+                        <label class="form-label">Status Settings</label>
+                        <div class="form-check form-switch border p-4 bg-white d-flex align-items-center" style="border-color: #dee2e6 !important; border-radius: 0.5rem;">
+                            <input class="form-check-input me-3" type="checkbox" role="switch" id="isActing" name="isActing" value="true" style="transform: scale(1.2);">
+                            <div class="flex-grow-1">
+                                <label class="form-check-label mb-0 fw-semibold" for="isActing">
+                                    <i class="bi bi-star me-2 text-warning"></i>Acting Position
+                                </label>
+                                <div class="form-text mt-1 mb-0">
+                                    Check if this user is in a temporary acting position
+                                </div>
+                            </div>
+                            <span class="badge bg-warning text-dark ms-2" id="actingBadge" style="display: none;">ACTING</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Create User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-pencil"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="editUserModalLabel">Edit User</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editUserForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editUserId" name="id">
+                <div class="modal-body app-modal-body">
+                    <!-- Employee Information -->
+                    <div class="mb-4">
+                        <label class="form-label">Employee Information</label>
+                        <div class="card bg-light">
+                            <div class="card-body py-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-2">
+                                            <strong>Name:</strong> <span id="editEmployeeName"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>ID:</strong> <span id="editEmployeeId"></span>
+                                        </div>
+                                        <div>
+                                            <strong>Position:</strong> <span id="editEmployeePosition"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-2">
+                                            <strong>Email:</strong> <span id="editEmployeeEmail"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Division:</strong> <span id="editDivisionName"></span>
+                                        </div>
+                                        <div>
+                                            <strong>Department:</strong> <span id="editDepartmentName"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Warning untuk dependencies -->
+                    <div class="alert alert-warning d-none" id="editUserWarning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="editUserWarningText"></span>
+                    </div>
+                    
+                    <!-- Username Field -->
+                    <div class="mb-4">
+                        <label for="editUsername" class="form-label">Username <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-circle"></i>
+                            </span>
+                            <input type="text" class="form-control form-control-enhanced" id="editUsername" name="username" required 
+                                   maxlength="100" pattern="^[a-zA-Z0-9._-]+$">
+                        </div>
+                    </div>
+                    
+                    <!-- Role Selection -->
+                    <div class="mb-4">
+                        <label for="editRoleId" class="form-label">Role <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-enhanced">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <select class="form-select form-control-enhanced" id="editRoleId" name="roleId" required>
+                                @foreach (var role in Model.AvailableRoles)
+                                {
+                                    <option value="@role.Value">@role.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Status Settings -->
+                    <div class="mb-4">
+                        <label class="form-label">Status Settings</label>
+                        <div class="form-check form-switch border p-4 bg-white d-flex align-items-center" style="border-color: #dee2e6 !important; border-radius: 0.5rem;">
+                            <input class="form-check-input me-3" type="checkbox" role="switch" id="editIsActing" name="isActing" value="true" style="transform: scale(1.2);">
+                            <div class="flex-grow-1">
+                                <label class="form-check-label mb-0 fw-semibold" for="editIsActing">
+                                    <i class="bi bi-star me-2 text-warning"></i>Acting Position
+                                </label>
+                                <div class="form-text mt-1 mb-0">
+                                    Check if this user is in a temporary acting position
+                                </div>
+                            </div>
+                            <span class="badge bg-warning text-dark ms-2" id="editActingBadge" style="display: none;">ACTING</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Update User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        // Set up URLs untuk user management operations
+        window.userManagementUrls = {
+            create: '@Url.Action("Create", "UserManagement")',
+            edit: '@Url.Action("Edit", "UserManagement")',
+            getUser: '@Url.Action("GetUser", "UserManagement")',
+            delete: '@Url.Action("Delete", "UserManagement")'
+        };
+    </script>
+    <script src="~/js/pages/user-management.js" asp-append-version="true"></script>
+}

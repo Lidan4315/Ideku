@@ -15,6 +15,11 @@ function navigateToRoleManagement() {
     window.location.href = '/Settings/RoleManagement';
 }
 
+function navigateToUserManagement() {
+    // Navigate to user management page
+    window.location.href = '/Settings/UserManagement';
+}
+
 function showComingSoon(featureName) {
     Swal.fire({
         icon: 'info',
