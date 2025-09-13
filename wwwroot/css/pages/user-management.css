@@ -1,0 +1,175 @@
+/* User Management Page Specific Styles */
+/* Consistent with Role Management and other management pages */
+
+/* Not Found Field Styling */
+.not-found-field {
+    color: #6c757d !important;
+    font-style: italic;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* Back Button - Uses same styling as role-management */
+.btn-outline-secondary {
+    border-color: #d1d5db;
+    color: #6b7280;
+    border-radius: 0.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+    color: #374151;
+    transform: translateX(-2px);
+}
+
+/* Page Title Enhancement - Uses global .text-gradient from site.css */
+
+/* Statistics Cards - Removed (no longer used) */
+
+/* User Avatar Styling */
+.user-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar .bi-person-circle {
+    color: #6b7280;
+    transition: color 0.2s ease;
+}
+
+.user-avatar:hover .bi-person-circle {
+    color: #3b82f6;
+}
+
+/* User Action Buttons */
+.user-action-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background: white;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.user-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Edit Button */
+.edit-user-btn {
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.edit-user-btn:hover {
+    background-color: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+}
+
+/* Delete Button */
+.delete-user-btn {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.delete-user-btn:hover {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+/* Badge colors - Uses global badge styling from site.css */
+
+/* Modal styling - Uses global .app-modal, .app-modal-header, .app-modal-body from site.css */
+
+/* Form Controls - Uses global .form-control-enhanced and .form-select-enhanced from site.css */
+
+/* Employee Information Card in Edit Modal */
+.card.bg-light {
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0;
+}
+
+.card.bg-light .card-body {
+    font-size: 0.9rem;
+}
+
+/* Form Check - Custom styling for user management forms */
+.form-check {
+    padding: 1rem;
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.form-check:hover {
+    background-color: #f1f5f9;
+}
+
+.form-check-input:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+/* Table hover animation - Extends global table styling */
+.table-hover tbody tr:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+/* Empty State - Same as role-management */
+.empty-state .display-1 {
+    opacity: 0.3;
+}
+
+/* Button styling - Uses global .btn-save from site.css */
+
+/* Alert styling - Uses Bootstrap alert classes */
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .user-action-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+    
+    /* Responsive adjustments */
+}
+
+/* Loading States - Uses Bootstrap spinner classes */
+
+/* User Details Modal - Removed (no longer used) */
+
+/* Animation - Uses global fadeIn from site.css */
+
+/* Focus States - Uses global focus styling from site.css */
+
+/* Dark Mode - Uses global styling from site.css */

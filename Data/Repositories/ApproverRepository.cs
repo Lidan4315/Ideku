@@ -7,10 +7,12 @@ namespace Ideku.Data.Repositories
     public class ApproverRepository : IApproverRepository
     {
         private readonly AppDbContext _context;
+        private readonly IRolesRepository _rolesRepository;
 
-        public ApproverRepository(AppDbContext context)
+        public ApproverRepository(AppDbContext context, IRolesRepository rolesRepository)
         {
             _context = context;
+            _rolesRepository = rolesRepository;
         }
 
         public async Task<IEnumerable<Approver>> GetAllAsync()
@@ -55,9 +57,7 @@ namespace Ideku.Data.Repositories
 
         public async Task<IEnumerable<Role>> GetAllRolesAsync()
         {
-            return await _context.Roles
-                .OrderBy(r => r.RoleName)
-                .ToListAsync();
+            return await _rolesRepository.GetAllAsync();
         }
 
         public async Task<ApproverRole> AddApproverRoleAsync(ApproverRole approverRole)

@@ -21,5 +21,15 @@ namespace Ideku.Controllers
         {
             return RedirectToAction("Index", "ApproverManagement");
         }
+
+        public IActionResult RoleManagement()
+        {
+            return RedirectToAction("Index", "RoleManagement");
+        }
+
+        public IActionResult UserManagement()
+        {
+            return RedirectToAction("Index", "UserManagement");
+        }
     }
 }

@@ -30,5 +30,19 @@ namespace Ideku.Data.Repositories
                 .OrderBy(e => e.NAME)
                 .ToListAsync();
         }
+
+        /// <summary>
+        /// Get active employees that don't have user accounts yet
+        /// Perfect for Create User dropdown - shows only available employees
+        /// </summary>
+        public async Task<IEnumerable<Employee>> GetEmployeesWithoutUsersAsync()
+        {
+            return await _context.Employees
+                .Include(e => e.DivisionNavigation)
+                .Include(e => e.DepartmentNavigation)
+                .Where(e => e.EMP_STATUS == "Active" && e.User == null) // No user account yet
+                .OrderBy(e => e.NAME)
+                .ToListAsync();
+        }
     }
 }

@@ -130,8 +130,8 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
                 .Include(i => i.Event)
-                .Where(i => !i.IsDeleted);
-        }
+
+                .Where(i => !i.IsDeleted);}
 
         public async Task<bool> SoftDeleteAsync(long id)
         {
