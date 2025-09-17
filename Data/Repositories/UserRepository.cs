@@ -84,6 +84,21 @@ namespace Ideku.Data.Repositories
         }
 
         /// <summary>
+        /// Get users as IQueryable for pagination - same pattern as IdeaRepository
+        /// </summary>
+        public async Task<IQueryable<User>> GetAllUsersQueryAsync()
+        {
+            // Return the query without executing it - this allows pagination to work at DB level
+            return _context.Users
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e.DivisionNavigation)
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e.DepartmentNavigation)
+                .Include(u => u.Role)
+                .OrderByDescending(u => u.Id);
+        }
+
+        /// <summary>
         /// Create new user with automatic timestamp
         /// </summary>
         public async Task<User> CreateUserAsync(User user)

@@ -16,6 +16,13 @@ namespace Ideku.Services.UserManagement
         Task<IEnumerable<User>> GetAllUsersAsync();
 
         /// <summary>
+        /// Get users as queryable for pagination and filtering
+        /// Returns IQueryable for efficient database-level operations
+        /// Same pattern as IdeaService for consistency
+        /// </summary>
+        Task<IQueryable<User>> GetAllUsersQueryAsync();
+
+        /// <summary>
         /// Get user by ID with business logic validation
         /// </summary>
         Task<User?> GetUserByIdAsync(long id);

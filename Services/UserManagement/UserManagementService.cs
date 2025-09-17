@@ -33,6 +33,14 @@ namespace Ideku.Services.UserManagement
         }
 
         /// <summary>
+        /// Get users as queryable for pagination - same pattern as IdeaService
+        /// </summary>
+        public async Task<IQueryable<User>> GetAllUsersQueryAsync()
+        {
+            return await _userRepository.GetAllUsersQueryAsync();
+        }
+
+        /// <summary>
         /// Get user by ID with validation
         /// </summary>
         public async Task<User?> GetUserByIdAsync(long id)

@@ -1,4 +1,4 @@
-@model Ideku.ViewModels.Common.PagedResult<Ideku.Models.Entities.Idea>
+@model dynamic
 @using Ideku.Helpers
 
 @if (Model != null && Model.ShowPagination)
@@ -22,13 +22,13 @@
         <div class="pagination-info">
             <i class="bi bi-info-circle text-primary me-1"></i>
             <span class="text-muted">
-                Showing <strong>@Model.FirstItemIndex-@Model.LastItemIndex</strong> of <strong>@Model.TotalCount</strong> items
+                Showing <strong>@Model.FirstItemIndex-@Model.LastItemIndex</strong> of <strong>@Model.TotalCount</strong> @(ViewBag.ItemName ?? "items")
             </span>
         </div>
         
         <div class="pagination-controls">
             <div class="page-size-selector">
-                <label class="form-label text-muted small mb-0 me-2">Items per page:</label>
+                <label class="form-label text-muted small mb-0 me-2">@(ViewBag.ItemName ?? "Items") per page:</label>
                 <select class="form-select form-select-sm" style="width: auto;" onchange="changePageSize(this.value)">
                     @foreach (var size in PaginationHelper.PageSizeOptions)
                     {

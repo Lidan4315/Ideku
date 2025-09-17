@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Ideku.Services.UserManagement;
 using Ideku.ViewModels.UserManagement;
+using Ideku.Extensions;
+using Ideku.Helpers;
 
 namespace Ideku.Controllers
 {
@@ -26,21 +28,52 @@ namespace Ideku.Controllers
         }
 
         /// <summary>
-        /// GET: User Management Index page
-        /// Displays all users with create form, statistics, and dropdown data
+        /// GET: User Management Index page with pagination
+        /// Same pattern as IdeaListController for consistency
         /// </summary>
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            int? selectedRole = null)
         {
             try
             {
-                // Get all required data sequentially to avoid DbContext concurrency issues
-                var users = await _userManagementService.GetAllUsersAsync();
+                // Validate and normalize pagination parameters (same as IdeaListController)
+                pageSize = PaginationHelper.ValidatePageSize(pageSize);
+                page = Math.Max(1, page);
+
+                // Get users query for pagination
+                var usersQuery = await _userManagementService.GetAllUsersQueryAsync();
+                
+                // Apply progressive filters (same pattern as IdeaListController)
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    usersQuery = usersQuery.Where(u => 
+                        u.Username.Contains(searchTerm) ||
+                        u.Employee.NAME.Contains(searchTerm) ||
+                        u.EmployeeId.Contains(searchTerm));
+                }
+                
+                if (selectedRole.HasValue)
+                {
+                    usersQuery = usersQuery.Where(u => u.RoleId == selectedRole.Value);
+                }
+                
+                // Apply pagination - this executes the database queries
+                var pagedResult = await usersQuery.ToPagedResultAsync(page, pageSize);
+                
+                // Get dropdown data
                 var roles = await _userManagementService.GetAvailableRolesAsync();
 
                 var viewModel = new UserIndexViewModel
                 {
-                    Users = users,
+                    PagedUsers = pagedResult,
                     CreateUserForm = new CreateUserViewModel(),
+                    
+                    // Filter properties (preserve state)
+                    SearchTerm = searchTerm,
+                    SelectedRole = selectedRole,
                     
                     // Using input field with AJAX validation - no dropdown needed
                     AvailableEmployees = Enumerable.Empty<SelectListItem>(),
@@ -51,6 +84,9 @@ namespace Ideku.Controllers
                         Text = r.RoleName
                     })
                 };
+
+                // Set ViewBag for generic pagination partial
+                ViewBag.ItemName = "Users";
 
                 return View(viewModel);
             }
@@ -198,6 +234,78 @@ namespace Ideku.Controllers
             {
                 _logger.LogError(ex, "Error updating user with ID {UserId}", id);
                 return Json(new { success = false, message = "An error occurred while updating the user." });
+            }
+        }
+
+        /// <summary>
+        /// GET: Filter users via AJAX (same pattern as IdeaListController.FilterAllIdeas)
+        /// Returns JSON with filtered users and pagination data
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> FilterUsers(
+            int page = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            int? selectedRole = null)
+        {
+            try
+            {
+                // Same logic as Index method
+                pageSize = PaginationHelper.ValidatePageSize(pageSize);
+                page = Math.Max(1, page);
+
+                var usersQuery = await _userManagementService.GetAllUsersQueryAsync();
+                
+                // Apply progressive filters
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    usersQuery = usersQuery.Where(u => 
+                        u.Username.Contains(searchTerm) ||
+                        u.Employee.NAME.Contains(searchTerm) ||
+                        u.EmployeeId.Contains(searchTerm));
+                }
+                
+                if (selectedRole.HasValue)
+                {
+                    usersQuery = usersQuery.Where(u => u.RoleId == selectedRole.Value);
+                }
+                
+                var pagedResult = await usersQuery.ToPagedResultAsync(page, pageSize);
+
+                // Return JSON response
+                return Json(new
+                {
+                    success = true,
+                    users = pagedResult.Items.Select(user => new
+                    {
+                        id = user.Id,
+                        username = user.Username,
+                        name = user.Name,
+                        employeeId = user.EmployeeId,
+                        divisionName = user.Employee.DivisionNavigation?.NameDivision ?? "N/A",
+                        departmentName = user.Employee.DepartmentNavigation?.NameDepartment ?? "N/A",
+                        roleName = user.Role.RoleName,
+                        isActing = user.IsActing
+                    }),
+                    pagination = new
+                    {
+                        page = pagedResult.Page,
+                        pageSize = pagedResult.PageSize,
+                        totalCount = pagedResult.TotalCount,
+                        totalPages = pagedResult.TotalPages,
+                        hasItems = pagedResult.HasItems,
+                        showPagination = pagedResult.ShowPagination,
+                        firstItemIndex = pagedResult.FirstItemIndex,
+                        lastItemIndex = pagedResult.LastItemIndex,
+                        hasPrevious = pagedResult.HasPrevious,
+                        hasNext = pagedResult.HasNext
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering users");
+                return Json(new { success = false, message = "Error loading filtered users." });
             }
         }
 

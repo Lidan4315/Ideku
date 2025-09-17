@@ -18,7 +18,6 @@ function initializeUserManagement() {
     // Initialize employee validation
     initializeEmployeeValidation();
     
-    console.log('User Management initialized');
 }
 
 // ============================================

@@ -25,6 +25,13 @@ namespace Ideku.Data.Repositories
         Task<IEnumerable<User>> GetAllUsersWithDetailsAsync();
 
         /// <summary>
+        /// Get all users as IQueryable for pagination and filtering
+        /// Includes same navigation properties as GetAllUsersWithDetailsAsync
+        /// Same pattern as IdeaRepository for consistency
+        /// </summary>
+        Task<IQueryable<User>> GetAllUsersQueryAsync();
+
+        /// <summary>
         /// Create new user account
         /// </summary>
         Task<User> CreateUserAsync(User user);
