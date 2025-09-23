@@ -157,11 +157,18 @@ namespace Ideku.Data.Context
                 .HasForeignKey(e => e.DEPARTEMENT)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // User-Role relationship
+            // User-Role relationship (current active role)
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Role)
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // User-CurrentRole relationship (backup original role for acting)
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.CurrentRole)
+                .WithMany()
+                .HasForeignKey(u => u.CurrentRoleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // =================== IDEA RELATIONSHIPS ===================

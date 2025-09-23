@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Ideku.Data.Context;
 using Ideku.Models.Entities;
+using Ideku.Models.Statistics;
 
 namespace Ideku.Data.Repositories
 {
@@ -176,6 +177,150 @@ namespace Ideku.Data.Repositories
                 .CountAsync(m => m.CreatorUserId == userId);
 
             return ideasCount + workflowHistoryCount + milestonesCount;
+        }
+
+        // =================== ACTING DURATION IMPLEMENTATIONS ===================
+
+        /// <summary>
+        /// Get all users who are currently acting
+        /// Includes complete navigation properties for display
+        /// </summary>
+        public async Task<IEnumerable<User>> GetCurrentlyActingUsersAsync()
+        {
+            return await _context.Users
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e.DivisionNavigation)
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e.DepartmentNavigation)
+                .Include(u => u.Role)
+                .Include(u => u.CurrentRole)
+                .Where(u => u.IsActing &&
+                           u.ActingStartDate.HasValue &&
+                           u.ActingEndDate.HasValue &&
+                           DateTime.Now >= u.ActingStartDate.Value &&
+                           DateTime.Now < u.ActingEndDate.Value)
+                .OrderBy(u => u.ActingEndDate)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Get users whose acting period is about to expire within specified days
+        /// Optimized query for notification purposes
+        /// </summary>
+        public async Task<IEnumerable<User>> GetActingUsersExpiringInDaysAsync(int withinDays)
+        {
+            var thresholdDate = DateTime.Now.AddDays(withinDays);
+
+            return await _context.Users
+                .Include(u => u.Employee)
+                .Include(u => u.Role)
+                .Include(u => u.CurrentRole)
+                .Where(u => u.IsActing &&
+                           u.ActingEndDate.HasValue &&
+                           u.ActingEndDate.Value <= thresholdDate &&
+                           u.ActingEndDate.Value > DateTime.Now)
+                .OrderBy(u => u.ActingEndDate)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Get users whose acting period has expired and needs auto-revert
+        /// Used by background service for efficient processing
+        /// </summary>
+        public async Task<IEnumerable<User>> GetExpiredActingUsersAsync()
+        {
+            return await _context.Users
+                .Include(u => u.CurrentRole)
+                .Where(u => u.IsActing &&
+                           u.ActingEndDate.HasValue &&
+                           u.ActingEndDate.Value <= DateTime.Now)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Get acting statistics for dashboard/reporting
+        /// Returns counts for various acting states
+        /// </summary>
+        public async Task<ActingStatistics> GetActingStatisticsAsync()
+        {
+            var now = DateTime.Now;
+            var totalUsers = await _context.Users.CountAsync();
+
+            var currentlyActingUsers = await _context.Users
+                .Where(u => u.IsActing &&
+                           u.ActingStartDate.HasValue &&
+                           u.ActingEndDate.HasValue &&
+                           now >= u.ActingStartDate.Value &&
+                           now < u.ActingEndDate.Value)
+                .ToListAsync();
+
+            var expiringIn7Days = currentlyActingUsers
+                .Count(u => u.ActingEndDate!.Value <= now.AddDays(7));
+
+            var expiringIn30Days = currentlyActingUsers
+                .Count(u => u.ActingEndDate!.Value <= now.AddDays(30));
+
+            var expiredActingUsers = await _context.Users
+                .CountAsync(u => u.IsActing &&
+                            u.ActingEndDate.HasValue &&
+                            u.ActingEndDate.Value <= now);
+
+            var urgentExpirations = currentlyActingUsers
+                .Count(u => u.ActingEndDate!.Value <= now.AddDays(3));
+
+            // Calculate average acting duration
+            var averageDuration = currentlyActingUsers.Any()
+                ? currentlyActingUsers.Average(u => (u.ActingEndDate!.Value - u.ActingStartDate!.Value).TotalDays)
+                : 0;
+
+            // Find most common acting role
+            var roleGroups = await _context.Users
+                .Where(u => u.IsActing && u.ActingStartDate.HasValue && u.ActingEndDate.HasValue &&
+                           now >= u.ActingStartDate.Value && now < u.ActingEndDate.Value)
+                .Include(u => u.Role)
+                .GroupBy(u => u.Role.RoleName)
+                .Select(g => new { RoleName = g.Key, Count = g.Count() })
+                .OrderByDescending(g => g.Count)
+                .FirstOrDefaultAsync();
+
+            return new ActingStatistics
+            {
+                TotalActingUsers = currentlyActingUsers.Count,
+                TotalRegularUsers = totalUsers - currentlyActingUsers.Count,
+                ExpiringIn7Days = expiringIn7Days,
+                ExpiringIn30Days = expiringIn30Days,
+                ExpiredActingUsers = expiredActingUsers,
+                UrgentExpirations = urgentExpirations,
+                HasUrgentExpirations = urgentExpirations > 0,
+                AverageActingDurationDays = Math.Round(averageDuration, 1),
+                MostCommonActingRole = roleGroups?.RoleName ?? "None",
+                MostCommonActingRoleCount = roleGroups?.Count ?? 0
+            };
+        }
+
+        /// <summary>
+        /// Get users with specific acting role
+        /// Useful for role-based queries and analysis
+        /// </summary>
+        public async Task<IEnumerable<User>> GetUsersByActingRoleAsync(int roleId)
+        {
+            var now = DateTime.Now;
+
+            return await _context.Users
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e.DivisionNavigation)
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e.DepartmentNavigation)
+                .Include(u => u.Role)
+                .Include(u => u.CurrentRole)
+                .Where(u => u.IsActing &&
+                           u.RoleId == roleId &&
+                           u.ActingStartDate.HasValue &&
+                           u.ActingEndDate.HasValue &&
+                           now >= u.ActingStartDate.Value &&
+                           now < u.ActingEndDate.Value)
+                .OrderBy(u => u.Employee.NAME)
+                .ToListAsync();
         }
     }
 }

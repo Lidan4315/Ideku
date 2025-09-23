@@ -156,9 +156,24 @@
                                                 <span class="text-muted">@(user.Employee.DepartmentNavigation?.NameDepartment ?? "N/A")</span>
                                             </td>
                                             <td>
-                                                @if (user.IsActing)
+                                                @if (user.IsCurrentlyActing())
                                                 {
-                                                    <span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i>Acting</span>
+                                                    <div>
+                                                        <span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i>Acting</span>
+                                                        <div class="small text-muted mt-1">
+                                                            @user.GetActingStatusText()
+                                                        </div>
+                                                        @if (user.IsActingExpiringSoon())
+                                                        {
+                                                            <div class="small text-danger mt-1">
+                                                                <i class="bi bi-exclamation-triangle me-1"></i>Expiring Soon!
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else if (user.IsActing)
+                                                {
+                                                    <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Acting Ended</span>
                                                 }
                                                 else
                                                 {
@@ -171,13 +186,45 @@
                                             <td>
                                                 <!-- Action Buttons -->
                                                 <div class="d-flex gap-2">
-                                                    <button type="button" class="btn user-action-btn edit-user-btn" 
-                                                            data-user-id="@user.Id" 
+                                                    <button type="button" class="btn user-action-btn edit-user-btn"
+                                                            data-user-id="@user.Id"
                                                             title="Edit User">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
-                                                    <button type="button" class="btn user-action-btn delete-user-btn" 
-                                                            data-user-id="@user.Id" 
+
+                                                    @if (user.IsCurrentlyActing())
+                                                    {
+                                                        <!-- Stop Acting Button -->
+                                                        <button type="button" class="btn user-action-btn stop-acting-btn"
+                                                                data-user-id="@user.Id"
+                                                                data-user-name="@user.Name"
+                                                                title="Stop Acting">
+                                                            <i class="bi bi-stop-circle text-danger"></i>
+                                                        </button>
+
+                                                        <!-- Extend Acting Button -->
+                                                        <button type="button" class="btn user-action-btn extend-acting-btn"
+                                                                data-user-id="@user.Id"
+                                                                data-user-name="@user.Name"
+                                                                data-current-end-date="@user.ActingEndDate?.ToString("yyyy-MM-dd")"
+                                                                title="Extend Acting Period">
+                                                            <i class="bi bi-calendar-plus text-primary"></i>
+                                                        </button>
+                                                    }
+                                                    else if (!user.IsActing)
+                                                    {
+                                                        <!-- Set Acting Button -->
+                                                        <button type="button" class="btn user-action-btn set-acting-btn"
+                                                                data-user-id="@user.Id"
+                                                                data-user-name="@user.Name"
+                                                                data-current-role="@user.Role.RoleName"
+                                                                title="Set Acting">
+                                                            <i class="bi bi-star text-warning"></i>
+                                                        </button>
+                                                    }
+
+                                                    <button type="button" class="btn user-action-btn delete-user-btn"
+                                                            data-user-id="@user.Id"
                                                             data-user-name="@user.Name"
                                                             title="Delete User">
                                                         <i class="bi bi-trash"></i>
@@ -315,22 +362,6 @@
                         </div>
                     </div>
 
-                    <!-- Status Settings -->
-                    <div class="mb-4">
-                        <label class="form-label">Status Settings</label>
-                        <div class="form-check form-switch border p-4 bg-white d-flex align-items-center" style="border-color: #dee2e6 !important; border-radius: 0.5rem;">
-                            <input class="form-check-input me-3" type="checkbox" role="switch" id="isActing" name="isActing" value="true" style="transform: scale(1.2);">
-                            <div class="flex-grow-1">
-                                <label class="form-check-label mb-0 fw-semibold" for="isActing">
-                                    <i class="bi bi-star me-2 text-warning"></i>Acting Position
-                                </label>
-                                <div class="form-text mt-1 mb-0">
-                                    Check if this user is in a temporary acting position
-                                </div>
-                            </div>
-                            <span class="badge bg-warning text-dark ms-2" id="actingBadge" style="display: none;">ACTING</span>
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -431,22 +462,6 @@
                         </div>
                     </div>
 
-                    <!-- Status Settings -->
-                    <div class="mb-4">
-                        <label class="form-label">Status Settings</label>
-                        <div class="form-check form-switch border p-4 bg-white d-flex align-items-center" style="border-color: #dee2e6 !important; border-radius: 0.5rem;">
-                            <input class="form-check-input me-3" type="checkbox" role="switch" id="editIsActing" name="isActing" value="true" style="transform: scale(1.2);">
-                            <div class="flex-grow-1">
-                                <label class="form-check-label mb-0 fw-semibold" for="editIsActing">
-                                    <i class="bi bi-star me-2 text-warning"></i>Acting Position
-                                </label>
-                                <div class="form-text mt-1 mb-0">
-                                    Check if this user is in a temporary acting position
-                                </div>
-                            </div>
-                            <span class="badge bg-warning text-dark ms-2" id="editActingBadge" style="display: none;">ACTING</span>
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -454,6 +469,135 @@
                     </button>
                     <button type="submit" class="btn btn-primary btn-save">
                         <i class="bi bi-check-circle me-2"></i>Update User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Set Acting Modal -->
+<div class="modal fade" id="setActingModal" tabindex="-1" aria-labelledby="setActingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-star"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="setActingModalLabel">Set Acting Role</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="setActingForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="setActingUserId" name="userId">
+                <div class="modal-body app-modal-body">
+                    <!-- User Info -->
+                    <div class="alert alert-info d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i>
+                        <div>
+                            <strong>User:</strong> <span id="setActingUserName"></span><br>
+                            <strong>Current Role:</strong> <span id="setActingCurrentRole"></span>
+                        </div>
+                    </div>
+
+                    <!-- Acting Role Selection -->
+                    <div class="mb-3">
+                        <label for="setActingRoleSelect" class="form-label">Acting Role <span class="text-danger">*</span></label>
+                        <select class="form-select" id="setActingRoleSelect" name="actingRoleId" required>
+                            <option value="">Choose Acting Role...</option>
+                            @foreach (var role in Model.AvailableRoles)
+                            {
+                                <option value="@role.Value">@role.Text</option>
+                            }
+                        </select>
+                        <div class="form-text">Role user will temporarily act as</div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="setActingStartDate" class="form-label">Start Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="setActingStartDate" name="actingStartDate"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" value="@DateTime.Today.ToString("yyyy-MM-dd")" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="setActingEndDate" class="form-label">End Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="setActingEndDate" name="actingEndDate"
+                                   min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" value="@DateTime.Today.AddDays(30).ToString("yyyy-MM-dd")" required>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> User's current role will be backed up and automatically restored when acting period ends.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-star me-2"></i>Set Acting
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Extend Acting Modal -->
+<div class="modal fade" id="extendActingModal" tabindex="-1" aria-labelledby="extendActingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-calendar-plus"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="extendActingModalLabel">Extend Acting Period</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="extendActingForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="extendActingUserId" name="userId">
+                <input type="hidden" id="extendActingCurrentEndDate" name="currentActingEndDate">
+                <div class="modal-body app-modal-body">
+                    <!-- User Info -->
+                    <div class="alert alert-info d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i>
+                        <div>
+                            <strong>User:</strong> <span id="extendActingUserName"></span><br>
+                            <strong>Current End Date:</strong> <span id="extendActingCurrentEnd"></span>
+                        </div>
+                    </div>
+
+                    <!-- New End Date -->
+                    <div class="mb-3">
+                        <label for="extendActingNewEndDate" class="form-label">New End Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="extendActingNewEndDate" name="newActingEndDate" required>
+                        <div class="form-text">Must be after current end date</div>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Extension will take effect immediately and user will continue in acting role.
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-calendar-plus me-2"></i>Extend Acting
                     </button>
                 </div>
             </form>
@@ -469,7 +613,12 @@
             create: '@Url.Action("Create", "UserManagement")',
             edit: '@Url.Action("Edit", "UserManagement")',
             getUser: '@Url.Action("GetUser", "UserManagement")',
-            delete: '@Url.Action("Delete", "UserManagement")'
+            delete: '@Url.Action("Delete", "UserManagement")',
+            setActing: '@Url.Action("SetActing", "UserManagement")',
+            stopActing: '@Url.Action("StopActing", "UserManagement")',
+            extendActing: '@Url.Action("ExtendActing", "UserManagement")',
+            getExpiringActing: '@Url.Action("GetExpiringActingUsers", "UserManagement")',
+            getActingStatistics: '@Url.Action("GetActingStatistics", "UserManagement")'
         };
         
         // AJAX Filter Functionality

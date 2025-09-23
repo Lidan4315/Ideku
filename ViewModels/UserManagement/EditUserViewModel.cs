@@ -37,6 +37,25 @@ namespace Ideku.ViewModels.UserManagement
         [Display(Name = "Acting Position")]
         public bool IsActing { get; set; }
 
+        /// <summary>
+        /// Acting start date - required when IsActing is true
+        /// </summary>
+        [Display(Name = "Acting Start Date")]
+        public DateTime? ActingStartDate { get; set; }
+
+        /// <summary>
+        /// Acting end date - required when IsActing is true
+        /// </summary>
+        [Display(Name = "Acting End Date")]
+        public DateTime? ActingEndDate { get; set; }
+
+        /// <summary>
+        /// Acting role ID - required when IsActing is true
+        /// This becomes the active role during acting period
+        /// </summary>
+        [Display(Name = "Acting Role")]
+        public int? ActingRoleId { get; set; }
+
         // =================== READ-ONLY EMPLOYEE INFORMATION ===================
         // These fields are populated for display but not editable (business rule)
 

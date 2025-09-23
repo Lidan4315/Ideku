@@ -1,4 +1,5 @@
 using Ideku.Models.Entities;
+using Ideku.Models.Statistics;
 
 namespace Ideku.Data.Repositories
 {
@@ -59,6 +60,38 @@ namespace Ideku.Data.Repositories
         /// Returns count of dependencies (Ideas, WorkflowHistory, Milestones)
         /// </summary>
         Task<int> GetUserDependenciesCountAsync(long userId);
+
+        // =================== ACTING DURATION QUERIES ===================
+
+        /// <summary>
+        /// Get all users who are currently acting
+        /// Includes complete navigation properties for display
+        /// </summary>
+        Task<IEnumerable<User>> GetCurrentlyActingUsersAsync();
+
+        /// <summary>
+        /// Get users whose acting period is about to expire within specified days
+        /// Optimized query for notification purposes
+        /// </summary>
+        Task<IEnumerable<User>> GetActingUsersExpiringInDaysAsync(int withinDays);
+
+        /// <summary>
+        /// Get users whose acting period has expired and needs auto-revert
+        /// Used by background service for efficient processing
+        /// </summary>
+        Task<IEnumerable<User>> GetExpiredActingUsersAsync();
+
+        /// <summary>
+        /// Get acting statistics for dashboard/reporting
+        /// Returns counts for various acting states
+        /// </summary>
+        Task<ActingStatistics> GetActingStatisticsAsync();
+
+        /// <summary>
+        /// Get users with specific acting role
+        /// Useful for role-based queries and analysis
+        /// </summary>
+        Task<IEnumerable<User>> GetUsersByActingRoleAsync(int roleId);
     }
 
 }
