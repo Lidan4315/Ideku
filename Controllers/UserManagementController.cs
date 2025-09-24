@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Ideku.Services.UserManagement;
 using Ideku.ViewModels.UserManagement;
+using Ideku.Models.Statistics;
+using Ideku.Extensions;
+using Ideku.Helpers;
 
 namespace Ideku.Controllers
 {
@@ -26,21 +29,52 @@ namespace Ideku.Controllers
         }
 
         /// <summary>
-        /// GET: User Management Index page
-        /// Displays all users with create form, statistics, and dropdown data
+        /// GET: User Management Index page with pagination
+        /// Same pattern as IdeaListController for consistency
         /// </summary>
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            int? selectedRole = null)
         {
             try
             {
-                // Get all required data sequentially to avoid DbContext concurrency issues
-                var users = await _userManagementService.GetAllUsersAsync();
+                // Validate and normalize pagination parameters (same as IdeaListController)
+                pageSize = PaginationHelper.ValidatePageSize(pageSize);
+                page = Math.Max(1, page);
+
+                // Get users query for pagination
+                var usersQuery = await _userManagementService.GetAllUsersQueryAsync();
+                
+                // Apply progressive filters (same pattern as IdeaListController)
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    usersQuery = usersQuery.Where(u => 
+                        u.Username.Contains(searchTerm) ||
+                        u.Employee.NAME.Contains(searchTerm) ||
+                        u.EmployeeId.Contains(searchTerm));
+                }
+                
+                if (selectedRole.HasValue)
+                {
+                    usersQuery = usersQuery.Where(u => u.RoleId == selectedRole.Value);
+                }
+                
+                // Apply pagination - this executes the database queries
+                var pagedResult = await usersQuery.ToPagedResultAsync(page, pageSize);
+                
+                // Get dropdown data
                 var roles = await _userManagementService.GetAvailableRolesAsync();
 
                 var viewModel = new UserIndexViewModel
                 {
-                    Users = users,
+                    PagedUsers = pagedResult,
                     CreateUserForm = new CreateUserViewModel(),
+                    
+                    // Filter properties (preserve state)
+                    SearchTerm = searchTerm,
+                    SelectedRole = selectedRole,
                     
                     // Using input field with AJAX validation - no dropdown needed
                     AvailableEmployees = Enumerable.Empty<SelectListItem>(),
@@ -51,6 +85,9 @@ namespace Ideku.Controllers
                         Text = r.RoleName
                     })
                 };
+
+                // Set ViewBag for generic pagination partial
+                ViewBag.ItemName = "Users";
 
                 return View(viewModel);
             }
@@ -178,6 +215,13 @@ namespace Ideku.Controllers
                     return Json(new { success = false, message = string.Join("; ", errors) });
                 }
 
+                // PRE-VALIDATION: Check if user is acting and role is being changed
+                var currentUser = await _userManagementService.GetUserByIdAsync(id);
+                if (currentUser != null && currentUser.IsCurrentlyActing() && model.RoleId != currentUser.CurrentRoleId)
+                {
+                    return Json(new { success = false, message = "Cannot change role while user is acting. Please stop acting first." });
+                }
+
                 var result = await _userManagementService.UpdateUserAsync(
                     id, 
                     model.Username, 
@@ -198,6 +242,78 @@ namespace Ideku.Controllers
             {
                 _logger.LogError(ex, "Error updating user with ID {UserId}", id);
                 return Json(new { success = false, message = "An error occurred while updating the user." });
+            }
+        }
+
+        /// <summary>
+        /// GET: Filter users via AJAX (same pattern as IdeaListController.FilterAllIdeas)
+        /// Returns JSON with filtered users and pagination data
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> FilterUsers(
+            int page = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            int? selectedRole = null)
+        {
+            try
+            {
+                // Same logic as Index method
+                pageSize = PaginationHelper.ValidatePageSize(pageSize);
+                page = Math.Max(1, page);
+
+                var usersQuery = await _userManagementService.GetAllUsersQueryAsync();
+                
+                // Apply progressive filters
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    usersQuery = usersQuery.Where(u => 
+                        u.Username.Contains(searchTerm) ||
+                        u.Employee.NAME.Contains(searchTerm) ||
+                        u.EmployeeId.Contains(searchTerm));
+                }
+                
+                if (selectedRole.HasValue)
+                {
+                    usersQuery = usersQuery.Where(u => u.RoleId == selectedRole.Value);
+                }
+                
+                var pagedResult = await usersQuery.ToPagedResultAsync(page, pageSize);
+
+                // Return JSON response
+                return Json(new
+                {
+                    success = true,
+                    users = pagedResult.Items.Select(user => new
+                    {
+                        id = user.Id,
+                        username = user.Username,
+                        name = user.Name,
+                        employeeId = user.EmployeeId,
+                        divisionName = user.Employee.DivisionNavigation?.NameDivision ?? "N/A",
+                        departmentName = user.Employee.DepartmentNavigation?.NameDepartment ?? "N/A",
+                        roleName = user.Role.RoleName,
+                        isActing = user.IsActing
+                    }),
+                    pagination = new
+                    {
+                        page = pagedResult.Page,
+                        pageSize = pagedResult.PageSize,
+                        totalCount = pagedResult.TotalCount,
+                        totalPages = pagedResult.TotalPages,
+                        hasItems = pagedResult.HasItems,
+                        showPagination = pagedResult.ShowPagination,
+                        firstItemIndex = pagedResult.FirstItemIndex,
+                        lastItemIndex = pagedResult.LastItemIndex,
+                        hasPrevious = pagedResult.HasPrevious,
+                        hasNext = pagedResult.HasNext
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering users");
+                return Json(new { success = false, message = "Error loading filtered users." });
             }
         }
 
@@ -272,6 +388,212 @@ namespace Ideku.Controllers
             {
                 _logger.LogError(ex, "Error validating employee with ID {EmployeeId}", employeeId);
                 return Json(new { success = false, message = "Error validating employee." });
+            }
+        }
+
+        // =================== ACTING DURATION ENDPOINTS ===================
+
+        /// <summary>
+        /// POST: Set user acting role with duration
+        /// Uses SetActingViewModel for comprehensive validation
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> SetActing([FromBody] SetActingViewModel model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage);
+                    return Json(new { success = false, message = string.Join(", ", errors) });
+                }
+
+                // Additional business validation
+                if (!model.IsValidActingPeriod())
+                {
+                    return Json(new {
+                        success = false,
+                        message = "Invalid acting period. Period must be future dates and max 1 year."
+                    });
+                }
+
+                var result = await _userManagementService.SetUserActingAsync(
+                    model.UserId,
+                    model.ActingRoleId,
+                    model.ActingStartDate,
+                    model.ActingEndDate
+                );
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("User {UserId} set as acting successfully", model.UserId);
+                    return Json(new { success = true, message = result.Message });
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to set user {UserId} as acting: {Message}", model.UserId, result.Message);
+                    return Json(new { success = false, message = result.Message });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error setting user {UserId} as acting", model?.UserId);
+                return Json(new { success = false, message = "An error occurred while setting acting role." });
+            }
+        }
+
+        /// <summary>
+        /// POST: Stop user acting immediately and revert to original role
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> StopActing([FromBody] StopActingViewModel model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage));
+                    return Json(new { success = false, message = string.Join(", ", errors) });
+                }
+
+                long userId = model.UserId;
+                var result = await _userManagementService.StopUserActingAsync(userId);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("User {UserId} acting stopped successfully", userId);
+                    return Json(new { success = true, message = result.Message });
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to stop acting for user {UserId}: {Message}", userId, result.Message);
+                    return Json(new { success = false, message = result.Message });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error stopping acting for user");
+                return Json(new { success = false, message = $"An error occurred while stopping acting role: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// POST: Extend user acting period to new end date
+        /// Uses ExtendActingViewModel for validation
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> ExtendActing([FromBody] ExtendActingViewModel model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage);
+                    return Json(new { success = false, message = string.Join(", ", errors) });
+                }
+
+                // Business validation - new date must be after current end date
+                if (model.NewActingEndDate <= model.CurrentActingEndDate)
+                {
+                    return Json(new {
+                        success = false,
+                        message = "New end date must be after current end date."
+                    });
+                }
+
+                var result = await _userManagementService.ExtendUserActingAsync(model.UserId, model.NewActingEndDate);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("User {UserId} acting period extended successfully", model.UserId);
+                    return Json(new { success = true, message = result.Message });
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to extend acting for user {UserId}: {Message}", model.UserId, result.Message);
+                    return Json(new { success = false, message = result.Message });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extending acting for user {UserId}", model?.UserId);
+                return Json(new { success = false, message = "An error occurred while extending acting period." });
+            }
+        }
+
+        /// <summary>
+        /// GET: Get users whose acting period is about to expire (for notifications)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetExpiringActingUsers(int withinDays = 7)
+        {
+            try
+            {
+                var users = await _userManagementService.GetExpiringActingUsersAsync(withinDays);
+
+                return Json(new
+                {
+                    success = true,
+                    users = users.Select(u => new
+                    {
+                        id = u.Id,
+                        username = u.Username,
+                        name = u.Name,
+                        actingRoleName = u.Role.RoleName,
+                        originalRoleName = u.CurrentRole?.RoleName,
+                        actingEndDate = u.ActingEndDate?.ToString("yyyy-MM-dd"),
+                        daysRemaining = u.GetActingDaysRemaining(),
+                        division = u.Employee.DivisionNavigation?.NameDivision,
+                        department = u.Employee.DepartmentNavigation?.NameDepartment
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting expiring acting users");
+                return Json(new { success = false, message = "Error loading expiring acting users." });
+            }
+        }
+
+
+        /// <summary>
+        /// GET: Get acting statistics for dashboard
+        /// Returns comprehensive statistics about acting users
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetActingStatistics()
+        {
+            try
+            {
+                var statistics = await _userManagementService.GetActingStatisticsAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    statistics = new
+                    {
+                        totalActingUsers = statistics.TotalActingUsers,
+                        totalRegularUsers = statistics.TotalRegularUsers,
+                        actingPercentage = Math.Round(statistics.ActingPercentage, 1),
+                        expiringIn7Days = statistics.ExpiringIn7Days,
+                        expiringIn30Days = statistics.ExpiringIn30Days,
+                        expiredActingUsers = statistics.ExpiredActingUsers,
+                        urgentExpirations = statistics.UrgentExpirations,
+                        hasUrgentExpirations = statistics.HasUrgentExpirations,
+                        averageActingDurationDays = statistics.AverageActingDurationDays,
+                        mostCommonActingRole = statistics.MostCommonActingRole,
+                        mostCommonActingRoleCount = statistics.MostCommonActingRoleCount
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting acting statistics");
+                return Json(new { success = false, message = "Error loading acting statistics." });
             }
         }
     }

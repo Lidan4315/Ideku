@@ -85,6 +85,9 @@ builder.Services.AddScoped<Ideku.Services.Lookup.ILookupService, Ideku.Services.
 builder.Services.AddScoped<Ideku.Services.Roles.IRolesService, Ideku.Services.Roles.RolesService>();
 builder.Services.AddScoped<Ideku.Services.UserManagement.IUserManagementService, Ideku.Services.UserManagement.UserManagementService>();
 
+// Register Background Services
+builder.Services.AddHostedService<Ideku.Services.BackgroundServices.ActingRoleReversionService>();
+
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();
 builder.Services.AddScoped<ILookupRepository, LookupRepository>();

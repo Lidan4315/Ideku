@@ -1,5 +1,6 @@
 using Ideku.Data.Repositories;
 using Ideku.Models.Entities;
+using Ideku.Models.Statistics;
 
 namespace Ideku.Services.UserManagement
 {
@@ -30,6 +31,14 @@ namespace Ideku.Services.UserManagement
         public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
             return await _userRepository.GetAllUsersWithDetailsAsync();
+        }
+
+        /// <summary>
+        /// Get users as queryable for pagination - same pattern as IdeaService
+        /// </summary>
+        public async Task<IQueryable<User>> GetAllUsersQueryAsync()
+        {
+            return await _userRepository.GetAllUsersQueryAsync();
         }
 
         /// <summary>
@@ -133,6 +142,12 @@ namespace Ideku.Services.UserManagement
                 if (role == null)
                 {
                     return (false, "Selected role not found.", null);
+                }
+
+                // BUSINESS RULE: Cannot change role while user is acting
+                if (existingUser.IsCurrentlyActing() && roleId != existingUser.CurrentRoleId)
+                {
+                    return (false, "Cannot change role while user is acting. Please stop acting first or wait until acting period expires.", null);
                 }
 
                 // Update user properties
@@ -293,6 +308,278 @@ namespace Ideku.Services.UserManagement
             {
                 return (false, $"Error validating employee: {ex.Message}", null);
             }
+        }
+
+        // =================== ACTING DURATION MANAGEMENT ===================
+
+
+        /// <summary>
+        /// Set user to acting role with specific duration
+        /// </summary>
+        public async Task<(bool Success, string Message)> SetUserActingAsync(
+            long userId,
+            int actingRoleId,
+            DateTime startDate,
+            DateTime endDate)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                {
+                    return (false, "User not found.");
+                }
+
+                // Validate acting data
+                var validation = await ValidateActingDataAsync(user.RoleId, actingRoleId, startDate, endDate);
+                if (!validation.IsValid)
+                {
+                    return (false, validation.Message);
+                }
+
+                // Set acting
+                await SetUserActingInternalAsync(user, actingRoleId, startDate, endDate);
+                await _userRepository.UpdateUserAsync(user);
+
+                var actingRole = await _rolesRepository.GetByIdAsync(actingRoleId);
+                return (true, $"User set to acting {actingRole?.RoleName} until {endDate:MMM dd, yyyy}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error setting user acting: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Stop user acting immediately and revert to original role
+        /// </summary>
+        public async Task<(bool Success, string Message)> StopUserActingAsync(long userId)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                {
+                    return (false, "User not found.");
+                }
+
+                if (!user.IsActing || !user.CurrentRoleId.HasValue)
+                {
+                    return (false, "User is not currently acting.");
+                }
+
+                // Stop acting
+                await StopUserActingInternalAsync(user);
+                await _userRepository.UpdateUserAsync(user);
+
+                return (true, "User acting stopped and reverted to original role.");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error stopping user acting: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Extend user acting period to new end date
+        /// </summary>
+        public async Task<(bool Success, string Message)> ExtendUserActingAsync(long userId, DateTime newEndDate)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                {
+                    return (false, "User not found.");
+                }
+
+                if (!user.IsActing || !user.ActingEndDate.HasValue)
+                {
+                    return (false, "User is not currently acting.");
+                }
+
+                if (newEndDate <= user.ActingEndDate.Value)
+                {
+                    return (false, "New end date must be after current end date.");
+                }
+
+                if (newEndDate <= DateTime.Now)
+                {
+                    return (false, "New end date must be in the future.");
+                }
+
+                // Extend acting period
+                user.ActingEndDate = newEndDate;
+                user.UpdatedAt = DateTime.Now;
+
+                await _userRepository.UpdateUserAsync(user);
+                return (true, $"Acting period extended until {newEndDate:MMM dd, yyyy}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error extending acting period: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get all users whose acting period is about to expire
+        /// </summary>
+        public async Task<IEnumerable<User>> GetExpiringActingUsersAsync(int withinDays = 7)
+        {
+            return await _userRepository.GetActingUsersExpiringInDaysAsync(withinDays);
+        }
+
+        /// <summary>
+        /// Get all users whose acting period has expired and needs auto-revert
+        /// </summary>
+        public async Task<IEnumerable<User>> GetExpiredActingUsersAsync()
+        {
+            return await _userRepository.GetExpiredActingUsersAsync();
+        }
+
+        /// <summary>
+        /// Auto-revert expired acting users (used by background service)
+        /// </summary>
+        public async Task<(int ProcessedCount, List<string> Messages)> ProcessExpiredActingUsersAsync()
+        {
+            var messages = new List<string>();
+            var processedCount = 0;
+
+            try
+            {
+                var expiredUsers = await GetExpiredActingUsersAsync();
+
+                foreach (var user in expiredUsers)
+                {
+                    try
+                    {
+                        if (user.CurrentRoleId.HasValue)
+                        {
+                            var originalRole = await _rolesRepository.GetByIdAsync(user.CurrentRoleId.Value);
+                            var actingRole = await _rolesRepository.GetByIdAsync(user.RoleId);
+
+                            // Stop acting
+                            await StopUserActingInternalAsync(user);
+                            await _userRepository.UpdateUserAsync(user);
+
+                            messages.Add($"User {user.Name} reverted from {actingRole?.RoleName} to {originalRole?.RoleName}");
+                            processedCount++;
+                        }
+                        else
+                        {
+                            messages.Add($"Warning: User {user.Name} acting but no original role found");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        messages.Add($"Error reverting user {user.Name}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                messages.Add($"Error processing expired acting users: {ex.Message}");
+            }
+
+            return (processedCount, messages);
+        }
+
+        /// <summary>
+        /// Get acting statistics for dashboard and reporting
+        /// Returns comprehensive statistics about acting users
+        /// </summary>
+        public async Task<ActingStatistics> GetActingStatisticsAsync()
+        {
+            return await _userRepository.GetActingStatisticsAsync();
+        }
+
+        // =================== PRIVATE HELPER METHODS FOR ACTING ===================
+
+        /// <summary>
+        /// Internal method to set user acting (used by multiple public methods)
+        /// </summary>
+        private async Task SetUserActingInternalAsync(User user, int actingRoleId, DateTime startDate, DateTime endDate)
+        {
+            // Backup original role if not already acting
+            if (!user.IsActing || !user.CurrentRoleId.HasValue)
+            {
+                user.CurrentRoleId = user.RoleId;
+            }
+
+            // Set acting
+            user.RoleId = actingRoleId;
+            user.ActingStartDate = startDate;
+            user.ActingEndDate = endDate;
+            user.IsActing = true;
+            user.UpdatedAt = DateTime.Now;
+        }
+
+        /// <summary>
+        /// Internal method to stop user acting (used by multiple public methods)
+        /// </summary>
+        private async Task StopUserActingInternalAsync(User user)
+        {
+            if (user.CurrentRoleId.HasValue)
+            {
+                user.RoleId = user.CurrentRoleId.Value;
+            }
+
+            user.IsActing = false;
+            user.CurrentRoleId = null;
+            user.ActingStartDate = null;
+            user.ActingEndDate = null;
+            user.UpdatedAt = DateTime.Now;
+        }
+
+        /// <summary>
+        /// Validate acting duration data
+        /// </summary>
+        private async Task<(bool IsValid, string Message)> ValidateActingDataAsync(
+            int currentRoleId,
+            int? actingRoleId,
+            DateTime? startDate,
+            DateTime? endDate)
+        {
+            if (!actingRoleId.HasValue)
+            {
+                return (false, "Acting role is required when setting acting position.");
+            }
+
+            if (!startDate.HasValue || !endDate.HasValue)
+            {
+                return (false, "Acting start date and end date are required.");
+            }
+
+            if (startDate.Value >= endDate.Value)
+            {
+                return (false, "Acting end date must be after start date.");
+            }
+
+            if (endDate.Value <= DateTime.Now.AddHours(1))
+            {
+                return (false, "Acting end date must be at least 1 hour in the future.");
+            }
+
+            if (actingRoleId.Value == currentRoleId)
+            {
+                return (false, "Acting role must be different from current role.");
+            }
+
+            // Check if acting role exists
+            var actingRole = await _rolesRepository.GetByIdAsync(actingRoleId.Value);
+            if (actingRole == null)
+            {
+                return (false, "Acting role not found.");
+            }
+
+            // Max acting duration validation (1 year)
+            var duration = endDate.Value - startDate.Value;
+            if (duration.TotalDays > 365)
+            {
+                return (false, "Acting duration cannot exceed 1 year.");
+            }
+
+            return (true, "Acting data is valid.");
         }
     }
 }

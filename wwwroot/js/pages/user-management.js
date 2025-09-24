@@ -2,6 +2,20 @@
 // Handles AJAX operations, form submissions, and UI interactions
 // Following the same pattern as role-management.js for consistency
 
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+/**
+ * Simple toast notification function
+ * @param {string} message - Message to display
+ * @param {string} type - Type: 'success', 'error', 'warning', 'info'
+ */
+function showToast(message, type = 'info') {
+    // Silent operation - no annoying alerts
+    // TODO: Implement proper toast notification library if needed
+}
+
 $(document).ready(function() {
     initializeUserManagement();
 });
@@ -10,15 +24,17 @@ function initializeUserManagement() {
     // Initialize form submissions
     initializeCreateUserForm();
     initializeEditUserForm();
-    
+
     // Initialize button event handlers
     initializeEditButtons();
     initializeDeleteButtons();
-    
+
     // Initialize employee validation
     initializeEmployeeValidation();
-    
-    console.log('User Management initialized');
+
+    // Initialize acting management functionality
+    initializeActingManagement();
+
 }
 
 // ============================================
@@ -146,7 +162,7 @@ function initializeEditButtons() {
     $(document).on('click', '.edit-user-btn', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const userId = $(this).data('user-id');
         loadUserForEdit(userId);
     });
@@ -207,7 +223,7 @@ function populateEditModal(user) {
     $('#editUsername').val(user.username);
     $('#editRoleId').val(user.roleId);
     $('#editIsActing').prop('checked', user.isActing);
-    
+
     // Populate employee information (read-only)
     $('#editEmployeeName').text(user.employeeName);
     $('#editEmployeeId').text(user.employeeId);
@@ -215,15 +231,32 @@ function populateEditModal(user) {
     $('#editEmployeeEmail').text(user.employeeEmail);
     $('#editDivisionName').text(user.divisionName);
     $('#editDepartmentName').text(user.departmentName);
-    
-    // Show warning if user has dependencies
-    if (user.dependencyCount > 0) {
-        $('#editUserWarningText').text(`Warning: This user has ${user.dependencyCount} associated record(s). Changes may affect system data.`);
+
+    // FRONTEND PROTECTION: Check if user is currently acting
+    if (user.isCurrentlyActing) {
+        // Disable role field
+        $('#editRoleId').prop('disabled', true);
+
+        // Show acting protection warning
+        $('#editUserWarningText').html(
+            '<i class="bi bi-exclamation-triangle text-warning me-2"></i>' +
+            '<strong>Role Protected:</strong> Cannot change role while user is acting. ' +
+            'Stop acting first or wait until acting period expires.'
+        );
         $('#editUserWarning').removeClass('d-none');
     } else {
-        $('#editUserWarning').addClass('d-none');
+        // Enable role field
+        $('#editRoleId').prop('disabled', false);
+
+        // Show dependency warning if exists
+        if (user.dependencyCount > 0) {
+            $('#editUserWarningText').text(`Warning: This user has ${user.dependencyCount} associated record(s). Changes may affect system data.`);
+            $('#editUserWarning').removeClass('d-none');
+        } else {
+            $('#editUserWarning').addClass('d-none');
+        }
     }
-    
+
     // Update modal title
     $('#editUserModalLabel').text(`Edit User: "${user.username}"`);
 }
@@ -612,3 +645,223 @@ function initializeActingBadge() {
 $(document).ready(function() {
     initializeActingBadge();
 });
+
+
+// ============================================
+// ACTING MANAGEMENT FUNCTIONALITY
+// ============================================
+
+function initializeActingManagement() {
+    // Set Acting button handler
+    $(document).on('click', '.set-acting-btn', function() {
+        const userId = $(this).data('user-id');
+        const userName = $(this).data('user-name');
+        const currentRole = $(this).data('current-role');
+
+        openSetActingModal(userId, userName, currentRole);
+    });
+
+    // Stop Acting button handler
+    $(document).on('click', '.stop-acting-btn', function() {
+        const userId = $(this).data('user-id');
+        const userName = $(this).data('user-name');
+
+        confirmStopActing(userId, userName);
+    });
+
+    // Extend Acting button handler
+    $(document).on('click', '.extend-acting-btn', function() {
+        const userId = $(this).data('user-id');
+        const userName = $(this).data('user-name');
+        const currentEndDate = $(this).data('current-end-date');
+
+        openExtendActingModal(userId, userName, currentEndDate);
+    });
+
+    // Set Acting form submission
+    $('#setActingForm').on('submit', function(e) {
+        e.preventDefault();
+        submitSetActing();
+    });
+
+    // Extend Acting form submission
+    $('#extendActingForm').on('submit', function(e) {
+        e.preventDefault();
+        submitExtendActing();
+    });
+}
+
+function openSetActingModal(userId, userName, currentRole) {
+    $('#setActingUserId').val(userId);
+    $('#setActingUserName').text(userName);
+    $('#setActingCurrentRole').text(currentRole);
+
+    // Reset form
+    $('#setActingForm')[0].reset();
+    $('#setActingUserId').val(userId); // Re-set after reset
+
+    // Set default dates
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    $('#setActingStartDate').val(today);
+    $('#setActingEndDate').val(thirtyDaysLater);
+
+    $('#setActingModal').modal('show');
+}
+
+function openExtendActingModal(userId, userName, currentEndDate) {
+    $('#extendActingUserId').val(userId);
+    $('#extendActingUserName').text(userName);
+    $('#extendActingCurrentEnd').text(new Date(currentEndDate).toLocaleDateString());
+    $('#extendActingCurrentEndDate').val(currentEndDate);
+
+    // Set minimum date to current end date + 1 day
+    const minDate = new Date(currentEndDate);
+    minDate.setDate(minDate.getDate() + 1);
+    $('#extendActingNewEndDate').attr('min', minDate.toISOString().split('T')[0]);
+
+    // Set default to 30 days from current end date
+    const defaultDate = new Date(currentEndDate);
+    defaultDate.setDate(defaultDate.getDate() + 30);
+    $('#extendActingNewEndDate').val(defaultDate.toISOString().split('T')[0]);
+
+    $('#extendActingModal').modal('show');
+}
+
+function confirmStopActing(userId, userName) {
+    Swal.fire({
+        title: 'Stop Acting Role',
+        text: `Are you sure you want to stop acting role for ${userName}? This will revert them to their original role immediately.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Stop Acting',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            submitStopActing(userId);
+        }
+    });
+}
+
+function submitSetActing() {
+    const formData = {
+        userId: parseInt($('#setActingUserId').val()),
+        actingRoleId: parseInt($('#setActingRoleSelect').val()),
+        actingStartDate: $('#setActingStartDate').val(),
+        actingEndDate: $('#setActingEndDate').val()
+    };
+
+    // Validate dates
+    if (!validateSetActingForm(formData)) {
+        return;
+    }
+
+    $.ajax({
+        url: window.userManagementUrls.setActing,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function(response) {
+            if (response.success) {
+                $('#setActingModal').modal('hide');
+                showToast(response.message, 'success');
+                refreshUserTable();
+            } else {
+                showToast(response.message, 'error');
+            }
+        },
+        error: function() {
+            showToast('Error setting acting role. Please try again.', 'error');
+        }
+    });
+}
+
+function submitExtendActing() {
+    const formData = {
+        userId: parseInt($('#extendActingUserId').val()),
+        newActingEndDate: $('#extendActingNewEndDate').val(),
+        currentActingEndDate: $('#extendActingCurrentEndDate').val()
+    };
+
+    $.ajax({
+        url: window.userManagementUrls.extendActing,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function(response) {
+            if (response.success) {
+                $('#extendActingModal').modal('hide');
+                showToast(response.message, 'success');
+                refreshUserTable();
+            } else {
+                showToast(response.message, 'error');
+            }
+        },
+        error: function() {
+            showToast('Error extending acting period. Please try again.', 'error');
+        }
+    });
+}
+
+function submitStopActing(userId) {
+    $.ajax({
+        url: window.userManagementUrls.stopActing,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ userId: userId }),
+        success: function(response) {
+            if (response.success) {
+                showToast(response.message, 'success');
+                refreshUserTable();
+            } else {
+                showToast(response.message, 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            showToast('Error stopping acting role. Please try again.', 'error');
+        }
+    });
+}
+
+function validateSetActingForm(formData) {
+    if (!formData.actingRoleId) {
+        showToast('Please select an acting role', 'error');
+        return false;
+    }
+
+    if (!formData.actingStartDate || !formData.actingEndDate) {
+        showToast('Please select both start and end dates', 'error');
+        return false;
+    }
+
+    const startDate = new Date(formData.actingStartDate);
+    const endDate = new Date(formData.actingEndDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (startDate < today) {
+        showToast('Start date cannot be in the past', 'error');
+        return false;
+    }
+
+    if (endDate <= startDate) {
+        showToast('End date must be after start date', 'error');
+        return false;
+    }
+
+    return true;
+}
+
+function refreshUserTable() {
+    // Trigger table refresh using AJAX filter functionality
+    // Call the global applyFilters function from the page
+    if (typeof applyFilters === 'function') {
+        applyFilters();
+    } else {
+        // Fallback: reload page if applyFilters not available
+        window.location.reload();
+    }
+}

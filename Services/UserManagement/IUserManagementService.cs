@@ -1,4 +1,5 @@
 using Ideku.Models.Entities;
+using Ideku.Models.Statistics;
 using Ideku.Data.Repositories;
 
 namespace Ideku.Services.UserManagement
@@ -14,6 +15,13 @@ namespace Ideku.Services.UserManagement
         /// Business rule: Only return users for active employees
         /// </summary>
         Task<IEnumerable<User>> GetAllUsersAsync();
+
+        /// <summary>
+        /// Get users as queryable for pagination and filtering
+        /// Returns IQueryable for efficient database-level operations
+        /// Same pattern as IdeaService for consistency
+        /// </summary>
+        Task<IQueryable<User>> GetAllUsersQueryAsync();
 
         /// <summary>
         /// Get user by ID with business logic validation
@@ -38,6 +46,47 @@ namespace Ideku.Services.UserManagement
         /// Update existing user with validation and business rules
         /// </summary>
         Task<(bool Success, string Message, User? User)> UpdateUserAsync(long userId, string username, int roleId, bool isActing);
+
+
+        /// <summary>
+        /// Set user to acting role with specific duration
+        /// </summary>
+        Task<(bool Success, string Message)> SetUserActingAsync(
+            long userId,
+            int actingRoleId,
+            DateTime startDate,
+            DateTime endDate);
+
+        /// <summary>
+        /// Stop user acting immediately and revert to original role
+        /// </summary>
+        Task<(bool Success, string Message)> StopUserActingAsync(long userId);
+
+        /// <summary>
+        /// Extend user acting period to new end date
+        /// </summary>
+        Task<(bool Success, string Message)> ExtendUserActingAsync(long userId, DateTime newEndDate);
+
+        /// <summary>
+        /// Get all users whose acting period is about to expire
+        /// </summary>
+        Task<IEnumerable<User>> GetExpiringActingUsersAsync(int withinDays = 7);
+
+        /// <summary>
+        /// Get all users whose acting period has expired and needs auto-revert
+        /// </summary>
+        Task<IEnumerable<User>> GetExpiredActingUsersAsync();
+
+        /// <summary>
+        /// Auto-revert expired acting users (used by background service)
+        /// </summary>
+        Task<(int ProcessedCount, List<string> Messages)> ProcessExpiredActingUsersAsync();
+
+        /// <summary>
+        /// Get acting statistics for dashboard and reporting
+        /// Returns comprehensive statistics about acting users
+        /// </summary>
+        Task<ActingStatistics> GetActingStatisticsAsync();
 
         /// <summary>
         /// Delete user with comprehensive dependency checking and business rules

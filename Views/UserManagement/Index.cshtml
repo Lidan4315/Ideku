@@ -37,9 +37,84 @@
 
             <!-- Statistics Cards -->
 
-            <!-- Main Content Card -->
-            <div class="card">
-                <div class="card-body">
+            <!-- Filter and Content Card -->
+            <div class="card filter-card">
+                <div class="card-body p-4">
+                    <!-- Filter Form - Single Row Layout -->
+                    <form method="get" asp-action="Index">
+                        <!-- Desktop: Single Row Layout -->
+                        <div class="d-none d-lg-flex gap-3 mb-4 align-items-center">
+                            <!-- Search Input -->
+                            <div style="flex: 1;">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                                    <input type="text" 
+                                           id="searchTerm"
+                                           name="searchTerm" 
+                                           value="@Model.SearchTerm"
+                                           class="form-control" 
+                                           placeholder="Search by Username, Employee Name, or Employee ID...">
+                                </div>
+                            </div>
+
+                            <!-- Role Filter -->
+                            <div style="width: 200px;">
+                                <select id="selectedRole" name="selectedRole" class="form-select">
+                                    <option value="">All Roles</option>
+                                    @foreach (var role in Model.AvailableRoles)
+                                    {
+                                        <option value="@role.Value" selected="@(Model.SelectedRole?.ToString() == role.Value)">@role.Text</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <!-- Clear Button -->
+                            <div style="width: 120px;">
+                                <button type="button" class="btn btn-outline-secondary w-100 clear-all-btn" style="height: 38px;">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Clear All
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mobile: Vertical Layout -->
+                        <div class="d-lg-none mb-4">
+                            <div class="row g-3">
+                                <!-- Search Input -->
+                                <div class="col-12">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               id="searchTermMobile"
+                                               name="searchTerm" 
+                                               value="@Model.SearchTerm"
+                                               class="form-control" 
+                                               placeholder="Search by Username, Employee Name, or Employee ID...">
+                                    </div>
+                                </div>
+
+                                <!-- Role Filter & Clear Button -->
+                                <div class="col-8">
+                                    <select id="selectedRoleMobile" name="selectedRole" class="form-select">
+                                        <option value="">All Roles</option>
+                                        @foreach (var role in Model.AvailableRoles)
+                                        {
+                                            <option value="@role.Value" selected="@(Model.SelectedRole?.ToString() == role.Value)">@role.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-4">
+                                    <button type="button" class="btn btn-outline-secondary w-100 clear-all-btn" style="height: 38px;">
+                                        <i class="bi bi-arrow-clockwise me-1"></i>Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
                     @if (Model.Users.Any())
                     {
                         <!-- Users Table -->
@@ -56,7 +131,7 @@
                                         <th>ACTIONS</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="users-table-body">
                                     @foreach (var user in Model.Users)
                                     {
                                         <tr>
@@ -81,9 +156,24 @@
                                                 <span class="text-muted">@(user.Employee.DepartmentNavigation?.NameDepartment ?? "N/A")</span>
                                             </td>
                                             <td>
-                                                @if (user.IsActing)
+                                                @if (user.IsCurrentlyActing())
                                                 {
-                                                    <span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i>Acting</span>
+                                                    <div>
+                                                        <span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i>Acting</span>
+                                                        <div class="small text-muted mt-1">
+                                                            @user.GetActingStatusText()
+                                                        </div>
+                                                        @if (user.IsActingExpiringSoon())
+                                                        {
+                                                            <div class="small text-danger mt-1">
+                                                                <i class="bi bi-exclamation-triangle me-1"></i>Expiring Soon!
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else if (user.IsActing)
+                                                {
+                                                    <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Acting Ended</span>
                                                 }
                                                 else
                                                 {
@@ -96,13 +186,45 @@
                                             <td>
                                                 <!-- Action Buttons -->
                                                 <div class="d-flex gap-2">
-                                                    <button type="button" class="btn user-action-btn edit-user-btn" 
-                                                            data-user-id="@user.Id" 
+                                                    <button type="button" class="btn user-action-btn edit-user-btn"
+                                                            data-user-id="@user.Id"
                                                             title="Edit User">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
-                                                    <button type="button" class="btn user-action-btn delete-user-btn" 
-                                                            data-user-id="@user.Id" 
+
+                                                    @if (user.IsCurrentlyActing())
+                                                    {
+                                                        <!-- Stop Acting Button -->
+                                                        <button type="button" class="btn user-action-btn stop-acting-btn"
+                                                                data-user-id="@user.Id"
+                                                                data-user-name="@user.Name"
+                                                                title="Stop Acting">
+                                                            <i class="bi bi-stop-circle text-danger"></i>
+                                                        </button>
+
+                                                        <!-- Extend Acting Button -->
+                                                        <button type="button" class="btn user-action-btn extend-acting-btn"
+                                                                data-user-id="@user.Id"
+                                                                data-user-name="@user.Name"
+                                                                data-current-end-date="@user.ActingEndDate?.ToString("yyyy-MM-dd")"
+                                                                title="Extend Acting Period">
+                                                            <i class="bi bi-calendar-plus text-primary"></i>
+                                                        </button>
+                                                    }
+                                                    else if (!user.IsActing)
+                                                    {
+                                                        <!-- Set Acting Button -->
+                                                        <button type="button" class="btn user-action-btn set-acting-btn"
+                                                                data-user-id="@user.Id"
+                                                                data-user-name="@user.Name"
+                                                                data-current-role="@user.Role.RoleName"
+                                                                title="Set Acting">
+                                                            <i class="bi bi-star text-warning"></i>
+                                                        </button>
+                                                    }
+
+                                                    <button type="button" class="btn user-action-btn delete-user-btn"
+                                                            data-user-id="@user.Id"
                                                             data-user-name="@user.Name"
                                                             title="Delete User">
                                                         <i class="bi bi-trash"></i>
@@ -128,6 +250,12 @@
                                 </button>
                             </div>
                         </div>
+                    }
+                    
+                    <!-- Pagination - Same pattern as Approval/IdeaList -->
+                    @if (Model.ShowPagination)
+                    {
+                        @await Html.PartialAsync("_PaginationPartial", Model.PagedUsers)
                     }
                 </div>
             </div>
@@ -234,22 +362,6 @@
                         </div>
                     </div>
 
-                    <!-- Status Settings -->
-                    <div class="mb-4">
-                        <label class="form-label">Status Settings</label>
-                        <div class="form-check form-switch border p-4 bg-white d-flex align-items-center" style="border-color: #dee2e6 !important; border-radius: 0.5rem;">
-                            <input class="form-check-input me-3" type="checkbox" role="switch" id="isActing" name="isActing" value="true" style="transform: scale(1.2);">
-                            <div class="flex-grow-1">
-                                <label class="form-check-label mb-0 fw-semibold" for="isActing">
-                                    <i class="bi bi-star me-2 text-warning"></i>Acting Position
-                                </label>
-                                <div class="form-text mt-1 mb-0">
-                                    Check if this user is in a temporary acting position
-                                </div>
-                            </div>
-                            <span class="badge bg-warning text-dark ms-2" id="actingBadge" style="display: none;">ACTING</span>
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -350,22 +462,6 @@
                         </div>
                     </div>
 
-                    <!-- Status Settings -->
-                    <div class="mb-4">
-                        <label class="form-label">Status Settings</label>
-                        <div class="form-check form-switch border p-4 bg-white d-flex align-items-center" style="border-color: #dee2e6 !important; border-radius: 0.5rem;">
-                            <input class="form-check-input me-3" type="checkbox" role="switch" id="editIsActing" name="isActing" value="true" style="transform: scale(1.2);">
-                            <div class="flex-grow-1">
-                                <label class="form-check-label mb-0 fw-semibold" for="editIsActing">
-                                    <i class="bi bi-star me-2 text-warning"></i>Acting Position
-                                </label>
-                                <div class="form-text mt-1 mb-0">
-                                    Check if this user is in a temporary acting position
-                                </div>
-                            </div>
-                            <span class="badge bg-warning text-dark ms-2" id="editActingBadge" style="display: none;">ACTING</span>
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -373,6 +469,135 @@
                     </button>
                     <button type="submit" class="btn btn-primary btn-save">
                         <i class="bi bi-check-circle me-2"></i>Update User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Set Acting Modal -->
+<div class="modal fade" id="setActingModal" tabindex="-1" aria-labelledby="setActingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-star"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="setActingModalLabel">Set Acting Role</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="setActingForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="setActingUserId" name="userId">
+                <div class="modal-body app-modal-body">
+                    <!-- User Info -->
+                    <div class="alert alert-info d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i>
+                        <div>
+                            <strong>User:</strong> <span id="setActingUserName"></span><br>
+                            <strong>Current Role:</strong> <span id="setActingCurrentRole"></span>
+                        </div>
+                    </div>
+
+                    <!-- Acting Role Selection -->
+                    <div class="mb-3">
+                        <label for="setActingRoleSelect" class="form-label">Acting Role <span class="text-danger">*</span></label>
+                        <select class="form-select" id="setActingRoleSelect" name="actingRoleId" required>
+                            <option value="">Choose Acting Role...</option>
+                            @foreach (var role in Model.AvailableRoles)
+                            {
+                                <option value="@role.Value">@role.Text</option>
+                            }
+                        </select>
+                        <div class="form-text">Role user will temporarily act as</div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="setActingStartDate" class="form-label">Start Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="setActingStartDate" name="actingStartDate"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" value="@DateTime.Today.ToString("yyyy-MM-dd")" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="setActingEndDate" class="form-label">End Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="setActingEndDate" name="actingEndDate"
+                                   min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" value="@DateTime.Today.AddDays(30).ToString("yyyy-MM-dd")" required>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> User's current role will be backed up and automatically restored when acting period ends.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-star me-2"></i>Set Acting
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Extend Acting Modal -->
+<div class="modal fade" id="extendActingModal" tabindex="-1" aria-labelledby="extendActingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-calendar-plus"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="extendActingModalLabel">Extend Acting Period</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="extendActingForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="extendActingUserId" name="userId">
+                <input type="hidden" id="extendActingCurrentEndDate" name="currentActingEndDate">
+                <div class="modal-body app-modal-body">
+                    <!-- User Info -->
+                    <div class="alert alert-info d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i>
+                        <div>
+                            <strong>User:</strong> <span id="extendActingUserName"></span><br>
+                            <strong>Current End Date:</strong> <span id="extendActingCurrentEnd"></span>
+                        </div>
+                    </div>
+
+                    <!-- New End Date -->
+                    <div class="mb-3">
+                        <label for="extendActingNewEndDate" class="form-label">New End Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="extendActingNewEndDate" name="newActingEndDate" required>
+                        <div class="form-text">Must be after current end date</div>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Extension will take effect immediately and user will continue in acting role.
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-calendar-plus me-2"></i>Extend Acting
                     </button>
                 </div>
             </form>
@@ -388,8 +613,428 @@
             create: '@Url.Action("Create", "UserManagement")',
             edit: '@Url.Action("Edit", "UserManagement")',
             getUser: '@Url.Action("GetUser", "UserManagement")',
-            delete: '@Url.Action("Delete", "UserManagement")'
+            delete: '@Url.Action("Delete", "UserManagement")',
+            setActing: '@Url.Action("SetActing", "UserManagement")',
+            stopActing: '@Url.Action("StopActing", "UserManagement")',
+            extendActing: '@Url.Action("ExtendActing", "UserManagement")',
+            getExpiringActing: '@Url.Action("GetExpiringActingUsers", "UserManagement")',
+            getActingStatistics: '@Url.Action("GetActingStatistics", "UserManagement")'
         };
+        
+        // AJAX Filter Functionality
+        
+        let debounceTimeout;
+        let searchInput, roleSelect, tableBody;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            tableBody = document.getElementById('users-table-body');
+            const filterForm = document.querySelector('form[asp-action="Index"]');
+            
+            // Initialize active elements based on screen size
+            function initializeElements() {
+                if (window.innerWidth >= 992) { // lg breakpoint
+                    searchInput = document.getElementById('searchTerm');
+                    roleSelect = document.getElementById('selectedRole');
+                } else {
+                    searchInput = document.getElementById('searchTermMobile');
+                    roleSelect = document.getElementById('selectedRoleMobile');
+                }
+            }
+            initializeElements();
+            
+            // Update active elements on resize
+            window.addEventListener('resize', initializeElements);
+            
+            // Setup event listeners for all elements (desktop and mobile)
+            function setupEventListeners() {
+                const allSearchInputs = [
+                    document.getElementById('searchTerm'),
+                    document.getElementById('searchTermMobile')
+                ];
+                const allRoleSelects = [
+                    document.getElementById('selectedRole'),
+                    document.getElementById('selectedRoleMobile')
+                ];
+                
+                // Setup search input listeners
+                allSearchInputs.forEach(input => {
+                    if (input) {
+                        input.addEventListener('input', function() {
+                            clearTimeout(debounceTimeout);
+                            debounceTimeout = setTimeout(() => applyFilters(), 300);
+                        });
+                        
+                        input.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                applyFilters();
+                            }
+                        });
+                    }
+                });
+                
+                // Setup role select listeners
+                allRoleSelects.forEach(select => {
+                    if (select) {
+                        select.addEventListener('change', applyFilters);
+                    }
+                });
+            }
+            setupEventListeners();
+            
+            // Setup clear button listeners
+            document.querySelectorAll('.clear-all-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = '@Url.Action("Index")';
+                });
+            });
+            
+            // Prevent form submission - use AJAX instead
+            if (filterForm) {
+                filterForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    applyFilters();
+                });
+            }
+        });
+        
+        // Apply filters via AJAX
+        function applyFilters(page = 1, pageSize = 10) {
+            const searchTerm = searchInput?.value?.trim() || '';
+            const selectedRole = roleSelect?.value || '';
+            
+            // If no filters, reload to original state
+            if (!searchTerm && !selectedRole) {
+                window.location.href = window.location.pathname;
+                return;
+            }
+            
+            // Build parameters for existing FilterUsers method
+            const params = new URLSearchParams();
+            params.append('page', page);
+            params.append('pageSize', pageSize);
+            
+            if (searchTerm) params.append('searchTerm', searchTerm);
+            if (selectedRole) params.append('selectedRole', selectedRole);
+            
+            // Build URL for browser history (same pattern as Need Approval)
+            const newUrl = `/UserManagement?${params.toString()}`;
+            
+            // Update browser URL without reload (for bookmarking/sharing)
+            if (page !== 1 || hasActiveFilters()) {
+                try {
+                    // Simple state object to avoid DataCloneError
+                    history.pushState({ 
+                        page: page, 
+                        searchTerm: searchTerm, 
+                        selectedRole: selectedRole 
+                    }, '', newUrl);
+                } catch (error) {
+                    // Fallback: just update URL without state
+                    window.history.replaceState(null, '', newUrl);
+                }
+            }
+            
+            // Show loading state
+            showLoadingState();
+            
+            // Call existing FilterUsers endpoint
+            fetch(`/UserManagement/FilterUsers?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateUsersTable(data.users);
+                    updatePagination(data.pagination);
+                } else {
+                    showErrorState(data.message || 'Error loading users');
+                }
+            })
+            .catch(error => {
+                console.error('Filter Error:', error);
+                showErrorState('Error loading filtered users');
+            });
+        }
+        
+        // Update users table with filtered results
+        function updateUsersTable(users) {
+            if (!tableBody) return;
+            
+            if (users.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No users found matching your filters</td></tr>';
+                return;
+            }
+            
+            const rows = users.map(user => {
+                const statusBadge = user.isActing 
+                    ? '<span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i>Acting</span>'
+                    : '<span class="badge bg-success"><i class="bi bi-person me-1"></i>Regular</span>';
+                
+                return `
+                    <tr>
+                        <td><span class="badge bg-light text-dark fw-bold">${user.id}</span></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-3">
+                                    <i class="bi bi-person-circle fs-2 text-secondary"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold">${user.name}</div>
+                                    <small class="text-muted">${user.username}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="fw-bold text-dark">${user.divisionName}</span></td>
+                        <td><span class="text-muted">${user.departmentName}</span></td>
+                        <td>${statusBadge}</td>
+                        <td><span class="badge bg-primary">${user.roleName}</span></td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn user-action-btn edit-user-btn" 
+                                        data-user-id="${user.id}" title="Edit User">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn user-action-btn delete-user-btn" 
+                                        data-user-id="${user.id}" data-user-name="${user.name}" title="Delete User">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Update table with smooth transition
+            tableBody.style.opacity = '0.5';
+            tableBody.innerHTML = rows;
+            tableBody.offsetHeight; // Force reflow
+            tableBody.style.opacity = '1';
+        }
+        
+        // Update pagination with filter context
+        function updatePagination(paginationData) {
+            const paginationContainer = document.querySelector('.pagination-container-single-row');
+            
+            if (!paginationData || !paginationData.showPagination) {
+                if (paginationContainer) {
+                    paginationContainer.style.display = 'none';
+                }
+                return;
+            }
+            
+            paginationContainer.style.display = 'flex';
+            
+            // Update pagination info
+            const paginationInfo = paginationContainer.querySelector('.pagination-info span');
+            if (paginationInfo) {
+                paginationInfo.innerHTML = `
+                    Showing <strong>${paginationData.firstItemIndex}-${paginationData.lastItemIndex}</strong> 
+                    of <strong>${paginationData.totalCount}</strong> Users
+                `;
+            }
+            
+            // Get current filters
+            const filters = {
+                searchTerm: searchInput?.value?.trim() || '',
+                selectedRole: roleSelect?.value || ''
+            };
+            
+            // Regenerate pagination HTML with filter parameters (same as Need Approval)
+            regeneratePaginationHTML(paginationData, filters);
+            
+            // Update pagination links with AJAX handlers
+            updatePaginationLinks(paginationData, filters);
+        }
+        
+        // Regenerate pagination HTML with filter parameters
+        function regeneratePaginationHTML(paginationData, filters = {}) {
+            const paginationNav = document.querySelector('.pagination-navigation ul.pagination');
+            if (!paginationNav) {
+                return;
+            }
+            
+            // Calculate visible pages (show max 5 pages)
+            const currentPage = paginationData.page;
+            const totalPages = paginationData.totalPages;
+            const maxVisible = 5;
+            
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            
+            // Adjust start if we're near the end
+            if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+            
+            // Build filter parameters for URLs
+            const filterParams = new URLSearchParams();
+            if (filters.searchTerm) filterParams.append('searchTerm', filters.searchTerm);
+            if (filters.selectedRole) filterParams.append('selectedRole', filters.selectedRole);
+            filterParams.append('pageSize', paginationData.pageSize);
+            
+            // Generate pagination HTML
+            let paginationHTML = '';
+            
+            // First button (Desktop Only)
+            paginationHTML += `
+                <li class="page-item first-last-btn ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="/UserManagement?${filterParams}&page=1" title="First Page">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </a>
+                </li>
+            `;
+            
+            // Previous button
+            paginationHTML += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="/UserManagement?${filterParams}&page=${currentPage - 1}" title="Previous">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            `;
+            
+            // Page numbers (Desktop)
+            for (let page = startPage; page <= endPage; page++) {
+                const isActive = page === currentPage;
+                paginationHTML += `
+                    <li class="page-item page-number desktop-page ${isActive ? 'active' : ''}">
+                        <a class="page-link ${isActive ? 'current-page' : ''}" href="/UserManagement?${filterParams}&page=${page}" title="Go to page ${page}">${page}</a>
+                    </li>
+                `;
+            }
+            
+            // Mobile current page
+            paginationHTML += `
+                <li class="page-item page-number mobile-page">
+                    <span class="page-link" style="background-color: white; border-color: #dee2e6; color: #495057;" aria-current="page">${currentPage}</span>
+                </li>
+            `;
+            
+            // Next button
+            paginationHTML += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="/UserManagement?${filterParams}&page=${currentPage + 1}" title="Next">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            `;
+            
+            // Last button (Desktop Only)
+            paginationHTML += `
+                <li class="page-item first-last-btn ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="/UserManagement?${filterParams}&page=${totalPages}" title="Last Page">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </a>
+                </li>
+            `;
+            
+            // Update pagination HTML
+            paginationNav.innerHTML = paginationHTML;
+        }
+        
+        // Update pagination links to use AJAX
+        function updatePaginationLinks(paginationData, filters = {}) {
+            const paginationLinks = document.querySelectorAll('.pagination a');
+            
+            paginationLinks.forEach(link => {
+                const newLink = link.cloneNode(true);
+                link.parentNode.replaceChild(newLink, link);
+                
+                newLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const url = new URL(this.href, window.location.origin);
+                    const page = parseInt(url.searchParams.get('page')) || 1;
+                    const pageSize = parseInt(url.searchParams.get('pageSize')) || 10;
+                    
+                    // Prevent multiple rapid clicks
+                    if (this.disabled) return;
+                    this.disabled = true;
+                    setTimeout(() => this.disabled = false, 1000);
+                    
+                    applyFilters(page, pageSize);
+                });
+            });
+            
+            // Handle page size selector
+            const pageSizeSelect = document.querySelector('.pagination select');
+            if (pageSizeSelect) {
+                pageSizeSelect.removeAttribute('onchange');
+                
+                pageSizeSelect.addEventListener('change', function() {
+                    const newPageSize = parseInt(this.value);
+                    applyFilters(1, newPageSize);
+                });
+            }
+        }
+        
+        // Loading and error states
+        function showLoadingState() {
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div class="mt-2 text-muted">Loading filtered users...</div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function showErrorState(message) {
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-danger mb-2">
+                                <i class="bi bi-exclamation-triangle"></i> ${message}
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="applyFilters()">
+                                <i class="bi bi-arrow-clockwise"></i> Retry
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // Make functions global for pagination partial
+        window.hasActiveFilters = function() {
+            const searchTerm = searchInput?.value?.trim() || '';
+            const selectedRole = roleSelect?.value || '';
+            return searchTerm || selectedRole;
+        };
+        
+        window.loadFilteredResults = function(page = 1, pageSize = 10) {
+            applyFilters(page, pageSize);
+        };
+        
+        // Browser history management for back/forward navigation (same pattern as Need Approval)
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.filters) {
+                // Restore filter values from history state
+                const filters = event.state.filters;
+                
+                if (searchInput) searchInput.value = filters.searchTerm || '';
+                if (roleSelect) roleSelect.value = filters.selectedRole || '';
+                
+                // Load results for the restored state
+                applyFilters(event.state.page || 1, 10);
+            } else {
+                // No state, reload original page
+                window.location.reload();
+            }
+        });
     </script>
     <script src="~/js/pages/user-management.js" asp-append-version="true"></script>
 }
