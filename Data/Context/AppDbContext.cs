@@ -171,6 +171,20 @@ namespace Ideku.Data.Context
                 .HasForeignKey(u => u.CurrentRoleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // User-ActingDivision relationship (acting location override)
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.ActingDivision)
+                .WithMany()
+                .HasForeignKey(u => u.ActingDivisionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // User-ActingDepartment relationship (acting location override)
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.ActingDepartment)
+                .WithMany()
+                .HasForeignKey(u => u.ActingDepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // =================== IDEA RELATIONSHIPS ===================
 
             // Idea-User relationship (Initiator)

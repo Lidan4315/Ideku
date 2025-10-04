@@ -30,15 +30,10 @@ namespace Ideku.Data.Repositories
                 .Include(u => u.Employee)
                     .ThenInclude(e => e.DepartmentNavigation)
                 .Include(u => u.Role)
+                .Include(u => u.CurrentRole)
+                .Include(u => u.ActingDivision)
+                .Include(u => u.ActingDepartment)
                 .FirstOrDefaultAsync(u => u.Id == id);
-        }
-
-        public async Task<User?> GetUserByRoleAsync(string roleName)
-        {
-            return await _context.Users
-                .Include(u => u.Employee)
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Role.RoleName == roleName);
         }
 
         public async Task<User?> GetByEmployeeIdAsync(string employeeId)
@@ -80,6 +75,9 @@ namespace Ideku.Data.Repositories
                 .Include(u => u.Employee)
                     .ThenInclude(e => e.DepartmentNavigation)
                 .Include(u => u.Role)
+                .Include(u => u.CurrentRole)
+                .Include(u => u.ActingDivision)
+                .Include(u => u.ActingDepartment)
                 .OrderByDescending(u => u.Id)
                 .ToListAsync();
         }
@@ -96,6 +94,9 @@ namespace Ideku.Data.Repositories
                 .Include(u => u.Employee)
                     .ThenInclude(e => e.DepartmentNavigation)
                 .Include(u => u.Role)
+                .Include(u => u.CurrentRole)
+                .Include(u => u.ActingDivision)
+                .Include(u => u.ActingDepartment)
                 .OrderByDescending(u => u.Id);
         }
 

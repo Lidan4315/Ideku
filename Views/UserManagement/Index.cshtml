@@ -1,3 +1,4 @@
+@using Ideku.Helpers
 @model Ideku.ViewModels.UserManagement.UserIndexViewModel
 @{
     ViewData["Title"] = "User Management";
@@ -150,20 +151,44 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="fw-bold text-dark">@(user.Employee.DivisionNavigation?.NameDivision ?? "N/A")</span>
+                                                <span class="fw-bold text-dark">@LocationHelper.GetEffectiveDivision(user)</span>
+                                                @if (ActingHelper.IsCurrentlyActing(user) && LocationHelper.HasActingLocationOverride(user))
+                                                {
+                                                    <div class="small text-info mt-1">
+                                                        <i class="bi bi-arrow-right me-1"></i>Acting from @LocationHelper.GetOriginalDivision(user)
+                                                    </div>
+                                                }
                                             </td>
                                             <td>
-                                                <span class="text-muted">@(user.Employee.DepartmentNavigation?.NameDepartment ?? "N/A")</span>
+                                                <span class="text-muted">@LocationHelper.GetEffectiveDepartment(user)</span>
+                                                @if (ActingHelper.IsCurrentlyActing(user) && LocationHelper.HasActingLocationOverride(user))
+                                                {
+                                                    <div class="small text-info mt-1">
+                                                        <i class="bi bi-arrow-right me-1"></i>Acting from @LocationHelper.GetOriginalDepartment(user)
+                                                    </div>
+                                                }
                                             </td>
                                             <td>
-                                                @if (user.IsCurrentlyActing())
+                                                @if (ActingHelper.IsCurrentlyActing(user))
                                                 {
                                                     <div>
                                                         <span class="badge bg-warning text-dark"><i class="bi bi-star me-1"></i>Acting</span>
+                                                        @if (LocationHelper.HasActingLocationOverride(user))
+                                                        {
+                                                            <span class="badge bg-info text-white ms-1">
+                                                                <i class="bi bi-geo-alt me-1"></i>Location Override
+                                                            </span>
+                                                        }
                                                         <div class="small text-muted mt-1">
-                                                            @user.GetActingStatusText()
+                                                            @ActingHelper.GetActingStatusText(user)
                                                         </div>
-                                                        @if (user.IsActingExpiringSoon())
+                                                        @if (LocationHelper.HasActingLocationOverride(user))
+                                                        {
+                                                            <div class="small text-info mt-1">
+                                                                <i class="bi bi-building me-1"></i>@LocationHelper.GetLocationDisplayText(user)
+                                                            </div>
+                                                        }
+                                                        @if (ActingHelper.IsActingExpiringSoon(user))
                                                         {
                                                             <div class="small text-danger mt-1">
                                                                 <i class="bi bi-exclamation-triangle me-1"></i>Expiring Soon!
@@ -192,7 +217,7 @@
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
 
-                                                    @if (user.IsCurrentlyActing())
+                                                    @if (ActingHelper.IsCurrentlyActing(user))
                                                     {
                                                         <!-- Stop Acting Button -->
                                                         <button type="button" class="btn user-action-btn stop-acting-btn"
@@ -218,6 +243,8 @@
                                                                 data-user-id="@user.Id"
                                                                 data-user-name="@user.Name"
                                                                 data-current-role="@user.Role.RoleName"
+                                                                data-current-division="@(user.Employee.DivisionNavigation?.NameDivision ?? "N/A")"
+                                                                data-current-department="@(user.Employee.DepartmentNavigation?.NameDepartment ?? "N/A")"
                                                                 title="Set Acting">
                                                             <i class="bi bi-star text-warning"></i>
                                                         </button>
@@ -495,12 +522,20 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" id="setActingUserId" name="userId">
                 <div class="modal-body app-modal-body">
-                    <!-- User Info -->
-                    <div class="alert alert-info d-flex align-items-center">
-                        <i class="bi bi-person me-2"></i>
-                        <div>
-                            <strong>User:</strong> <span id="setActingUserName"></span><br>
-                            <strong>Current Role:</strong> <span id="setActingCurrentRole"></span>
+                    <!-- Employee Information -->
+                    <div class="mb-3">
+                        <h6 class="mb-2">Employee Information</h6>
+                        <div class="border rounded p-3 bg-white">
+                            <div class="row small">
+                                <div class="col-md-6">
+                                    <strong>Name:</strong> <span id="setActingUserName"></span><br>
+                                    <strong>Role:</strong> <span id="setActingCurrentRole"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Division:</strong> <span id="currentUserDivision">Loading...</span><br>
+                                    <strong>Department:</strong> <span id="currentUserDepartment">Loading...</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -515,6 +550,37 @@
                             }
                         </select>
                         <div class="form-text">Role user will temporarily act as</div>
+                    </div>
+
+                    <!-- Acting Location Section -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-geo-alt me-2"></i>Acting Location <span class="text-danger">*</span></label>
+                        <div class="alert alert-light border" id="actingLocationFields">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="actingDivisionSelect" class="form-label">Acting Division <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="actingDivisionSelect" name="actingDivisionId" required>
+                                        <option value="">-- Select Acting Division --</option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Please select an acting division.
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="actingDepartmentSelect" class="form-label">Acting Department <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="actingDepartmentSelect" name="actingDepartmentId" required disabled>
+                                        <option value="">-- Select Acting Department --</option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Please select an acting department.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text mt-2">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Both division and department are required for acting role assignment
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Date Range -->

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Ideku.Data.Context;
 using Ideku.Models.Entities;
+using Ideku.Helpers;
 
 namespace Ideku.Data.Repositories.WorkflowManagement
 {
@@ -233,25 +234,30 @@ namespace Ideku.Data.Repositories.WorkflowManagement
             
             foreach (var approverRole in workflowStage.Approver.ApproverRoles)
             {
-                var query = _context.Users
+                // Get all users with the required role and active status
+                var usersWithRole = await _context.Users
                     .Include(u => u.Employee)
                     .Include(u => u.Role)
-                    .Where(u => u.RoleId == approverRole.RoleId && u.Employee.EMP_STATUS == "Active");
+                    .Include(u => u.ActingDivision)
+                    .Include(u => u.ActingDepartment)
+                    .Where(u => u.RoleId == approverRole.RoleId && u.Employee.EMP_STATUS == "Active")
+                    .ToListAsync();
 
-                // Filter by target division if specified
-                if (!string.IsNullOrEmpty(targetDivisionId))
+                // Filter by effective location using domain logic (exclusive acting approach)
+                var filteredUsers = usersWithRole.Where(u =>
                 {
-                    query = query.Where(u => u.Employee.DIVISION == targetDivisionId);
-                }
+                    // Check division match if specified
+                    if (!string.IsNullOrEmpty(targetDivisionId) && LocationHelper.GetEffectiveDivisionId(u) != targetDivisionId)
+                        return false;
 
-                // Filter by target department if specified
-                if (!string.IsNullOrEmpty(targetDepartmentId))
-                {
-                    query = query.Where(u => u.Employee.DEPARTEMENT == targetDepartmentId);
-                }
+                    // Check department match if specified
+                    if (!string.IsNullOrEmpty(targetDepartmentId) && LocationHelper.GetEffectiveDepartmentId(u) != targetDepartmentId)
+                        return false;
 
-                var usersWithRole = await query.ToListAsync();
-                approverUsers.AddRange(usersWithRole);
+                    return true;
+                }).ToList();
+
+                approverUsers.AddRange(filteredUsers);
             }
 
             // Remove duplicates and return

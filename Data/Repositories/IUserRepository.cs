@@ -7,7 +7,6 @@ namespace Ideku.Data.Repositories
     {
         Task<User?> GetByUsernameAsync(string username);
         Task<User?> GetByIdAsync(long id);
-        Task<User?> GetUserByRoleAsync(string roleName);
         Task<User?> GetByEmployeeIdAsync(string employeeId);
         
         /// <summary>
