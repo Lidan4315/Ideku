@@ -1,6 +1,7 @@
 using Ideku.Data.Repositories;
 using Ideku.Models.Entities;
 using Ideku.Models.Statistics;
+using Ideku.Helpers;
 
 namespace Ideku.Services.UserManagement
 {
@@ -13,15 +14,18 @@ namespace Ideku.Services.UserManagement
         private readonly IUserRepository _userRepository;
         private readonly IEmployeeRepository _employeeRepository;
         private readonly IRolesRepository _rolesRepository;
+        private readonly ILookupRepository _lookupRepository;
 
         public UserManagementService(
-            IUserRepository userRepository, 
+            IUserRepository userRepository,
             IEmployeeRepository employeeRepository,
-            IRolesRepository rolesRepository)
+            IRolesRepository rolesRepository,
+            ILookupRepository lookupRepository)
         {
             _userRepository = userRepository;
             _employeeRepository = employeeRepository;
             _rolesRepository = rolesRepository;
+            _lookupRepository = lookupRepository;
         }
 
         /// <summary>
@@ -145,7 +149,7 @@ namespace Ideku.Services.UserManagement
                 }
 
                 // BUSINESS RULE: Cannot change role while user is acting
-                if (existingUser.IsCurrentlyActing() && roleId != existingUser.CurrentRoleId)
+                if (ActingHelper.IsCurrentlyActing(existingUser) && roleId != existingUser.CurrentRoleId)
                 {
                     return (false, "Cannot change role while user is acting. Please stop acting first or wait until acting period expires.", null);
                 }
@@ -314,13 +318,15 @@ namespace Ideku.Services.UserManagement
 
 
         /// <summary>
-        /// Set user to acting role with specific duration
+        /// Set user to acting role with specific duration and required location
         /// </summary>
         public async Task<(bool Success, string Message)> SetUserActingAsync(
             long userId,
             int actingRoleId,
             DateTime startDate,
-            DateTime endDate)
+            DateTime endDate,
+            string actingDivisionId,
+            string actingDepartmentId)
         {
             try
             {
@@ -337,8 +343,20 @@ namespace Ideku.Services.UserManagement
                     return (false, validation.Message);
                 }
 
-                // Set acting
+                // Validate acting location (now required)
+                var locationValidation = await ValidateActingLocationAsync(actingDivisionId, actingDepartmentId);
+                if (!locationValidation.IsValid)
+                {
+                    return (false, locationValidation.Message);
+                }
+
+                // Set acting with location
                 await SetUserActingInternalAsync(user, actingRoleId, startDate, endDate);
+
+                // Set acting location override
+                user.ActingDivisionId = actingDivisionId;
+                user.ActingDepartmentId = actingDepartmentId;
+
                 await _userRepository.UpdateUserAsync(user);
 
                 var actingRole = await _rolesRepository.GetByIdAsync(actingRoleId);
@@ -528,6 +546,8 @@ namespace Ideku.Services.UserManagement
             user.CurrentRoleId = null;
             user.ActingStartDate = null;
             user.ActingEndDate = null;
+            user.ActingDivisionId = null;
+            user.ActingDepartmentId = null;
             user.UpdatedAt = DateTime.Now;
         }
 
@@ -580,6 +600,49 @@ namespace Ideku.Services.UserManagement
             }
 
             return (true, "Acting data is valid.");
+        }
+
+        /// <summary>
+        /// Validate acting location selection (division and department compatibility)
+        /// Both division and department are now required for acting
+        /// </summary>
+        public async Task<(bool IsValid, string Message)> ValidateActingLocationAsync(string divisionId, string departmentId)
+        {
+            try
+            {
+                // Both division and department are required
+                if (string.IsNullOrEmpty(divisionId))
+                {
+                    return (false, "Acting division is required.");
+                }
+
+                if (string.IsNullOrEmpty(departmentId))
+                {
+                    return (false, "Acting department is required.");
+                }
+
+                // Validate division exists and is active
+                var activeDivisions = await _lookupRepository.GetActiveDivisionsAsync();
+                var division = activeDivisions.FirstOrDefault(d => d.Id == divisionId);
+                if (division == null)
+                {
+                    return (false, "Selected division not found or is not active.");
+                }
+
+                // Validate department exists, is active, and belongs to division
+                var departmentsList = await _lookupRepository.GetDepartmentsByDivisionAsync(divisionId);
+                var department = departmentsList.FirstOrDefault(d => d.Value == departmentId);
+                if (department == null)
+                {
+                    return (false, "Selected department not found or does not belong to the selected division.");
+                }
+
+                return (true, "Acting location is valid.");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error validating acting location: {ex.Message}");
+            }
         }
     }
 }

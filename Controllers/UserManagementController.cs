@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Ideku.Services.UserManagement;
+using Ideku.Services.Lookup;
 using Ideku.ViewModels.UserManagement;
 using Ideku.Models.Statistics;
 using Ideku.Extensions;
@@ -18,13 +19,16 @@ namespace Ideku.Controllers
     public class UserManagementController : Controller
     {
         private readonly IUserManagementService _userManagementService;
+        private readonly ILookupService _lookupService;
         private readonly ILogger<UserManagementController> _logger;
 
         public UserManagementController(
-            IUserManagementService userManagementService, 
+            IUserManagementService userManagementService,
+            ILookupService lookupService,
             ILogger<UserManagementController> logger)
         {
             _userManagementService = userManagementService;
+            _lookupService = lookupService;
             _logger = logger;
         }
 
@@ -217,7 +221,7 @@ namespace Ideku.Controllers
 
                 // PRE-VALIDATION: Check if user is acting and role is being changed
                 var currentUser = await _userManagementService.GetUserByIdAsync(id);
-                if (currentUser != null && currentUser.IsCurrentlyActing() && model.RoleId != currentUser.CurrentRoleId)
+                if (currentUser != null && ActingHelper.IsCurrentlyActing(currentUser) && model.RoleId != currentUser.CurrentRoleId)
                 {
                     return Json(new { success = false, message = "Cannot change role while user is acting. Please stop acting first." });
                 }
@@ -423,7 +427,9 @@ namespace Ideku.Controllers
                     model.UserId,
                     model.ActingRoleId,
                     model.ActingStartDate,
-                    model.ActingEndDate
+                    model.ActingEndDate,
+                    model.ActingDivisionId,
+                    model.ActingDepartmentId
                 );
 
                 if (result.Success)
@@ -546,7 +552,7 @@ namespace Ideku.Controllers
                         actingRoleName = u.Role.RoleName,
                         originalRoleName = u.CurrentRole?.RoleName,
                         actingEndDate = u.ActingEndDate?.ToString("yyyy-MM-dd"),
-                        daysRemaining = u.GetActingDaysRemaining(),
+                        daysRemaining = ActingHelper.GetActingDaysRemaining(u),
                         division = u.Employee.DivisionNavigation?.NameDivision,
                         department = u.Employee.DepartmentNavigation?.NameDepartment
                     })
@@ -594,6 +600,49 @@ namespace Ideku.Controllers
             {
                 _logger.LogError(ex, "Error getting acting statistics");
                 return Json(new { success = false, message = "Error loading acting statistics." });
+            }
+        }
+
+        // =================== ACTING LOCATION ENDPOINTS ===================
+
+        /// <summary>
+        /// GET: Get divisions for acting location dropdown
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetActingDivisions()
+        {
+            try
+            {
+                var divisions = await _lookupService.GetDivisionsAsync();
+                return Json(new { success = true, divisions });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting divisions for acting location");
+                return Json(new { success = false, message = "Error loading divisions." });
+            }
+        }
+
+        /// <summary>
+        /// GET: Get departments by division for acting location dropdown
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetActingDepartmentsByDivision(string divisionId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(divisionId))
+                {
+                    return Json(new { success = false, message = "Division ID is required." });
+                }
+
+                var departments = await _lookupService.GetDepartmentsByDivisionForAjaxAsync(divisionId);
+                return Json(new { success = true, departments });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting departments for division {DivisionId}", divisionId);
+                return Json(new { success = false, message = "Error loading departments." });
             }
         }
     }

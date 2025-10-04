@@ -49,13 +49,15 @@ namespace Ideku.Services.UserManagement
 
 
         /// <summary>
-        /// Set user to acting role with specific duration
+        /// Set user to acting role with specific duration and required location
         /// </summary>
         Task<(bool Success, string Message)> SetUserActingAsync(
             long userId,
             int actingRoleId,
             DateTime startDate,
-            DateTime endDate);
+            DateTime endDate,
+            string actingDivisionId,
+            string actingDepartmentId);
 
         /// <summary>
         /// Stop user acting immediately and revert to original role
@@ -87,6 +89,12 @@ namespace Ideku.Services.UserManagement
         /// Returns comprehensive statistics about acting users
         /// </summary>
         Task<ActingStatistics> GetActingStatisticsAsync();
+
+        /// <summary>
+        /// Validate acting location selection (division and department compatibility)
+        /// Both division and department are now required for acting
+        /// </summary>
+        Task<(bool IsValid, string Message)> ValidateActingLocationAsync(string divisionId, string departmentId);
 
         /// <summary>
         /// Delete user with comprehensive dependency checking and business rules

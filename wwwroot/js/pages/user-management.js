@@ -657,8 +657,10 @@ function initializeActingManagement() {
         const userId = $(this).data('user-id');
         const userName = $(this).data('user-name');
         const currentRole = $(this).data('current-role');
+        const currentDivision = $(this).data('current-division');
+        const currentDepartment = $(this).data('current-department');
 
-        openSetActingModal(userId, userName, currentRole);
+        openSetActingModal(userId, userName, currentRole, currentDivision, currentDepartment);
     });
 
     // Stop Acting button handler
@@ -689,12 +691,19 @@ function initializeActingManagement() {
         e.preventDefault();
         submitExtendActing();
     });
+
+    // Initialize acting location functionality
+    initializeActingLocation();
 }
 
-function openSetActingModal(userId, userName, currentRole) {
+function openSetActingModal(userId, userName, currentRole, currentDivision, currentDepartment) {
     $('#setActingUserId').val(userId);
     $('#setActingUserName').text(userName);
     $('#setActingCurrentRole').text(currentRole);
+
+    // Populate current location info
+    $('#currentUserDivision').text(currentDivision || 'N/A');
+    $('#currentUserDepartment').text(currentDepartment || 'N/A');
 
     // Reset form
     $('#setActingForm')[0].reset();
@@ -747,11 +756,16 @@ function confirmStopActing(userId, userName) {
 }
 
 function submitSetActing() {
+    // Get acting location data
+    const locationData = getActingLocationData();
+
     const formData = {
         userId: parseInt($('#setActingUserId').val()),
         actingRoleId: parseInt($('#setActingRoleSelect').val()),
         actingStartDate: $('#setActingStartDate').val(),
-        actingEndDate: $('#setActingEndDate').val()
+        actingEndDate: $('#setActingEndDate').val(),
+        actingDivisionId: locationData.actingDivisionId,
+        actingDepartmentId: locationData.actingDepartmentId
     };
 
     // Validate dates
@@ -864,4 +878,149 @@ function refreshUserTable() {
         // Fallback: reload page if applyFilters not available
         window.location.reload();
     }
+}
+
+// ============================================
+// ACTING LOCATION FUNCTIONALITY
+// ============================================
+
+function initializeActingLocation() {
+    // Load divisions when modal opens and show location fields immediately
+    $('#setActingModal').on('shown.bs.modal', function() {
+        // Always show acting location fields (no more optional)
+        $('#actingLocationFields').show();
+
+        // Load divisions on modal open
+        loadActingDivisions();
+    });
+
+    // Handle division selection change
+    $('#actingDivisionSelect').on('change', function() {
+        const divisionId = $(this).val();
+        if (divisionId) {
+            loadActingDepartments(divisionId);
+        } else {
+            // Clear department dropdown when no division selected
+            $('#actingDepartmentSelect').html('<option value="">-- Select Acting Department --</option>');
+        }
+    });
+
+    // Reset location fields when modal is hidden
+    $('#setActingModal').on('hidden.bs.modal', function() {
+        resetActingLocationFields();
+    });
+}
+
+function loadActingDivisions() {
+    const $divisionSelect = $('#actingDivisionSelect');
+
+    // Show loading state
+    $divisionSelect.html('<option value="">Loading divisions...</option>');
+    $divisionSelect.prop('disabled', true);
+
+    $.ajax({
+        url: '/UserManagement/GetActingDivisions',
+        type: 'GET',
+        success: function(response) {
+            if (response.success) {
+                populateActingDivisionDropdown(response.divisions);
+            } else {
+                showActingLocationError('Failed to load divisions: ' + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading divisions:', error);
+            showActingLocationError('Error loading divisions. Please try again.');
+        },
+        complete: function() {
+            $divisionSelect.prop('disabled', false);
+        }
+    });
+}
+
+function populateActingDivisionDropdown(divisions) {
+    const $divisionSelect = $('#actingDivisionSelect');
+
+    // Clear and add default option
+    $divisionSelect.html('<option value="">-- Select Acting Division --</option>');
+
+    // Add divisions
+    divisions.forEach(function(division) {
+        if (division.value !== '') { // Skip the default "Select To Division" option
+            $divisionSelect.append(`<option value="${division.value}">${division.text}</option>`);
+        }
+    });
+}
+
+function loadActingDepartments(divisionId) {
+    const $departmentSelect = $('#actingDepartmentSelect');
+
+    if (!divisionId) {
+        $departmentSelect.html('<option value="">Select division first</option>');
+        $departmentSelect.prop('disabled', true);
+        return;
+    }
+
+    // Show loading state
+    $departmentSelect.html('<option value="">Loading departments...</option>');
+    $departmentSelect.prop('disabled', true);
+
+    $.ajax({
+        url: '/UserManagement/GetActingDepartmentsByDivision',
+        type: 'GET',
+        data: { divisionId: divisionId },
+        success: function(response) {
+            if (response.success) {
+                populateActingDepartmentDropdown(response.departments);
+            } else {
+                showActingLocationError('Failed to load departments: ' + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading departments:', error);
+            showActingLocationError('Error loading departments. Please try again.');
+        },
+        complete: function() {
+            $departmentSelect.prop('disabled', false);
+        }
+    });
+}
+
+function populateActingDepartmentDropdown(departments) {
+    const $departmentSelect = $('#actingDepartmentSelect');
+
+    // Clear and add default option
+    $departmentSelect.html('<option value="">-- Select Acting Department --</option>');
+
+    // Add departments
+    departments.forEach(function(department) {
+        $departmentSelect.append(`<option value="${department.value}">${department.text}</option>`);
+    });
+}
+
+function clearActingLocationSelections() {
+    $('#actingDivisionSelect').val('');
+    $('#actingDepartmentSelect').html('<option value="">Select division first</option>');
+    $('#actingDepartmentSelect').prop('disabled', true);
+}
+
+function resetActingLocationFields() {
+    // Clear acting location selections (no more hiding fields - always visible)
+    clearActingLocationSelections();
+}
+
+function showActingLocationError(message) {
+    // You can customize this to show errors in a toast or alert
+    console.error('Acting Location Error:', message);
+
+    // Simple alert for now - can be replaced with toast notification
+    alert('Location Error: ' + message);
+}
+
+function getActingLocationData() {
+    // Acting location is now always required (no more optional)
+    return {
+        actingDivisionId: $('#actingDivisionSelect').val() || '',
+        actingDepartmentId: $('#actingDepartmentSelect').val() || ''
+    };
 }

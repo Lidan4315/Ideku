@@ -37,6 +37,22 @@ namespace Ideku.ViewModels.UserManagement
         public DateTime ActingEndDate { get; set; } = DateTime.Today.AddDays(30);
 
         /// <summary>
+        /// Acting Division ID - where user will act (required)
+        /// User must explicitly choose acting location
+        /// </summary>
+        [Required(ErrorMessage = "Please select an acting division.")]
+        [Display(Name = "Acting Division")]
+        public string ActingDivisionId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Acting Department ID - where user will act (required)
+        /// Must belong to selected acting division
+        /// </summary>
+        [Required(ErrorMessage = "Please select an acting department.")]
+        [Display(Name = "Acting Department")]
+        public string ActingDepartmentId { get; set; } = string.Empty;
+
+        /// <summary>
         /// Current user information (read-only)
         /// </summary>
         public string UserName { get; set; } = string.Empty;
@@ -63,6 +79,24 @@ namespace Ideku.ViewModels.UserManagement
         {
             return (int)(ActingEndDate - ActingStartDate).TotalDays;
         }
+
+        /// <summary>
+        /// Validate acting location selection
+        /// Both division and department are now required
+        /// </summary>
+        public bool IsValidActingLocation()
+        {
+            // Both division and department must be selected (required fields)
+            return !string.IsNullOrEmpty(ActingDivisionId) &&
+                   !string.IsNullOrEmpty(ActingDepartmentId);
+        }
+
+        /// <summary>
+        /// Check if acting location is different from current location
+        /// Useful for UI display purposes
+        /// </summary>
+        public bool HasDifferentActingLocation(string currentDivisionId, string currentDepartmentId) =>
+            ActingDivisionId != currentDivisionId || ActingDepartmentId != currentDepartmentId;
     }
 
     /// <summary>
