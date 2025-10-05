@@ -81,6 +81,7 @@ namespace Ideku.Models.Entities
 
         public ICollection<Idea> InitiatedIdeas { get; set; } = new List<Idea>();
         public ICollection<WorkflowHistory> WorkflowActions { get; set; } = new List<WorkflowHistory>();
-        public ICollection<Milestone> CreatedMilestones { get; set; } = new List<Milestone>();
+        public ICollection<IdeaImplementator> ImplementatorAssignments { get; set; } = new List<IdeaImplementator>();
+        public ICollection<MilestonePIC> MilestonePICAssignments { get; set; } = new List<MilestonePIC>();
     }
 }

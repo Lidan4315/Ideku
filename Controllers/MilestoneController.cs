@@ -1,0 +1,317 @@
+using Ideku.Services.Milestone;
+using Ideku.Services.Lookup;
+using Ideku.ViewModels.Milestone;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace Ideku.Controllers
+{
+    [Authorize]
+    public class MilestoneController : Controller
+    {
+        private readonly IMilestoneService _milestoneService;
+        private readonly ILookupService _lookupService;
+        private readonly ILogger<MilestoneController> _logger;
+
+        public MilestoneController(
+            IMilestoneService milestoneService,
+            ILookupService lookupService,
+            ILogger<MilestoneController> logger)
+        {
+            _milestoneService = milestoneService;
+            _lookupService = lookupService;
+            _logger = logger;
+        }
+
+        // GET: /Milestone or /Milestone/Index
+        public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            string? selectedDivision = null,
+            string? selectedDepartment = null,
+            int? selectedCategory = null,
+            string? selectedStatus = null)
+        {
+            try
+            {
+                var pagedIdeas = await _milestoneService.GetMilestoneEligibleIdeasAsync(
+                    page, pageSize, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStatus);
+
+                var viewModel = new MilestoneListViewModel
+                {
+                    PagedIdeas = pagedIdeas,
+                    SearchTerm = searchTerm,
+                    SelectedDivision = selectedDivision,
+                    SelectedDepartment = selectedDepartment,
+                    SelectedCategory = selectedCategory,
+                    SelectedStatus = selectedStatus
+                };
+
+                // Get lookup data for filters
+                var divisions = await _lookupService.GetDivisionsAsync();
+                var categories = await _lookupService.GetCategoriesAsync();
+
+                // Pass lookup data to view
+                ViewBag.Divisions = divisions;
+                ViewBag.Categories = categories;
+
+                if (!string.IsNullOrWhiteSpace(selectedDivision))
+                {
+                    ViewBag.Departments = await _lookupService.GetDepartmentsByDivisionAsync(selectedDivision);
+                }
+
+                // Get unique statuses for filter
+                ViewBag.Statuses = pagedIdeas.Items
+                    .Select(i => i.CurrentStatus)
+                    .Distinct()
+                    .OrderBy(s => s)
+                    .ToList();
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading milestone list");
+                TempData["ErrorMessage"] = "An error occurred while loading the milestone list.";
+                return View(new MilestoneListViewModel());
+            }
+        }
+
+        // GET: /Milestone/Detail/{ideaId}
+        public async Task<IActionResult> Detail(long ideaId)
+        {
+            try
+            {
+                var idea = await _milestoneService.GetMilestoneEligibleIdeaByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    TempData["ErrorMessage"] = "Idea not found or not eligible for milestone management.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var milestones = await _milestoneService.GetMilestonesByIdeaIdAsync(ideaId);
+                var availablePICUsers = await _milestoneService.GetAvailablePICUsersAsync(ideaId);
+                var canManage = await _milestoneService.CanUserManageMilestonesAsync(User.Identity!.Name!, ideaId);
+
+                var viewModel = new MilestoneDetailViewModel
+                {
+                    Idea = idea,
+                    Milestones = milestones,
+                    AvailablePICUsers = availablePICUsers,
+                    CanManageMilestones = canManage,
+                    IsEligibleForMilestones = true // Already filtered in service
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading milestone detail for idea {IdeaId}", ideaId);
+                TempData["ErrorMessage"] = "An error occurred while loading the milestone details.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+
+        // AJAX: Create milestone from modal
+        [HttpPost]
+        public async Task<IActionResult> CreateMilestone(
+            long ideaId,
+            string title,
+            string note,
+            DateTime startDate,
+            DateTime endDate,
+            string status,
+            string creatorName,
+            string creatorEmployeeId,
+            List<long>? selectedPICUserIds = null)
+        {
+            try
+            {
+                var result = await _milestoneService.CreateMilestoneAsync(
+                    ideaId, title, note, startDate, endDate, status, creatorName, creatorEmployeeId, selectedPICUserIds);
+
+                return Json(new { success = result.Success, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating milestone via AJAX for idea {IdeaId}", ideaId);
+                return Json(new { success = false, message = "An error occurred while creating the milestone." });
+            }
+        }
+
+        // NOTE: Edit milestone functionality has been moved to modal popup in Detail view
+        // using UpdateMilestone AJAX action below
+
+        // POST: /Milestone/UpdateMilestone (AJAX)
+        [HttpPost]
+        public async Task<IActionResult> UpdateMilestone([FromBody] UpdateMilestoneRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return Json(new { success = false, message = "Invalid data provided." });
+                }
+
+                var canManage = await _milestoneService.CanUserManageMilestonesAsync(User.Identity!.Name!, request.IdeaId);
+                if (!canManage)
+                {
+                    return Json(new { success = false, message = "You don't have permission to update this milestone." });
+                }
+
+                var result = await _milestoneService.UpdateMilestoneAsync(
+                    request.MilestoneId,
+                    request.Title,
+                    request.Note,
+                    request.StartDate,
+                    request.EndDate,
+                    request.Status,
+                    request.SelectedPICUserIds);
+
+                if (result.Success)
+                {
+                    return Json(new { success = true, message = "Milestone updated successfully!" });
+                }
+                else
+                {
+                    return Json(new { success = false, message = result.Message });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating milestone {MilestoneId}", request.MilestoneId);
+                return Json(new { success = false, message = "An error occurred while updating the milestone." });
+            }
+        }
+
+        // POST: /Milestone/Delete/{milestoneId}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(long milestoneId, long ideaId)
+        {
+            try
+            {
+                var canManage = await _milestoneService.CanUserManageMilestonesAsync(User.Identity!.Name!, ideaId);
+                if (!canManage)
+                {
+                    TempData["ErrorMessage"] = "You don't have permission to delete this milestone.";
+                    return RedirectToAction(nameof(Detail), new { ideaId });
+                }
+
+                var result = await _milestoneService.DeleteMilestoneAsync(milestoneId);
+
+                if (result.Success)
+                {
+                    TempData["SuccessMessage"] = result.Message;
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.Message;
+                }
+
+                return RedirectToAction(nameof(Detail), new { ideaId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting milestone {MilestoneId}", milestoneId);
+                TempData["ErrorMessage"] = "An error occurred while deleting the milestone.";
+                return RedirectToAction(nameof(Detail), new { ideaId });
+            }
+        }
+
+        // AJAX endpoint for real-time filtering
+        [HttpGet]
+        public async Task<IActionResult> FilterAllIdeas(
+            int page = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            string? selectedDivision = null,
+            string? selectedDepartment = null,
+            int? selectedCategory = null,
+            string? selectedStatus = null)
+        {
+            try
+            {
+                // Validate pagination parameters
+                pageSize = Math.Max(5, Math.Min(100, pageSize));
+                page = Math.Max(1, page);
+
+                // Get milestone eligible ideas with filters
+                var pagedResult = await _milestoneService.GetMilestoneEligibleIdeasAsync(
+                    page, pageSize, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStatus);
+
+                // Return JSON with paginated results
+                return Json(new
+                {
+                    success = true,
+                    ideas = pagedResult.Items.Select(i => new
+                    {
+                        ideaCode = i.IdeaCode,
+                        ideaName = i.IdeaName,
+                        initiatorName = i.InitiatorUser?.Employee?.NAME,
+                        initiatorBadge = i.InitiatorUser?.Employee?.EMP_ID,
+                        divisionName = i.TargetDivision?.NameDivision,
+                        departmentName = i.TargetDepartment?.NameDepartment,
+                        categoryName = i.Category?.CategoryName,
+                        eventName = i.Event?.EventName,
+                        currentStage = i.CurrentStage,
+                        savingCost = i.SavingCost,
+                        savingCostValidated = i.SavingCostValidated,
+                        currentStatus = i.CurrentStatus,
+                        milestonesCount = i.Milestones.Count(),
+                        submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        detailUrl = Url.Action("Detail", new { ideaId = i.Id })
+                    }),
+                    pagination = new
+                    {
+                        currentPage = pagedResult.Page,
+                        pageSize = pagedResult.PageSize,
+                        totalCount = pagedResult.TotalCount,
+                        totalPages = pagedResult.TotalPages,
+                        hasPrevious = pagedResult.HasPrevious,
+                        hasNext = pagedResult.HasNext,
+                        firstItemIndex = pagedResult.FirstItemIndex,
+                        lastItemIndex = pagedResult.LastItemIndex
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering milestone ideas");
+                return Json(new { success = false, message = "Error loading data" });
+            }
+        }
+
+        // AJAX: Get departments by division
+        [HttpGet]
+        public async Task<IActionResult> GetDepartmentsByDivision(string divisionId)
+        {
+            try
+            {
+                var departments = await _lookupService.GetDepartmentsByDivisionForAjaxAsync(divisionId);
+                return Json(new { success = true, departments });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting departments for division {DivisionId}", divisionId);
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+    }
+
+    // Request model for AJAX UpdateMilestone
+    public class UpdateMilestoneRequest
+    {
+        public long MilestoneId { get; set; }
+        public long IdeaId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Note { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public List<long> SelectedPICUserIds { get; set; } = new();
+    }
+}

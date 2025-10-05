@@ -2,12 +2,14 @@ using Ideku.Data.Repositories;
 using Ideku.Services.Idea;
 using Ideku.Services.IdeaRelation;
 using Ideku.Services.Lookup;
+using Ideku.Services.IdeaImplementators;
 using Ideku.ViewModels.IdeaList;
 using Ideku.Extensions;
 using Ideku.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,19 +23,22 @@ namespace Ideku.Controllers
         private readonly IUserRepository _userRepository;
         private readonly ILookupService _lookupService;
         private readonly IIdeaRelationService _ideaRelationService;
+        private readonly IIdeaImplementatorService _implementatorService;
         private readonly ILogger<IdeaListController> _logger;
 
         public IdeaListController(
-            IIdeaService ideaService, 
-            IUserRepository userRepository, 
+            IIdeaService ideaService,
+            IUserRepository userRepository,
             ILookupService lookupService,
             IIdeaRelationService ideaRelationService,
+            IIdeaImplementatorService implementatorService,
             ILogger<IdeaListController> logger)
         {
             _ideaService = ideaService;
             _userRepository = userRepository;
             _lookupService = lookupService;
             _ideaRelationService = ideaRelationService;
+            _implementatorService = implementatorService;
             _logger = logger;
         }
 
@@ -239,6 +244,151 @@ namespace Ideku.Controllers
             {
                 return Json(new { success = false, message = ex.Message });
             }
+        }
+
+        // =================== IMPLEMENTATOR MANAGEMENT ACTIONS ===================
+
+        // GET: IdeaList/Detail/{id}
+        public async Task<IActionResult> Detail(long id)
+        {
+            try
+            {
+                // Get idea details
+                var ideasQuery = await _ideaService.GetAllIdeasQueryAsync(User.Identity?.Name ?? "");
+                var idea = await ideasQuery
+                    .Where(i => i.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (idea == null)
+                {
+                    TempData["ErrorMessage"] = "Idea not found";
+                    return RedirectToAction("Index");
+                }
+
+                // Get implementators for the idea
+                var implementators = await _implementatorService.GetImplementatorsByIdeaIdAsync(id);
+
+                // Get available users for dropdown (server-side)
+                var availableUsers = await _implementatorService.GetAvailableUsersForAssignmentAsync(id);
+
+                var viewModel = new IdeaDetailViewModel
+                {
+                    Idea = idea,
+                    Implementators = implementators.ToList(),
+                    AvailableUsers = availableUsers.Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                    {
+                        Value = GetUserProperty(u, "id")?.ToString(),
+                        Text = GetUserProperty(u, "displayText")?.ToString()
+                    }).ToList()
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading idea detail: {IdeaId}", id);
+                TempData["ErrorMessage"] = "Error loading idea details";
+                return RedirectToAction("Index");
+            }
+        }
+
+        // AJAX: Get implementators for an idea
+        [HttpGet]
+        public async Task<JsonResult> GetImplementators(long ideaId)
+        {
+            try
+            {
+                var implementators = await _implementatorService.GetImplementatorsByIdeaIdAsync(ideaId);
+
+                var result = implementators.Select(i => new
+                {
+                    id = i.Id,
+                    userId = i.UserId,
+                    role = i.Role,
+                    userName = i.User?.Name,
+                    employeeId = i.User?.EmployeeId,
+                    division = i.User?.Employee?.DivisionNavigation?.NameDivision,
+                    department = i.User?.Employee?.DepartmentNavigation?.NameDepartment,
+                    assignedDate = i.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                });
+
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting implementators for idea {IdeaId}", ideaId);
+                return Json(new { success = false, message = "Error loading implementators" });
+            }
+        }
+
+        // AJAX: Get available users for assignment
+        [HttpGet]
+        public async Task<JsonResult> GetAvailableUsers(long ideaId)
+        {
+            try
+            {
+                var availableUsers = await _implementatorService.GetAvailableUsersForAssignmentAsync(ideaId);
+                return Json(new { success = true, data = availableUsers });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available users for idea {IdeaId}", ideaId);
+                return Json(new { success = false, message = "Error loading available users" });
+            }
+        }
+
+        // AJAX: Assign implementator
+        [HttpPost]
+        public async Task<JsonResult> AssignImplementator(long ideaId, long userId, string role)
+        {
+            try
+            {
+                var result = await _implementatorService.AssignImplementatorAsync(ideaId, userId, role);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Successfully assigned user {UserId} as {Role} to idea {IdeaId}",
+                        userId, role, ideaId);
+                }
+
+                return Json(new { success = result.Success, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assigning implementator: IdeaId={IdeaId}, UserId={UserId}, Role={Role}",
+                    ideaId, userId, role);
+                return Json(new { success = false, message = "An error occurred while assigning implementator" });
+            }
+        }
+
+        // AJAX: Remove implementator
+        [HttpPost]
+        public async Task<JsonResult> RemoveImplementator(long implementatorId)
+        {
+            try
+            {
+                var result = await _implementatorService.RemoveImplementatorAsync(implementatorId);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Successfully removed implementator {ImplementatorId}", implementatorId);
+                }
+
+                return Json(new { success = result.Success, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing implementator {ImplementatorId}", implementatorId);
+                return Json(new { success = false, message = "An error occurred while removing implementator" });
+            }
+        }
+
+        // Helper method to get property from anonymous object
+        private object? GetUserProperty(object user, string propertyName)
+        {
+            var type = user.GetType();
+            var property = type.GetProperty(propertyName);
+            return property?.GetValue(user);
         }
 
     }

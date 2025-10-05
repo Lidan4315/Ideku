@@ -422,6 +422,57 @@ namespace Ideku.Migrations
                     b.ToTable("Ideas");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.IdeaImplementator", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<long>("IdeaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("IdeaId");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("Role");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdeaId")
+                        .HasDatabaseName("IX_IdeaImplementators_IdeaId");
+
+                    b.HasIndex("Role")
+                        .HasDatabaseName("IX_IdeaImplementators_Role");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_IdeaImplementators_UserId");
+
+                    b.HasIndex("IdeaId", "Role")
+                        .HasDatabaseName("IX_IdeaImplementators_IdeaId_Role");
+
+                    b.HasIndex("IdeaId", "UserId")
+                        .HasDatabaseName("IX_IdeaImplementators_IdeaId_UserId");
+
+                    b.ToTable("IdeaImplementators");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
                 {
                     b.Property<long>("Id")
@@ -435,9 +486,17 @@ namespace Ideku.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("CreatedAt");
 
-                    b.Property<long>("CreatorUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("CreatorUserId");
+                    b.Property<string>("CreatorEmployeeId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("CreatorEmployeeId");
+
+                    b.Property<string>("CreatorName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("CreatorName");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2")
@@ -451,12 +510,6 @@ namespace Ideku.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("Note");
-
-                    b.Property<string>("PIC")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("PIC");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2")
@@ -474,13 +527,55 @@ namespace Ideku.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("TitleMilestone");
 
-                    b.HasKey("Id");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
 
-                    b.HasIndex("CreatorUserId");
+                    b.HasKey("Id");
 
                     b.HasIndex("IdeaId");
 
                     b.ToTable("Milestones");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.MilestonePIC", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<long>("MilestoneId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("MilestoneId");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MilestoneId")
+                        .HasDatabaseName("IX_MilestonePICs_MilestoneId");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_MilestonePICs_UserId");
+
+                    b.HasIndex("MilestoneId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_MilestonePICs_MilestoneId_UserId");
+
+                    b.ToTable("MilestonePICs");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Role", b =>
@@ -901,23 +996,53 @@ namespace Ideku.Migrations
                     b.Navigation("Workflow");
                 });
 
-            modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
+            modelBuilder.Entity("Ideku.Models.Entities.IdeaImplementator", b =>
                 {
-                    b.HasOne("Ideku.Models.Entities.User", "CreatorUser")
-                        .WithMany("CreatedMilestones")
-                        .HasForeignKey("CreatorUserId")
+                    b.HasOne("Ideku.Models.Entities.Idea", "Idea")
+                        .WithMany("IdeaImplementators")
+                        .HasForeignKey("IdeaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ideku.Models.Entities.User", "User")
+                        .WithMany("ImplementatorAssignments")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Idea");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
+                {
                     b.HasOne("Ideku.Models.Entities.Idea", "Idea")
                         .WithMany("Milestones")
                         .HasForeignKey("IdeaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CreatorUser");
-
                     b.Navigation("Idea");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.MilestonePIC", b =>
+                {
+                    b.HasOne("Ideku.Models.Entities.Milestone", "Milestone")
+                        .WithMany("MilestonePICs")
+                        .HasForeignKey("MilestoneId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ideku.Models.Entities.User", "User")
+                        .WithMany("MilestonePICAssignments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Milestone");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.User", b =>
@@ -1049,9 +1174,16 @@ namespace Ideku.Migrations
 
             modelBuilder.Entity("Ideku.Models.Entities.Idea", b =>
                 {
+                    b.Navigation("IdeaImplementators");
+
                     b.Navigation("Milestones");
 
                     b.Navigation("WorkflowHistories");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
+                {
+                    b.Navigation("MilestonePICs");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Role", b =>
@@ -1061,9 +1193,11 @@ namespace Ideku.Migrations
 
             modelBuilder.Entity("Ideku.Models.Entities.User", b =>
                 {
-                    b.Navigation("CreatedMilestones");
+                    b.Navigation("ImplementatorAssignments");
 
                     b.Navigation("InitiatedIdeas");
+
+                    b.Navigation("MilestonePICAssignments");
 
                     b.Navigation("WorkflowActions");
                 });

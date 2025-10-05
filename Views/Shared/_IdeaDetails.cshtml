@@ -1,0 +1,115 @@
+@model Ideku.Models.Entities.Idea
+
+<!-- Idea Details Section -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h5 class="m-0 font-weight-bold text-primary">@Model.IdeaName</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-group-view">
+                    <label>Idea ID</label>
+                    <p>@Model.IdeaCode</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group-view">
+                    <label>Current Status</label>
+                    <p><span class="badge bg-warning text-dark">@Model.CurrentStatus</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-group-view">
+                    <label>Submitted by</label>
+                    <p>@Model.InitiatorUser.Name (@Model.InitiatorUser.EmployeeId)</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group-view">
+                    <label>Submitted Date</label>
+                    <p>@Model.SubmittedDate.ToString("dd MMMM yyyy HH:mm")</p>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-group-view">
+                    <label>Division</label>
+                    <p>@Model.TargetDivision.NameDivision</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group-view">
+                    <label>Department</label>
+                    <p>@Model.TargetDepartment.NameDepartment</p>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-group-view">
+                    <label>Category</label>
+                    <p>@Model.Category.CategoryName</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group-view">
+                    <label>Event</label>
+                    <p>@(Model.Event?.EventName ?? "-")</p>
+                </div>
+            </div>
+        </div>
+        <div class="form-group-view mb-3">
+            <label>Idea Description</label>
+            <div class="form-control-plaintext">@Model.IdeaIssueBackground</div>
+        </div>
+        <div class="form-group-view mb-3">
+            <label>Idea Solution</label>
+            <div class="form-control-plaintext">@Model.IdeaSolution</div>
+        </div>
+        <div class="form-group-view mb-3">
+            <label>Saving Cost (USD)</label>
+            <p>@Model.SavingCost.ToString("C0")</p>
+        </div>
+        @if (Model.SavingCostValidated.HasValue)
+        {
+            <div class="form-group-view mb-3">
+                <label>Validated Saving Cost (USD)</label>
+                <p><span class="text-success fw-bold">@Model.SavingCostValidated.Value.ToString("C0")</span></p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+.form-group-view {
+    margin-bottom: 1rem;
+}
+
+.form-group-view label {
+    display: block;
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-group-view p,
+.form-group-view .form-control-plaintext {
+    background-color: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin: 0;
+    font-size: 1rem;
+    color: #1f2937;
+}
+
+.form-control-plaintext {
+    white-space: pre-wrap;
+    min-height: 100px;
+}
+</style>

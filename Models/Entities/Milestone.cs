@@ -15,18 +15,19 @@ namespace Ideku.Models.Entities
         public long IdeaId { get; set; }
 
         [Required]
-        [Column("CreatorUserId")]
-        public long CreatorUserId { get; set; }
+        [Column("CreatorName")]
+        [StringLength(100)]
+        public string CreatorName { get; set; } = string.Empty;
+
+        [Required]
+        [Column("CreatorEmployeeId")]
+        [StringLength(20)]
+        public string CreatorEmployeeId { get; set; } = string.Empty;
 
         [Required]
         [Column("TitleMilestone")]
         [StringLength(50)]
         public string TitleMilestone { get; set; } = string.Empty;
-
-        [Required]
-        [Column("PIC")]
-        [StringLength(200)]
-        public string PIC { get; set; } = string.Empty;
 
         [Required]
         [Column("Status")]
@@ -48,11 +49,14 @@ namespace Ideku.Models.Entities
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        [Column("UpdatedAt")]
+        public DateTime? UpdatedAt { get; set; }
+
         // Navigation Properties
         [ForeignKey("IdeaId")]
         public Idea Idea { get; set; } = null!;
 
-        [ForeignKey("CreatorUserId")]
-        public User CreatorUser { get; set; } = null!;
+        // Collection Navigation Properties
+        public ICollection<MilestonePIC> MilestonePICs { get; set; } = new List<MilestonePIC>();
     }
 }

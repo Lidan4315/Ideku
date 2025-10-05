@@ -1,0 +1,1053 @@
+@model Ideku.ViewModels.IdeaList.IdeaDetailViewModel
+
+@{
+    ViewData["Title"] = "Idea Details";
+}
+
+<div class="container-fluid">
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="page-title text-gradient">
+                <i class="bi bi-lightbulb me-2"></i>Idea Details
+            </h2>
+            <p class="text-muted mb-0">View idea details and manage implementators.</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Index", "IdeaList")" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Ideas List
+            </a>
+        </div>
+    </div>
+
+    <!-- Use Shared Idea Details Partial -->
+    @await Html.PartialAsync("_IdeaDetails", Model.Idea)
+
+    <!-- Attachments and Implementators Section Side by Side -->
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Attachments Section -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-paperclip me-2"></i>Attachments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @await Html.PartialAsync("_IdeaAttachments", Model.Idea)
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Implementators Management Section -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-people me-2"></i>Team Assembly
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addImplementatorModal">
+                        <i class="bi bi-plus-circle me-1"></i>Add Member
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Leader Section -->
+                    <div class="form-group-view mb-4">
+                        <label>
+                            <i class="bi bi-star-fill text-warning me-2"></i>Leader
+                        </label>
+                        @{
+                            var leader = Model.Implementators.FirstOrDefault(i => i.Role == "Leader");
+                        }
+                        @if (leader != null)
+                        {
+                            <p class="d-flex justify-content-between align-items-center">
+                                <span class="d-flex align-items-center">
+                                    @leader.User?.Name
+                                </span>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeImplementator(@leader.Id, '@leader.User?.Name')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="text-muted">
+                                <i class="bi bi-info-circle me-2"></i>No leader assigned yet.
+                            </p>
+                        }
+                    </div>
+
+                    <!-- Members Section -->
+                    @{
+                        var members = Model.Implementators.Where(i => i.Role == "Member").ToList();
+                    }
+                    @if (members.Any())
+                    {
+                        <!-- Members Label (only once) -->
+                        <div class="form-group-view">
+                            <label>
+                                <i class="bi bi-people-fill text-primary me-2"></i>Members
+                            </label>
+                        </div>
+
+                        <!-- Individual Member Fields -->
+                        @foreach (var member in members)
+                        {
+                            <div class="form-group-view mb-3">
+                                <p class="d-flex justify-content-between align-items-center">
+                                    <span class="d-flex align-items-center">
+                                        @member.User?.Name
+                                    </span>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeImplementator(@member.Id, '@member.User?.Name')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </p>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="form-group-view">
+                            <label>
+                                <i class="bi bi-people-fill text-primary me-2"></i>Members
+                            </label>
+                            <p class="text-muted">
+                                <i class="bi bi-info-circle me-2"></i>No members assigned yet.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include File Preview Modal -->
+@await Html.PartialAsync("_FilePreviewModal")
+
+<!-- Add Implementator Modal -->
+<div class="modal fade" id="addImplementatorModal" tabindex="-1" aria-labelledby="addImplementatorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="addImplementatorModalLabel">Add Team Member</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addImplementatorForm">
+                <div class="modal-body app-modal-body">
+                    <!-- Implementators -->
+                    <div class="mb-4">
+                        <label class="form-label">Team Assembly <span class="text-danger">*</span></label>
+
+                        <!-- Hidden inputs to store selected implementators -->
+                        <input type="hidden" name="selectedImplementators" id="selectedImplementatorsInput" />
+
+                        <!-- Button + Tags Interface - Same as Related Division with Role Selection -->
+                        <div class="implementator-selection-container">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <!-- Add User Button -->
+                                @if (Model.AvailableUsers != null && Model.AvailableUsers.Any())
+                                {
+                                    <div class="dropdown position-relative">
+                                        <button type="button" class="btn dropdown-toggle add-implementator-btn"
+                                                id="addImplementatorBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-person-plus me-2"></i>Select Member
+                                        </button>
+                                        <ul class="dropdown-menu implementator-dropdown" aria-labelledby="addImplementatorBtn" id="implementatorDropdown">
+                                            <!-- Search Input -->
+                                            <li class="dropdown-search-container">
+                                                <div class="px-3 py-2 border-bottom">
+                                                    <input type="text"
+                                                           class="form-control form-control-sm"
+                                                           id="implementatorSearch"
+                                                           placeholder="Search member by name or EMP_ID..."
+                                                           autocomplete="off">
+                                                </div>
+                                            </li>
+
+                                            <!-- User List -->
+                                            @foreach (var user in Model.AvailableUsers)
+                                            {
+                                                <li class="implementator-item" data-search-text="@user.Text.ToLower()">
+                                                    <div class="dropdown-item-table" data-user-id="@user.Value" data-user-name="@user.Text">
+                                                        <div class="table-cell name-cell">
+                                                            <span class="user-name">@user.Text</span>
+                                                        </div>
+                                                        <button type="button" class="table-cell leader-cell role-btn"
+                                                                data-role="Leader" title="Assign as Leader">
+                                                            <i class="bi bi-star-fill text-warning"></i>
+                                                        </button>
+                                                        <button type="button" class="table-cell member-cell role-btn"
+                                                                data-role="Member" title="Assign as Member">
+                                                            <i class="bi bi-people-fill text-primary"></i>
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        No members available for assignment
+                                    </div>
+                                }
+
+                                <!-- Selected Implementators Tags -->
+                                <div id="selectedImplementatorTags" class="d-flex flex-wrap gap-2">
+                                    <!-- Tags will be dynamically added here -->
+                                </div>
+                            </div>
+
+                            <!-- Info message -->
+                            <div id="implementatorInfo" class="implementator-info-message d-none">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong><span id="selectedImplementatorCount">0</span> member(s)</strong> selected. Only one Leader is allowed per idea.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Select members and assign roles. Each member can only have one role per idea.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Assign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.text-gradient {
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Implementator Selection Styles - Same as Related Division and PIC Selection */
+.implementator-selection-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    background-color: transparent;
+    min-height: 200px; /* Increased field height to accommodate more content */
+}
+
+.add-implementator-btn {
+    border: 1px solid #6b7280;
+    background-color: #ffffff;
+    color: #374151;
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-size: 0.875rem;
+}
+
+.add-implementator-btn:hover {
+    border-color: #4b5563;
+    background-color: #f3f4f6;
+    color: #1f2937;
+}
+
+.add-implementator-btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25);
+    outline: none;
+}
+
+.implementator-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #ffffff;
+    border: 1px solid #6b7280;
+    color: #374151;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    animation: fadeInScale 0.3s ease-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.implementator-tag.leader {
+    border-color: #f59e0b;
+    background-color: #fffbeb;
+    color: #92400e;
+}
+
+.implementator-tag.member {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+    color: #1e40af;
+}
+
+.implementator-tag:hover {
+    border-color: #4b5563;
+    background-color: #f9fafb;
+}
+
+.implementator-tag.leader:hover {
+    border-color: #d97706;
+    background-color: #fef3c7;
+}
+
+.implementator-tag.member:hover {
+    border-color: #2563eb;
+    background-color: #dbeafe;
+}
+
+.implementator-tag .remove-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    padding: 0;
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin-left: 0;
+}
+
+.implementator-tag .remove-btn:hover {
+    color: #374151;
+    background-color: rgba(107, 114, 128, 0.1);
+}
+
+.implementator-info-message {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Implementator Dropdown Styling */
+.implementator-dropdown {
+    max-height: 300px; /* Height for 5 items + search input (50px + 5*50px) */
+    overflow-y: auto;
+    overflow-x: hidden; /* Hide horizontal scrollbar */
+    min-width: 320px;
+    padding: 0;
+    border-radius: 0.375rem;
+}
+
+/* Custom scrollbar for dropdown */
+.implementator-dropdown::-webkit-scrollbar {
+    width: 6px;
+    height: 6px; /* For horizontal scrollbar if needed */
+}
+
+.implementator-dropdown::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.implementator-dropdown::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.implementator-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Ensure horizontal scrollbar has same styling as vertical */
+.implementator-dropdown::-webkit-scrollbar-horizontal {
+    height: 6px;
+}
+
+.implementator-dropdown::-webkit-scrollbar-track:horizontal {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.implementator-dropdown::-webkit-scrollbar-thumb:horizontal {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+/* Dropdown Search Styling */
+.dropdown-search-container {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: #fff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dropdown-search-container input {
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+}
+
+.dropdown-search-container input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+    outline: none;
+}
+
+/* Hide filtered items */
+.implementator-item.d-none {
+    display: none !important;
+}
+
+/* No results message */
+.no-results-message {
+    padding: 1rem;
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.dropdown-item-table {
+    display: grid;
+    grid-template-columns: 1fr 50px 50px; /* Name | Leader | Member */
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dropdown-item-table:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item-table:last-child {
+    border-bottom: none;
+}
+
+.table-cell {
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid #e5e7eb;
+    min-width: 0; /* Prevent overflow */
+    overflow: hidden; /* Hide any overflow content */
+}
+
+.table-cell:last-child {
+    border-right: none;
+}
+
+.name-cell {
+    padding-left: 1rem;
+    justify-content: flex-start;
+    min-width: 0; /* Allow text to shrink */
+}
+
+.user-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.leader-cell,
+.member-cell {
+    justify-content: center;
+}
+
+.user-name {
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.role-btn {
+    border: none;
+    background: transparent;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+}
+
+.role-btn:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.role-btn:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+.role-btn:active {
+    background-color: rgba(0,0,0,0.1);
+}
+
+/* Table-like borders for clear separation */
+.dropdown-item-table {
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+}
+
+.dropdown-item-table:first-child {
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Removed duplicate scrollbar styles - using the ones above */
+
+/* Fade in animation for tags */
+@@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive adjustments */
+@@media (max-width: 768px) {
+    .implementator-selection-container {
+        padding: 1rem;
+    }
+
+    .add-implementator-btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .implementator-tag {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+        gap: 0.4rem;
+    }
+
+    .implementator-tag .remove-btn {
+        width: 14px;
+        height: 14px;
+        font-size: 0.75rem;
+    }
+
+    .implementator-info-message {
+        font-size: 0.8rem;
+    }
+}
+</style>
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    const ideaId = @Model.Idea.Id;
+
+    // Initialize Implementator Selection
+    initializeImplementatorSelection();
+
+    // Handle form submission - using new tag system
+    $('#addImplementatorForm').on('submit', function(e) {
+        e.preventDefault();
+
+        // Get selected implementators from tags system
+        var implementators = getSelectedImplementators();
+        var hasError = false;
+        var errorMessage = '';
+
+
+        // Validate implementators
+        if (implementators.length === 0) {
+            hasError = true;
+            errorMessage = 'Please select at least one implementator.';
+        }
+
+        // Check Leader constraint
+        var leaders = implementators.filter(impl => impl.role === 'Leader');
+        if (leaders.length > 1) {
+            hasError = true;
+            errorMessage = 'Only one Leader can be assigned per idea.';
+        }
+
+
+        if (hasError) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: errorMessage,
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+
+        // Show loading state
+        var submitBtn = $(this).find('button[type="submit"]');
+        var originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Saving...').prop('disabled', true);
+
+        // Save all implementators
+        saveImplementators(implementators, submitBtn, originalText);
+    });
+
+    // Function to save multiple implementators
+    function saveImplementators(implementators, submitBtn, originalText) {
+        let successCount = 0;
+        let errorCount = 0;
+        const totalCount = implementators.length;
+
+        // Save each implementator
+        implementators.forEach((impl, index) => {
+            $.post('@Url.Action("AssignImplementator", "IdeaList")', {
+                ideaId: ideaId,
+                userId: impl.userId,
+                role: impl.role
+            })
+            .done(function(response) {
+                if (response.success) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    console.error('Error saving implementator:', response.message);
+                }
+
+                // Check if all requests completed
+                if (successCount + errorCount === totalCount) {
+                    handleSaveComplete(successCount, errorCount, submitBtn, originalText);
+                }
+            })
+            .fail(function() {
+                errorCount++;
+                console.error('Failed to save implementator');
+
+                // Check if all requests completed
+                if (successCount + errorCount === totalCount) {
+                    handleSaveComplete(successCount, errorCount, submitBtn, originalText);
+                }
+            });
+        });
+    }
+
+    // Handle save completion
+    function handleSaveComplete(successCount, errorCount, submitBtn, originalText) {
+        // Restore button state
+        submitBtn.html(originalText).prop('disabled', false);
+
+        if (errorCount === 0) {
+            // All successful
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: `All ${successCount} member(s) have been assigned successfully.`,
+                confirmButtonColor: '#3b82f6'
+            }).then(() => {
+                $('#addImplementatorModal').modal('hide');
+                location.reload();
+            });
+        } else if (successCount > 0) {
+            // Partial success
+            Swal.fire({
+                icon: 'warning',
+                title: 'Partial Success',
+                text: `${successCount} member(s) were assigned successfully, but ${errorCount} failed.`,
+                confirmButtonColor: '#3b82f6'
+            }).then(() => {
+                location.reload();
+            });
+        } else {
+            // All failed
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Failed to assign any implementators. Please try again.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
+    }
+
+    // Remove implementator
+    window.removeImplementator = function(implementatorId, userName) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to remove ${userName} from this idea?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, remove it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('@Url.Action("RemoveImplementator", "IdeaList")', {
+                    implementatorId: implementatorId
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Removed!',
+                            text: response.message,
+                            confirmButtonColor: '#3b82f6'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message,
+                            confirmButtonColor: '#3b82f6'
+                        });
+                    }
+                })
+                .fail(function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Error removing implementator',
+                        confirmButtonColor: '#3b82f6'
+                    });
+                });
+            }
+        });
+    };
+
+
+    // Initialize dropdown when modal is opened
+    $('#addImplementatorModal').on('shown.bs.modal', function() {
+        // Update dropdown options to reflect current selections
+        if (typeof updateImplementatorDropdownOptions === 'function') {
+            updateImplementatorDropdownOptions();
+        }
+    });
+
+    // Reset modal when closed
+    $('#addImplementatorModal').on('hidden.bs.modal', function() {
+        resetImplementatorSelection();
+    });
+
+    // Initialize implementator dropdown search
+    initializeImplementatorSearch();
+
+});
+
+// Implementator Search Functionality
+function initializeImplementatorSearch() {
+    const searchInput = document.getElementById('implementatorSearch');
+    const dropdownItems = document.querySelectorAll('.implementator-item');
+    const dropdown = document.getElementById('implementatorDropdown');
+
+    if (!searchInput || !dropdownItems.length) return;
+
+    // Focus search input when dropdown opens
+    document.getElementById('addImplementatorBtn').addEventListener('shown.bs.dropdown', function() {
+        setTimeout(() => {
+            searchInput.focus();
+        }, 100);
+    });
+
+    // Clear search when dropdown closes
+    document.getElementById('addImplementatorBtn').addEventListener('hidden.bs.dropdown', function() {
+        searchInput.value = '';
+        showAllItems();
+    });
+
+    // Prevent dropdown from closing when clicking on search input
+    searchInput.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Handle search input
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        filterImplementatorItems(searchTerm, dropdownItems, dropdown);
+    });
+
+    // Handle keyboard navigation
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const visibleItems = Array.from(dropdownItems).filter(item => !item.classList.contains('d-none'));
+            if (visibleItems.length > 0) {
+                const firstButton = visibleItems[0].querySelector('.role-btn');
+                if (firstButton) firstButton.focus();
+            }
+        }
+    });
+
+    function showAllItems() {
+        dropdownItems.forEach(item => {
+            // Only show items that are not hidden by selection
+            if (item.style.display !== 'none') {
+                item.classList.remove('d-none');
+            }
+        });
+        removeNoResultsMessage();
+    }
+
+    function filterImplementatorItems(searchTerm, items, container) {
+        if (!searchTerm) {
+            showAllItems();
+            return;
+        }
+
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const searchText = item.getAttribute('data-search-text') || '';
+            const userName = item.querySelector('.user-name')?.textContent?.toLowerCase() || '';
+
+            // Check if item is already hidden due to being selected
+            const isHiddenBySelection = item.style.display === 'none';
+
+            // Search in both the data attribute and user name text
+            const matches = searchText.includes(searchTerm) || userName.includes(searchTerm);
+
+            if (matches && !isHiddenBySelection) {
+                item.classList.remove('d-none');
+                visibleCount++;
+            } else {
+                item.classList.add('d-none');
+            }
+        });
+
+        // Show/hide no results message
+        if (visibleCount === 0) {
+            showNoResultsMessage(container, searchTerm);
+        } else {
+            removeNoResultsMessage();
+        }
+    }
+
+    function showNoResultsMessage(container, searchTerm) {
+        removeNoResultsMessage(); // Remove existing message first
+
+        const noResultsItem = document.createElement('li');
+        noResultsItem.className = 'no-results-message';
+        noResultsItem.innerHTML = `
+            <div class="px-3 py-3 text-center text-muted">
+                <i class="bi bi-search me-2"></i>
+                No members found for "<strong>${searchTerm}</strong>"
+            </div>
+        `;
+
+        container.appendChild(noResultsItem);
+    }
+
+    function removeNoResultsMessage() {
+        const existingMessage = dropdown.querySelector('.no-results-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+    }
+}
+
+// Implementator Selection Functions - Similar to Related Division and PIC Selection
+function initializeImplementatorSelection() {
+    initializeImplementatorTagsInterface();
+}
+
+function initializeImplementatorTagsInterface() {
+    const addBtn = document.getElementById('addImplementatorBtn');
+    const dropdownItems = document.querySelectorAll('.implementator-item');
+    const selectedInput = document.getElementById('selectedImplementatorsInput');
+    const tagsContainer = document.getElementById('selectedImplementatorTags');
+    const infoPanel = document.getElementById('implementatorInfo');
+
+    if (!addBtn || !selectedInput || !tagsContainer) return;
+
+    // Store selected implementators
+    let selectedImplementators = [];
+
+    // Handle role button clicks
+    const roleButtons = document.querySelectorAll('.role-btn');
+    roleButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const dropdownItem = this.closest('.dropdown-item-table');
+            const userId = dropdownItem.dataset.userId;
+            const userName = dropdownItem.dataset.userName;
+            const role = this.dataset.role;
+
+            // Check if user is already selected
+            const existingUser = selectedImplementators.find(impl => impl.userId === userId);
+            if (existingUser) {
+                // Show error - user already selected
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'User Already Selected!',
+                    text: `${userName} is already assigned as ${existingUser.role}. Please remove the existing assignment first.`,
+                    confirmButtonColor: '#dc2626'
+                });
+                return;
+            }
+
+            // Check Leader constraint
+            if (role === 'Leader') {
+                const existingLeader = selectedImplementators.find(impl => impl.role === 'Leader');
+                if (existingLeader) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Leader Already Assigned!',
+                        text: `${existingLeader.userName} is already assigned as Leader. Only one Leader is allowed per idea.`,
+                        confirmButtonColor: '#dc2626'
+                    });
+                    return;
+                }
+            }
+
+            // Add to selected list
+            selectedImplementators.push({
+                userId: userId,
+                userName: userName,
+                role: role
+            });
+
+            // Update UI
+            updateImplementatorTagsDisplay();
+            updateImplementatorDropdownOptions();
+            updateImplementatorHiddenInput();
+            updateImplementatorInfoPanel();
+
+            // Close dropdown
+            bootstrap.Dropdown.getInstance(addBtn)?.hide();
+        });
+    });
+
+    function updateImplementatorTagsDisplay() {
+        tagsContainer.innerHTML = '';
+
+        selectedImplementators.forEach((implementator, index) => {
+            const tag = document.createElement('div');
+            tag.className = `implementator-tag ${implementator.role.toLowerCase()}`;
+            tag.innerHTML = `
+                <i class="bi bi-${implementator.role === 'Leader' ? 'star-fill' : 'people-fill'} me-1"></i>
+                <span>${implementator.userName} - ${implementator.role}</span>
+                <button type="button" class="remove-btn" data-index="${index}" title="Remove ${implementator.userName}">
+                    <i class="bi bi-x"></i>
+                </button>
+            `;
+
+            // Add remove functionality
+            const removeBtn = tag.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', function() {
+                const indexToRemove = parseInt(this.dataset.index);
+                selectedImplementators.splice(indexToRemove, 1);
+                updateImplementatorTagsDisplay();
+                updateImplementatorDropdownOptions();
+                updateImplementatorHiddenInput();
+                updateImplementatorInfoPanel();
+            });
+
+            tagsContainer.appendChild(tag);
+        });
+    }
+
+    function updateImplementatorDropdownOptions() {
+        // Get all dropdown items
+        const dropdownItems = document.querySelectorAll('.implementator-item');
+
+        // Hide/show items based on selection
+        dropdownItems.forEach(item => {
+            const dropdownItemTable = item.querySelector('.dropdown-item-table');
+            const userId = dropdownItemTable.getAttribute('data-user-id');
+
+            // Check if this user is already selected
+            const isSelected = selectedImplementators.find(impl => impl.userId === userId);
+
+            if (isSelected) {
+                item.style.display = 'none'; // Hide selected items
+            } else {
+                item.style.display = 'block'; // Show available items
+            }
+        });
+
+        // Update button text
+        const totalSelected = selectedImplementators.length;
+        const availableCount = Array.from(dropdownItems).filter(item => item.style.display !== 'none').length;
+
+        if (totalSelected > 0) {
+            if (availableCount === 0) {
+                addBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>All Members Selected';
+                addBtn.classList.add('disabled');
+                addBtn.style.opacity = '0.6';
+            } else {
+                addBtn.innerHTML = `<i class="bi bi-person-plus me-2"></i>Add More (${totalSelected} selected)`;
+                addBtn.classList.remove('disabled');
+                addBtn.style.opacity = '1';
+            }
+        } else {
+            addBtn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Select Member';
+            addBtn.classList.remove('disabled');
+            addBtn.style.opacity = '1';
+        }
+    }
+
+    function updateImplementatorHiddenInput() {
+        const implementatorsData = selectedImplementators.map(impl => ({
+            userId: parseInt(impl.userId),
+            role: impl.role
+        }));
+        selectedInput.value = JSON.stringify(implementatorsData);
+    }
+
+    function updateImplementatorInfoPanel() {
+        const selectedCount = selectedImplementators.length;
+        const countSpan = document.getElementById('selectedImplementatorCount');
+
+        if (selectedCount > 0) {
+            if (countSpan) countSpan.textContent = selectedCount;
+            infoPanel.classList.remove('d-none');
+        } else {
+            infoPanel.classList.add('d-none');
+        }
+    }
+
+    // Expose functions globally for form handling
+    window.getSelectedImplementators = function() {
+        return selectedImplementators.map(impl => ({
+            userId: parseInt(impl.userId),
+            role: impl.role,
+            userName: impl.userName
+        }));
+    };
+
+    window.resetImplementatorSelection = function() {
+        selectedImplementators = [];
+        updateImplementatorTagsDisplay();
+        updateImplementatorDropdownOptions();
+        updateImplementatorHiddenInput();
+        updateImplementatorInfoPanel();
+    };
+}
+</script>
+}
