@@ -701,3 +701,175 @@ body.modern-page {
     transform: none;
 }
 
+/* =============================================================================
+   TAG SELECTION SYSTEM (Implementator, PIC, Division, etc.)
+   Shared styles for tag-based selection interface
+   ============================================================================= */
+
+/* Selection Container */
+.tag-selection-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    background-color: transparent;
+    min-height: 120px;
+}
+
+/* Add Button */
+.tag-add-btn {
+    border: 1px solid #6b7280;
+    background-color: #ffffff;
+    color: #374151;
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-size: 0.875rem;
+}
+
+.tag-add-btn:hover {
+    border-color: #4b5563;
+    background-color: #f3f4f6;
+    color: #1f2937;
+}
+
+.tag-add-btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25);
+    outline: none;
+}
+
+/* Tag Styles */
+.selection-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #ffffff;
+    border: 1px solid #6b7280;
+    color: #374151;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    animation: tagFadeInScale 0.3s ease-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    margin: 0;
+    white-space: nowrap;
+}
+
+/* Tag Variants */
+.selection-tag.tag-leader {
+    border-color: #f59e0b !important;
+    background-color: #fffbeb !important;
+    color: #92400e !important;
+}
+
+.selection-tag.tag-member {
+    border-color: #3b82f6 !important;
+    background-color: #eff6ff !important;
+    color: #1e40af !important;
+}
+
+.selection-tag.tag-primary {
+    border-color: #10b981 !important;
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+/* Base hover state - for tags without variants */
+.selection-tag:hover {
+    border-color: #4b5563;
+    background-color: #f9fafb;
+}
+
+/* Variant hover states - Override base hover */
+.selection-tag.tag-leader:hover {
+    border-color: #d97706 !important;
+    background-color: #fef3c7 !important;
+}
+
+.selection-tag.tag-member:hover {
+    border-color: #2563eb !important;
+    background-color: #dbeafe !important;
+}
+
+.selection-tag.tag-primary:hover {
+    border-color: #059669 !important;
+    background-color: #a7f3d0 !important;
+}
+
+/* Tag Remove Button */
+.selection-tag .tag-remove-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    padding: 0;
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin-left: 0;
+}
+
+.selection-tag .tag-remove-btn:hover {
+    color: #374151;
+    background-color: rgba(107, 114, 128, 0.1);
+}
+
+/* Tag Info Message */
+.tag-info-message {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Tag Animation */
+@keyframes tagFadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Tag Selection Responsive */
+@media (max-width: 768px) {
+    .tag-selection-container {
+        padding: 1rem;
+        min-height: 100px;
+    }
+
+    .tag-add-btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .selection-tag {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+        gap: 0.4rem;
+    }
+
+    .selection-tag .tag-remove-btn {
+        width: 14px;
+        height: 14px;
+        font-size: 0.75rem;
+    }
+
+    .tag-info-message {
+        font-size: 0.8rem;
+    }
+}
+
