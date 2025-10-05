@@ -1,0 +1,77 @@
+@model Ideku.Models.Entities.Idea
+
+@if (!string.IsNullOrEmpty(Model.AttachmentFiles))
+{
+    @foreach (var file in Model.AttachmentFiles.Split(';', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var filename = System.IO.Path.GetFileName(file);
+        var viewUrl = Url.Action("ViewAttachment", "Approval", new { filename = filename, ideaId = Model.Id });
+        var downloadUrl = Url.Action("DownloadAttachment", "Approval", new { filename = filename, ideaId = Model.Id });
+
+        <div class="attachment-item d-flex justify-content-between align-items-center mb-2">
+            <span class="filename text-truncate me-2" title="@filename">
+                <i class="bi bi-paperclip me-1"></i>@filename
+            </span>
+            <div class="attachment-actions">
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary view-attachment-btn"
+                        data-filename="@filename"
+                        data-view-url="@viewUrl"
+                        data-download-url="@downloadUrl"
+                        title="View @filename">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <a href="@downloadUrl"
+                   class="btn btn-sm btn-outline-secondary ms-1"
+                   title="Download @filename">
+                    <i class="bi bi-download"></i>
+                </a>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="text-center text-muted py-4">
+        <i class="bi bi-paperclip-slash" style="font-size: 2rem; opacity: 0.5;"></i>
+        <p class="mt-2 mb-0">No attachments available</p>
+    </div>
+}
+
+<style>
+/* Attachment Styles */
+.attachment-item {
+    background-color: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin: 0;
+    font-size: 1rem;
+    color: #1f2937;
+}
+
+.filename {
+    font-size: 0.9rem;
+    color: #495057;
+    font-weight: 500;
+    max-width: 200px;
+}
+
+.attachment-actions .btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.attachment-actions .btn:hover {
+    transform: scale(1.05);
+    border-color: #007bff;
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+</style>

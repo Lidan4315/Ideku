@@ -20,7 +20,7 @@ namespace Ideku.Controllers
         private readonly ILogger<IdeaController> _logger;
 
         public IdeaController(
-            IIdeaService ideaService, 
+            IIdeaService ideaService,
             IWorkflowService workflowService,
             ILookupService lookupService,
             IServiceScopeFactory serviceScopeFactory,

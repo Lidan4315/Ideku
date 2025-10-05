@@ -1,0 +1,1612 @@
+@model Ideku.ViewModels.Milestone.MilestoneDetailViewModel
+@{
+    ViewData["Title"] = $"Milestones - {Model.Idea.IdeaName}";
+}
+
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index")">Milestone Management</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Idea.IdeaCode</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header mb-4">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2 class="page-title text-gradient">
+                    <i class="bi bi-flag me-2"></i>Milestones for @Model.Idea.IdeaCode
+                </h2>
+                <p class="text-muted">@Model.Idea.IdeaName</p>
+            </div>
+            @if (Model.CanManageMilestones)
+            {
+                <div class="col-auto">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal">
+                        <i class="bi bi-plus-circle me-1"></i>Add Milestone
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- View Toggle Section -->
+    <div class="view-toggle-section mb-4">
+        <div class="btn-group w-100" role="group" aria-label="View toggle">
+            <input type="radio" class="btn-check" name="viewOptions" id="listView" autocomplete="off" checked>
+            <label class="btn btn-outline-primary" for="listView">
+                <i class="bi bi-list-ul me-2"></i>List View
+            </label>
+
+            <input type="radio" class="btn-check" name="viewOptions" id="calendarView" autocomplete="off">
+            <label class="btn btn-outline-primary" for="calendarView">
+                <i class="bi bi-calendar3 me-2"></i>Calendar View
+            </label>
+        </div>
+    </div>
+
+    <!-- Milestones Content Section -->
+    <div id="milestonesContent">
+        <!-- List View -->
+        <div id="listViewContent" class="view-content">
+            @if (Model.Milestones.Any())
+            {
+                <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-check me-2"></i>Milestones (@Model.Milestones.Count())
+                </h5>
+                @if (Model.CanManageMilestones)
+                {
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal">
+                        <i class="bi bi-plus-circle me-1"></i>Add Milestone
+                    </button>
+                }
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Note</th>
+                                <th>PIC</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                @if (Model.CanManageMilestones)
+                                {
+                                    <th>Actions</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var milestone in Model.Milestones)
+                            {
+                                <tr>
+                                    <!-- Title -->
+                                    <td>
+                                        <div class="fw-semibold">@milestone.TitleMilestone</div>
+                                    </td>
+                                    <!-- Note -->
+                                    <td>
+                                        <div class="text-muted">@milestone.Note</div>
+                                    </td>
+                                    <!-- PIC -->
+                                    <td>
+                                        @if (milestone.MilestonePICs.Any())
+                                        {
+                                            <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                                                @foreach (var pic in milestone.MilestonePICs)
+                                                {
+                                                    <li class="mb-1">
+                                                        <i class="bi bi-dot text-primary me-1"></i>@pic.User.Name
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted" style="font-size: 0.9rem;">No PIC assigned</span>
+                                        }
+                                    </td>
+                                    <!-- Start Date -->
+                                    <td>
+                                        @milestone.StartDate.ToString("dd MMM yyyy")
+                                    </td>
+                                    <!-- End Date -->
+                                    <td>
+                                        @milestone.EndDate.ToString("dd MMM yyyy")
+                                    </td>
+                                    <!-- Status -->
+                                    <td>
+                                        @{
+                                            var statusBadgeClass = milestone.Status switch
+                                            {
+                                                "Completed" => "bg-success",
+                                                "In Progress" => "bg-primary",
+                                                "On Hold" => "bg-warning",
+                                                "Cancelled" => "bg-danger",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @statusBadgeClass">@milestone.Status</span>
+                                    </td>
+                                    <!-- Actions -->
+                                    @if (Model.CanManageMilestones)
+                                    {
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-primary px-2 py-1"
+                                                        title="Edit Milestone"
+                                                        onclick="openEditModal('@milestone.Id', '@milestone.TitleMilestone', '@milestone.Note', '@milestone.StartDate.ToString("yyyy-MM-dd")', '@milestone.EndDate.ToString("yyyy-MM-dd")', '@milestone.Status')">
+                                                    <i class="bi bi-pencil" style="font-size: 0.9rem;"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger px-2 py-1"
+                                                        title="Delete Milestone"
+                                                        onclick="confirmDelete('@milestone.Id', '@milestone.TitleMilestone')">
+                                                    <i class="bi bi-trash" style="font-size: 0.9rem;"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+            }
+            else
+            {
+                <!-- No Milestones -->
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-flag display-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">No Milestones Yet</h5>
+                        <p class="text-muted">This idea doesn't have any milestones yet.</p>
+                        @if (Model.CanManageMilestones)
+                        {
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal">
+                                <i class="bi bi-plus-circle me-1"></i>Create First Milestone
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Calendar View -->
+        <div id="calendarViewContent" class="view-content d-none">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calendar3 me-2"></i>Milestone Calendar
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="prevMonth">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <span class="fw-semibold" id="currentMonth"></span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="nextMonth">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="calendar-container">
+                        <!-- Calendar will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.IsEligibleForMilestones)
+    {
+        <div class="alert alert-warning mt-4" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Not Eligible:</strong> This idea is not eligible for milestone management. Ideas must reach stage 2 or higher.
+        </div>
+    }
+
+    @if (!Model.CanManageMilestones && Model.IsEligibleForMilestones)
+    {
+        <div class="alert alert-info mt-4" role="alert">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>View Only:</strong> You don't have permission to manage milestones for this idea.
+        </div>
+    }
+</div>
+
+<!-- CSRF Token for AJAX requests -->
+@Html.AntiForgeryToken()
+
+<!-- Add Milestone Modal -->
+<div class="modal fade" id="addMilestoneModal" tabindex="-1" aria-labelledby="addMilestoneModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-flag"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="addMilestoneModalLabel">Add New Milestone</h5>
+                        <small class="text-muted">Create a milestone for @Model.Idea.IdeaCode</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addMilestoneForm">
+                <div class="modal-body app-modal-body">
+                    <!-- Milestone Title -->
+                    <div class="mb-3">
+                        <label class="form-label">Milestone Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="title" maxlength="50" required placeholder="Enter milestone title">
+                        <div class="form-text">Maximum 50 characters</div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="note" rows="3" required placeholder="Describe the milestone objectives and deliverables"></textarea>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="startDate" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="endDate" required>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label class="form-label">Status <span class="text-danger">*</span></label>
+                        <select class="form-select" name="status" required>
+                            <option value="">Select Status</option>
+                            <option value="Planning">Planning</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="On Hold">On Hold</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <!-- Person In Charge (PIC) -->
+                    <div class="mb-3">
+                        <label class="form-label">Person In Charge (PIC)</label>
+
+                        <!-- Hidden input to store selected PIC IDs -->
+                        <input type="hidden" name="selectedPICUserIds" id="selectedPICInput" />
+
+                        <!-- Button + Tags Interface - Same as Related Division -->
+                        <div class="pic-selection-container">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <!-- Add PIC Button -->
+                                @if (Model.AvailablePICUsers != null && Model.AvailablePICUsers.Any())
+                                {
+                                    <div class="dropdown position-relative">
+                                        <button type="button" class="btn dropdown-toggle add-pic-btn"
+                                                id="addPICBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-person me-2"></i>Select PIC
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="addPICBtn" id="picDropdown">
+                                            @foreach (var user in Model.AvailablePICUsers)
+                                            {
+                                                <li>
+                                                    <a class="dropdown-item pic-option" href="#"
+                                                       data-pic-id="@user.Id"
+                                                       data-pic-name="@user.Name"
+                                                       data-pic-emp-id="@user.Employee?.EMP_ID"
+                                                       data-pic-role="@user.Role">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="me-3">
+                                                                <div class="fw-semibold">@user.Name</div>
+                                                                <small class="text-muted">@user.Employee?.EMP_ID - @user.Role</small>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        No implementators assigned to this idea yet
+                                    </div>
+                                }
+
+                                <!-- Selected PICs Tags -->
+                                <div id="selectedPICTags" class="d-flex flex-wrap gap-2">
+                                    <!-- Tags will be dynamically added here -->
+                                </div>
+                            </div>
+
+                            <!-- Info message -->
+                            <div id="picInfo" class="pic-info-message d-none">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong><span id="selectedPICCount">0</span> PIC(s)</strong> selected. PICs from assigned implementators will be responsible for this milestone.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Select from assigned implementators only. PIC must be someone already working on this idea.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Create Milestone
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal removed - now using SweetAlert -->
+
+<!-- Edit Milestone Modal -->
+<div class="modal fade" id="editMilestoneModal" tabindex="-1" aria-labelledby="editMilestoneModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="editMilestoneModalLabel">Edit Milestone</h5>
+                        <small class="text-muted">Update milestone for @Model.Idea.IdeaCode</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editMilestoneForm">
+                <div class="modal-body app-modal-body">
+                    <!-- Hidden field for milestone ID -->
+                    <input type="hidden" id="editMilestoneId" name="milestoneId" />
+
+                    <!-- Milestone Title -->
+                    <div class="mb-3">
+                        <label class="form-label">Milestone Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editTitle" name="title" maxlength="50" required placeholder="Enter milestone title">
+                        <div class="form-text">Maximum 50 characters</div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="editNote" name="note" rows="3" required placeholder="Describe the milestone objectives and deliverables"></textarea>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="editStartDate" name="startDate" readonly>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>Start date cannot be changed once milestone is created
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="editEndDate" name="endDate" required>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label class="form-label">Status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="editStatus" name="status" required>
+                            <option value="">Select Status</option>
+                            <option value="Planning">Planning</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="On Hold">On Hold</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <!-- Person In Charge (PIC) -->
+                    <div class="mb-3">
+                        <label class="form-label">Person In Charge (PIC)</label>
+
+                        <!-- Hidden input to store selected PIC IDs -->
+                        <input type="hidden" name="selectedEditPICUserIds" id="selectedEditPICInput" />
+
+                        <!-- Button + Tags Interface - Same as Add Modal -->
+                        <div class="pic-selection-container" id="editPICContainer">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <!-- Add PIC Button -->
+                                @if (Model.AvailablePICUsers != null && Model.AvailablePICUsers.Any())
+                                {
+                                    <div class="dropdown position-relative">
+                                        <button type="button" class="btn dropdown-toggle add-pic-btn"
+                                                id="addEditPICBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-person me-2"></i>Select PIC
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="addEditPICBtn" id="editPICDropdown">
+                                            @foreach (var user in Model.AvailablePICUsers)
+                                            {
+                                                <li>
+                                                    <a class="dropdown-item edit-pic-option" href="#"
+                                                       data-pic-id="@user.Id"
+                                                       data-pic-name="@user.Name"
+                                                       data-pic-emp-id="@user.Employee?.EMP_ID"
+                                                       data-pic-role="@user.Role">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="me-3">
+                                                                <div class="fw-semibold">@user.Name</div>
+                                                                <small class="text-muted">@user.Employee?.EMP_ID - @user.Role</small>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+
+                                <!-- Selected PICs Tags -->
+                                <div id="selectedEditPICTags" class="d-flex flex-wrap gap-2">
+                                    <!-- Tags will be dynamically added here -->
+                                </div>
+                            </div>
+
+                            <!-- Info message -->
+                            <div id="editPICInfo" class="pic-info-message d-none">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong><span id="selectedEditPICCount">0</span> PIC(s)</strong> selected. PICs from assigned implementators will be responsible for this milestone.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Select from assigned implementators only. PIC must be someone already working on this idea.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Update Milestone
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.text-gradient {
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* View Toggle Section */
+.view-toggle-section {
+    margin-bottom: 1.5rem;
+}
+
+.view-toggle-section .btn-group {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.view-toggle-section .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.view-toggle-section .btn:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+.view-toggle-section .btn:checked,
+.view-toggle-section .btn.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
+}
+
+/* View Content */
+.view-content {
+    transition: all 0.3s ease;
+}
+
+/* PIC Selection Styles - Exact Match with Related Division Design */
+.pic-selection-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    background-color: transparent;
+}
+
+.add-pic-btn {
+    border: 1px solid #6b7280;
+    background-color: #ffffff;
+    color: #374151;
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-size: 0.875rem;
+}
+
+.select-pic-btn:hover {
+    border-color: #4b5563;
+    background-color: #f3f4f6;
+    color: #1f2937;
+}
+
+.select-pic-btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25);
+    outline: none;
+}
+
+.pic-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #ffffff;
+    border: 1px solid #6b7280;
+    color: #374151;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    animation: fadeInScale 0.3s ease-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.pic-tag:hover {
+    border-color: #4b5563;
+    background-color: #f9fafb;
+}
+
+.pic-tag .remove-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    padding: 0;
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin-left: 0;
+}
+
+.pic-tag .remove-btn:hover {
+    color: #374151;
+    background-color: rgba(107, 114, 128, 0.1);
+}
+
+.pic-info-message {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Fade in animation for tags */
+@@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Dropdown item styling */
+.pic-option {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f3f4;
+    transition: all 0.2s ease;
+}
+
+.pic-option:hover {
+    background-color: #f8f9fa;
+}
+
+.pic-option.selected {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+/* Responsive adjustments */
+@@media (max-width: 768px) {
+    .pic-selection-container {
+        padding: 1rem;
+    }
+
+    .add-pic-btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .pic-tag {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+        gap: 0.4rem;
+    }
+
+    .pic-tag .remove-btn {
+        width: 14px;
+        height: 14px;
+        font-size: 0.75rem;
+    }
+
+    .pic-info-message {
+        font-size: 0.8rem;
+    }
+}
+
+/* Calendar Styles */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border: 1px solid #e5e7eb;
+}
+
+.calendar-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    text-align: center;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.calendar-cell {
+    border: 1px solid #e5e7eb;
+    min-height: 120px;
+    padding: 0.5rem;
+    position: relative;
+    background-color: #fff;
+    transition: background-color 0.2s ease;
+}
+
+.calendar-cell:hover {
+    background-color: #f8f9fa;
+}
+
+.calendar-cell.other-month {
+    background-color: #f9fafb;
+    color: #9ca3af;
+}
+
+.calendar-cell.today {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+}
+
+.calendar-date {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+}
+
+.calendar-cell.other-month .calendar-date {
+    color: #9ca3af;
+}
+
+.milestone-item {
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    word-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.milestone-item:hover {
+    background-color: #2563eb;
+}
+
+.milestone-item.status-completed {
+    background-color: #10b981;
+}
+
+.milestone-item.status-completed:hover {
+    background-color: #059669;
+}
+
+.milestone-item.status-planning {
+    background-color: #6b7280;
+}
+
+.milestone-item.status-planning:hover {
+    background-color: #4b5563;
+}
+
+.milestone-item.status-on-hold {
+    background-color: #f59e0b;
+}
+
+.milestone-item.status-on-hold:hover {
+    background-color: #d97706;
+}
+
+.milestone-item.status-cancelled {
+    background-color: #ef4444;
+}
+
+.milestone-item.status-cancelled:hover {
+    background-color: #dc2626;
+}
+
+@@media (max-width: 768px) {
+    .calendar-cell {
+        min-height: 80px;
+        padding: 0.25rem;
+    }
+
+    .milestone-item {
+        font-size: 0.6rem;
+        padding: 0.125rem 0.25rem;
+    }
+}
+
+/* Readonly input styling */
+input[readonly] {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+
+input[readonly]:focus {
+    box-shadow: none !important;
+    border-color: #ced4da !important;
+}
+</style>
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    const ideaId = @Model.Idea.Id;
+    const currentUser = {
+        name: '@(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity.Name ?? "Unknown User")',
+        employeeId: '@(User.FindFirst("EmployeeId")?.Value ?? "Unknown")'
+    };
+
+    console.log('Current user info:', currentUser);
+
+    // Initialize View Toggle
+    initializeViewToggle();
+
+    // Initialize PIC Selection
+    initializePICSelection();
+
+    // Initialize Calendar
+    initializeCalendar();
+
+    // Handle milestone form submission
+    $('#addMilestoneForm').on('submit', function(e) {
+        e.preventDefault();
+
+        // Collect form data
+        const formData = {
+            ideaId: ideaId,
+            title: $('input[name="title"]').val(),
+            note: $('textarea[name="note"]').val(),
+            startDate: $('input[name="startDate"]').val(),
+            endDate: $('input[name="endDate"]').val(),
+            status: $('select[name="status"]').val(),
+            creatorName: currentUser.name,
+            creatorEmployeeId: currentUser.employeeId,
+            selectedPICUserIds: getSelectedPICIds()
+        };
+
+        console.log('Form data to submit:', formData);
+
+        // Validate form
+        if (!formData.title || !formData.note || !formData.startDate || !formData.endDate || !formData.status) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Please fill in all required fields.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        // Validate creator information
+        if (!formData.creatorName || formData.creatorName === 'Unknown User') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Authentication Error!',
+                text: 'Unable to identify current user. Please refresh the page and try again.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        // Validate dates
+        const startDate = new Date(formData.startDate);
+        const endDate = new Date(formData.endDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (startDate < today) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Start date cannot be in the past.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        if (endDate <= startDate) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'End date must be after start date.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = $(this).find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Creating...').prop('disabled', true);
+
+        // Submit form
+        $.post('@Url.Action("CreateMilestone", "Milestone")', formData)
+            .done(function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message,
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        $('#addMilestoneModal').modal('hide');
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response.message,
+                        confirmButtonColor: '#3b82f6'
+                    });
+                }
+            })
+            .fail(function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'An error occurred while creating the milestone.',
+                    confirmButtonColor: '#3b82f6'
+                });
+            })
+            .always(function() {
+                // Restore button state
+                submitBtn.html(originalText).prop('disabled', false);
+            });
+    });
+
+    // Reset modal when closed
+    $('#addMilestoneModal').on('hidden.bs.modal', function() {
+        $('#addMilestoneForm')[0].reset();
+        resetPICSelection();
+    });
+
+    // Set default dates when modal opens
+    $('#addMilestoneModal').on('shown.bs.modal', function() {
+        const today = new Date();
+        const nextMonth = new Date(today);
+        nextMonth.setMonth(today.getMonth() + 1);
+
+        $('input[name="startDate"]').val(today.toISOString().split('T')[0]);
+        $('input[name="endDate"]').val(nextMonth.toISOString().split('T')[0]);
+        $('select[name="status"]').val('Planning');
+    });
+});
+
+function confirmDelete(milestoneId, milestoneTitle) {
+    Swal.fire({
+        title: 'Confirm Deletion',
+        html: `Are you sure you want to delete the milestone "<strong>${milestoneTitle}</strong>"?<br><br><span class="text-danger"><strong>This action cannot be undone.</strong></span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-trash me-2"></i>Delete',
+        cancelButtonText: '<i class="bi bi-x-circle me-2"></i>Cancel',
+        customClass: {
+            confirmButton: 'btn btn-danger px-4 me-2',
+            cancelButton: 'btn btn-secondary px-4'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading state
+            Swal.fire({
+                title: 'Deleting...',
+                text: 'Please wait while we delete the milestone.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Create form and submit
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '@Url.Action("Delete", "Milestone")';
+            form.style.display = 'none';
+
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '__RequestVerificationToken';
+            csrfToken.value = $('input[name="__RequestVerificationToken"]').val();
+            form.appendChild(csrfToken);
+
+            // Add milestone ID
+            const milestoneIdInput = document.createElement('input');
+            milestoneIdInput.type = 'hidden';
+            milestoneIdInput.name = 'milestoneId';
+            milestoneIdInput.value = milestoneId;
+            form.appendChild(milestoneIdInput);
+
+            // Add idea ID
+            const ideaIdInput = document.createElement('input');
+            ideaIdInput.type = 'hidden';
+            ideaIdInput.name = 'ideaId';
+            ideaIdInput.value = '@Model.Idea.Id';
+            form.appendChild(ideaIdInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+// PIC Selection Functions - Similar to Related Divisions
+function initializePICSelection() {
+    initializePICTagsInterface();
+}
+
+function initializePICTagsInterface() {
+    const addBtn = document.getElementById('addPICBtn');
+    const dropdownItems = document.querySelectorAll('.pic-option');
+    const selectedInput = document.getElementById('selectedPICInput');
+    const tagsContainer = document.getElementById('selectedPICTags');
+    const infoPanel = document.getElementById('picInfo');
+
+    if (!addBtn || !selectedInput || !tagsContainer) return;
+
+    // Store selected PICs
+    let selectedPICs = [];
+
+    // Handle dropdown item clicks
+    dropdownItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const picId = this.dataset.picId;
+            const picName = this.dataset.picName;
+            const picEmpId = this.dataset.picEmpId;
+            const picRole = this.dataset.picRole;
+
+            // Check if already selected
+            if (!selectedPICs.find(p => p.id === picId)) {
+                // Add to selected list
+                selectedPICs.push({
+                    id: picId,
+                    name: picName,
+                    empId: picEmpId,
+                    role: picRole
+                });
+
+                // Update UI
+                updatePICTagsDisplay();
+                updatePICDropdownOptions();
+                updatePICHiddenInput();
+                updatePICInfoPanel();
+
+                // Close dropdown
+                bootstrap.Dropdown.getInstance(addBtn)?.hide();
+            }
+        });
+    });
+
+    function updatePICTagsDisplay() {
+        tagsContainer.innerHTML = '';
+
+        selectedPICs.forEach((pic, index) => {
+            const tag = document.createElement('div');
+            tag.className = 'pic-tag';
+            tag.innerHTML = `
+                <span>${pic.name} (${pic.empId}) - ${pic.role}</span>
+                <button type="button" class="remove-btn" data-index="${index}" title="Remove ${pic.name}">
+                    <i class="bi bi-x"></i>
+                </button>
+            `;
+
+            // Add remove functionality
+            const removeBtn = tag.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', function() {
+                const indexToRemove = parseInt(this.dataset.index);
+                selectedPICs.splice(indexToRemove, 1);
+                updatePICTagsDisplay();
+                updatePICDropdownOptions();
+                updatePICHiddenInput();
+                updatePICInfoPanel();
+            });
+
+            tagsContainer.appendChild(tag);
+        });
+    }
+
+    function updatePICDropdownOptions() {
+        dropdownItems.forEach(item => {
+            const picId = item.dataset.picId;
+            const isSelected = selectedPICs.find(p => p.id === picId);
+
+            if (isSelected) {
+                item.classList.add('selected');
+                item.style.display = 'none'; // Hide selected items
+            } else {
+                item.classList.remove('selected');
+                item.style.display = 'block';
+            }
+        });
+
+        // Update button text
+        const availableCount = Array.from(dropdownItems).filter(item => item.style.display !== 'none').length;
+        if (availableCount === 0) {
+            addBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>All PICs Selected';
+            addBtn.classList.add('disabled');
+            addBtn.style.opacity = '0.6';
+        } else {
+            addBtn.innerHTML = '<i class="bi bi-person me-2"></i>Select PIC';
+            addBtn.classList.remove('disabled');
+            addBtn.style.opacity = '1';
+        }
+    }
+
+    function updatePICHiddenInput() {
+        const selectedIds = selectedPICs.map(p => p.id);
+        selectedInput.value = selectedIds.join(',');
+    }
+
+    function updatePICInfoPanel() {
+        const selectedCount = selectedPICs.length;
+        const countSpan = document.getElementById('selectedPICCount');
+
+        if (selectedCount > 0) {
+            if (countSpan) countSpan.textContent = selectedCount;
+            infoPanel.classList.remove('d-none');
+        } else {
+            infoPanel.classList.add('d-none');
+        }
+    }
+
+    // Expose functions globally for form handling
+    window.getSelectedPICIds = function() {
+        return selectedPICs.map(p => parseInt(p.id));
+    };
+
+    window.resetPICSelection = function() {
+        selectedPICs = [];
+        updatePICTagsDisplay();
+        updatePICDropdownOptions();
+        updatePICHiddenInput();
+        updatePICInfoPanel();
+    };
+}
+
+// View Toggle Functions
+function initializeViewToggle() {
+    const listViewBtn = document.getElementById('listView');
+    const calendarViewBtn = document.getElementById('calendarView');
+    const listViewContent = document.getElementById('listViewContent');
+    const calendarViewContent = document.getElementById('calendarViewContent');
+
+    // Handle view toggle
+    listViewBtn.addEventListener('change', function() {
+        if (this.checked) {
+            listViewContent.classList.remove('d-none');
+            calendarViewContent.classList.add('d-none');
+        }
+    });
+
+    calendarViewBtn.addEventListener('change', function() {
+        if (this.checked) {
+            listViewContent.classList.add('d-none');
+            calendarViewContent.classList.remove('d-none');
+            renderCalendar(); // Render calendar when switching to calendar view
+        }
+    });
+}
+
+// Calendar Functions
+let currentDate = new Date();
+
+function initializeCalendar() {
+    // Set up navigation buttons
+    document.getElementById('prevMonth').addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    });
+
+    document.getElementById('nextMonth').addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+
+    // Initial render
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    // Update month display
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+
+    // Get first day of month and number of days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    // Get milestones data
+    const milestones = @Html.Raw(Json.Serialize(Model.Milestones.Select(m => new {
+        id = m.Id,
+        title = m.TitleMilestone,
+        startDate = m.StartDate.ToString("yyyy-MM-dd"),
+        endDate = m.EndDate.ToString("yyyy-MM-dd"),
+        status = m.Status
+    })));
+
+    // Create calendar grid
+    let calendarHTML = `
+        <div class="calendar-grid">
+            <div class="calendar-header">Sun</div>
+            <div class="calendar-header">Mon</div>
+            <div class="calendar-header">Tue</div>
+            <div class="calendar-header">Wed</div>
+            <div class="calendar-header">Thu</div>
+            <div class="calendar-header">Fri</div>
+            <div class="calendar-header">Sat</div>
+    `;
+
+    // Add previous month's trailing days
+    const prevMonth = new Date(year, month - 1, 0);
+    const prevMonthDays = prevMonth.getDate();
+
+    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+        const day = prevMonthDays - i;
+        calendarHTML += `<div class="calendar-cell other-month">
+            <div class="calendar-date">${day}</div>
+        </div>`;
+    }
+
+    // Add current month's days
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const cellDate = new Date(year, month, day);
+        const isToday = cellDate.toDateString() === today.toDateString();
+        const cellClass = isToday ? 'calendar-cell today' : 'calendar-cell';
+
+        // Find milestones for this date
+        const dayMilestones = milestones.filter(milestone => {
+            const startDate = new Date(milestone.startDate);
+            const endDate = new Date(milestone.endDate);
+            return cellDate >= startDate && cellDate <= endDate;
+        });
+
+        let milestonesHTML = '';
+        dayMilestones.forEach(milestone => {
+            const statusClass = `status-${milestone.status.toLowerCase().replace(' ', '-')}`;
+            milestonesHTML += `
+                <div class="milestone-item ${statusClass}" title="${milestone.title} (${milestone.status})">
+                    ${milestone.title}
+                </div>
+            `;
+        });
+
+        calendarHTML += `
+            <div class="${cellClass}">
+                <div class="calendar-date">${day}</div>
+                ${milestonesHTML}
+            </div>
+        `;
+    }
+
+    // Add next month's leading days
+    const totalCells = Math.ceil((startingDayOfWeek + daysInMonth) / 7) * 7;
+    const remainingCells = totalCells - (startingDayOfWeek + daysInMonth);
+
+    for (let day = 1; day <= remainingCells; day++) {
+        calendarHTML += `<div class="calendar-cell other-month">
+            <div class="calendar-date">${day}</div>
+        </div>`;
+    }
+
+    calendarHTML += '</div>';
+
+    // Update calendar container
+    document.getElementById('calendar-container').innerHTML = calendarHTML;
+}
+
+// Edit Modal Functions
+function openEditModal(milestoneId, title, note, startDate, endDate, status) {
+    // Populate form fields
+    document.getElementById('editMilestoneId').value = milestoneId;
+    document.getElementById('editTitle').value = title;
+    document.getElementById('editNote').value = note;
+    document.getElementById('editStartDate').value = startDate;
+    document.getElementById('editEndDate').value = endDate;
+    document.getElementById('editStatus').value = status;
+
+    // Reset PIC selection
+    resetEditPICSelection();
+
+    // Load current PICs for this milestone
+    loadCurrentPICs(milestoneId);
+
+    // Show modal
+    const editModal = new bootstrap.Modal(document.getElementById('editMilestoneModal'));
+    editModal.show();
+}
+
+function loadCurrentPICs(milestoneId) {
+    // Find milestone data in Model.Milestones
+    const milestones = @Html.Raw(Json.Serialize(Model.Milestones.Select(m => new {
+        id = m.Id,
+        pics = m.MilestonePICs.Select(p => new {
+            id = p.User.Id,
+            name = p.User.Name,
+            empId = p.User.Employee.EMP_ID,
+            role = p.User.Role
+        })
+    })));
+
+    const milestone = milestones.find(m => m.id == milestoneId);
+    if (milestone && milestone.pics) {
+        // Clear current selection
+        selectedEditPICs = [];
+
+        // Add current PICs to selection
+        milestone.pics.forEach(pic => {
+            selectedEditPICs.push({
+                id: pic.id.toString(),
+                name: pic.name,
+                empId: pic.empId,
+                role: pic.role
+            });
+        });
+
+        // Update UI
+        updateEditPICTagsDisplay();
+        updateEditPICDropdownOptions();
+        updateEditPICHiddenInput();
+        updateEditPICInfoPanel();
+    }
+}
+
+// Edit PIC Selection Variables
+let selectedEditPICs = [];
+
+// Initialize Edit PIC Selection
+function initializeEditPICSelection() {
+    initializeEditPICTagsInterface();
+}
+
+function initializeEditPICTagsInterface() {
+    const addBtn = document.getElementById('addEditPICBtn');
+    const dropdownItems = document.querySelectorAll('.edit-pic-option');
+    const tagsContainer = document.getElementById('selectedEditPICTags');
+    const selectedInput = document.getElementById('selectedEditPICInput');
+    const infoPanel = document.getElementById('editPICInfo');
+
+    if (!addBtn || !dropdownItems.length || !tagsContainer || !selectedInput || !infoPanel) {
+        return;
+    }
+
+    // Handle dropdown item clicks
+    dropdownItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const picId = this.dataset.picId;
+            const picName = this.dataset.picName;
+            const picEmpId = this.dataset.picEmpId;
+            const picRole = this.dataset.picRole;
+
+            // Check if already selected
+            if (selectedEditPICs.find(p => p.id === picId)) {
+                return;
+            }
+
+            // Add to selection
+            selectedEditPICs.push({
+                id: picId,
+                name: picName,
+                empId: picEmpId,
+                role: picRole
+            });
+
+            // Update UI
+            updateEditPICTagsDisplay();
+            updateEditPICDropdownOptions();
+            updateEditPICHiddenInput();
+            updateEditPICInfoPanel();
+
+            // Close dropdown
+            bootstrap.Dropdown.getInstance(addBtn)?.hide();
+        });
+    });
+
+    function updateEditPICTagsDisplay() {
+        tagsContainer.innerHTML = '';
+
+        selectedEditPICs.forEach((pic, index) => {
+            const tag = document.createElement('div');
+            tag.className = 'pic-tag';
+            tag.innerHTML = `
+                <span>${pic.name} (${pic.empId}) - ${pic.role}</span>
+                <button type="button" class="remove-btn" data-index="${index}" title="Remove ${pic.name}">
+                    <i class="bi bi-x"></i>
+                </button>
+            `;
+
+            // Add remove functionality
+            const removeBtn = tag.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', function() {
+                const indexToRemove = parseInt(this.dataset.index);
+                selectedEditPICs.splice(indexToRemove, 1);
+                updateEditPICTagsDisplay();
+                updateEditPICDropdownOptions();
+                updateEditPICHiddenInput();
+                updateEditPICInfoPanel();
+            });
+
+            tagsContainer.appendChild(tag);
+        });
+    }
+
+    function updateEditPICDropdownOptions() {
+        dropdownItems.forEach(item => {
+            const picId = item.dataset.picId;
+            const isSelected = selectedEditPICs.find(p => p.id === picId);
+
+            if (isSelected) {
+                item.classList.add('selected');
+                item.style.display = 'none';
+            } else {
+                item.classList.remove('selected');
+                item.style.display = 'block';
+            }
+        });
+
+        // Update button text
+        const availableCount = Array.from(dropdownItems).filter(item => item.style.display !== 'none').length;
+        if (availableCount === 0) {
+            addBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>All PICs Selected';
+            addBtn.classList.add('disabled');
+            addBtn.style.opacity = '0.6';
+        } else {
+            addBtn.innerHTML = '<i class="bi bi-person me-2"></i>Select PIC';
+            addBtn.classList.remove('disabled');
+            addBtn.style.opacity = '1';
+        }
+    }
+
+    function updateEditPICHiddenInput() {
+        const selectedIds = selectedEditPICs.map(p => p.id);
+        selectedInput.value = selectedIds.join(',');
+    }
+
+    function updateEditPICInfoPanel() {
+        const selectedCount = selectedEditPICs.length;
+        const countSpan = document.getElementById('selectedEditPICCount');
+
+        if (selectedCount > 0) {
+            if (countSpan) countSpan.textContent = selectedCount;
+            infoPanel.classList.remove('d-none');
+        } else {
+            infoPanel.classList.add('d-none');
+        }
+    }
+
+    // Expose functions globally
+    window.updateEditPICTagsDisplay = updateEditPICTagsDisplay;
+    window.updateEditPICDropdownOptions = updateEditPICDropdownOptions;
+    window.updateEditPICHiddenInput = updateEditPICHiddenInput;
+    window.updateEditPICInfoPanel = updateEditPICInfoPanel;
+}
+
+function resetEditPICSelection() {
+    selectedEditPICs = [];
+    if (window.updateEditPICTagsDisplay) {
+        window.updateEditPICTagsDisplay();
+        window.updateEditPICDropdownOptions();
+        window.updateEditPICHiddenInput();
+        window.updateEditPICInfoPanel();
+    }
+}
+
+// Initialize Edit PIC Selection when DOM is ready
+$(document).ready(function() {
+    initializeEditPICSelection();
+
+    // Handle edit form submission
+    $('#editMilestoneForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const formData = {
+            milestoneId: $('#editMilestoneId').val(),
+            ideaId: @Model.Idea.Id,
+            title: $('#editTitle').val(),
+            note: $('#editNote').val(),
+            startDate: $('#editStartDate').val(),
+            endDate: $('#editEndDate').val(),
+            status: $('#editStatus').val(),
+            selectedPICUserIds: selectedEditPICs.map(p => parseInt(p.id))
+        };
+
+        console.log('Edit form data to submit:', formData);
+
+        // Validate form (startDate not required since it's readonly)
+        if (!formData.title || !formData.note || !formData.endDate || !formData.status) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Please fill in all required fields.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        // Validate dates (only validate end date since start date is readonly)
+        const startDate = new Date(formData.startDate);
+        const endDate = new Date(formData.endDate);
+
+        if (endDate <= startDate) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'End date must be after the start date.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = $(this).find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...').prop('disabled', true);
+
+        // Submit form
+        $.ajax({
+            url: '@Url.Action("UpdateMilestone", "Milestone")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData)
+        })
+            .done(function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message,
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        $('#editMilestoneModal').modal('hide');
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response.message || 'Failed to update milestone.',
+                        confirmButtonColor: '#dc2626'
+                    });
+                    submitBtn.html(originalText).prop('disabled', false);
+                }
+            })
+            .fail(function(xhr, status, error) {
+                console.error('Edit milestone error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'An error occurred while updating the milestone. Please try again.',
+                    confirmButtonColor: '#dc2626'
+                });
+                submitBtn.html(originalText).prop('disabled', false);
+            });
+    });
+
+    // Reset modal when closed
+    $('#editMilestoneModal').on('hidden.bs.modal', function() {
+        resetEditPICSelection();
+    });
+});
+</script>
+}

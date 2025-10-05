@@ -253,6 +253,11 @@ namespace Ideku.Migrations
                     Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     IsActing = table.Column<bool>(type: "bit", nullable: false),
+                    CurrentRoleId = table.Column<int>(type: "int", nullable: true),
+                    ActingStartDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ActingEndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ActingDivisionId = table.Column<string>(type: "char(3)", maxLength: 3, nullable: true),
+                    ActingDepartmentId = table.Column<string>(type: "char(3)", maxLength: 3, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -260,10 +265,28 @@ namespace Ideku.Migrations
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_Users_Departments_ActingDepartmentId",
+                        column: x => x.ActingDepartmentId,
+                        principalTable: "Departments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Users_Divisions_ActingDivisionId",
+                        column: x => x.ActingDivisionId,
+                        principalTable: "Divisions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Users_EMPLIST_EmployeeId",
                         column: x => x.EmployeeId,
                         principalTable: "EMPLIST",
                         principalColumn: "EMP_ID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Users_Roles_CurrentRoleId",
+                        column: x => x.CurrentRoleId,
+                        principalTable: "Roles",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Users_Roles_RoleId",
@@ -345,20 +368,50 @@ namespace Ideku.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "IdeaImplementators",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IdeaId = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: false),
+                    Role = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IdeaImplementators", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_IdeaImplementators_Ideas_IdeaId",
+                        column: x => x.IdeaId,
+                        principalTable: "Ideas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_IdeaImplementators_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Milestones",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     IdeaId = table.Column<long>(type: "bigint", nullable: false),
-                    CreatorUserId = table.Column<long>(type: "bigint", nullable: false),
+                    CreatorName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    CreatorEmployeeId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     TitleMilestone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    PIC = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     Note = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -369,12 +422,6 @@ namespace Ideku.Migrations
                         principalTable: "Ideas",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Milestones_Users_CreatorUserId",
-                        column: x => x.CreatorUserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -403,6 +450,34 @@ namespace Ideku.Migrations
                     table.ForeignKey(
                         name: "FK_WorkflowHistory_Users_ActorUserId",
                         column: x => x.ActorUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MilestonePICs",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    MilestoneId = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MilestonePICs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MilestonePICs_Milestones_MilestoneId",
+                        column: x => x.MilestoneId,
+                        principalTable: "Milestones",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MilestonePICs_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -437,6 +512,31 @@ namespace Ideku.Migrations
                 name: "IX_EMPLIST_DIVISION",
                 table: "EMPLIST",
                 column: "DIVISION");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaImplementators_IdeaId",
+                table: "IdeaImplementators",
+                column: "IdeaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaImplementators_IdeaId_Role",
+                table: "IdeaImplementators",
+                columns: new[] { "IdeaId", "Role" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaImplementators_IdeaId_UserId",
+                table: "IdeaImplementators",
+                columns: new[] { "IdeaId", "UserId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaImplementators_Role",
+                table: "IdeaImplementators",
+                column: "Role");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaImplementators_UserId",
+                table: "IdeaImplementators",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Ideas_CategoryId",
@@ -479,14 +579,40 @@ namespace Ideku.Migrations
                 column: "WorkflowId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Milestones_CreatorUserId",
-                table: "Milestones",
-                column: "CreatorUserId");
+                name: "IX_MilestonePICs_MilestoneId",
+                table: "MilestonePICs",
+                column: "MilestoneId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MilestonePICs_MilestoneId_UserId",
+                table: "MilestonePICs",
+                columns: new[] { "MilestoneId", "UserId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MilestonePICs_UserId",
+                table: "MilestonePICs",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Milestones_IdeaId",
                 table: "Milestones",
                 column: "IdeaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_ActingDepartmentId",
+                table: "Users",
+                column: "ActingDepartmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_ActingDivisionId",
+                table: "Users",
+                column: "ActingDivisionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_CurrentRoleId",
+                table: "Users",
+                column: "CurrentRoleId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_EmployeeId",
@@ -559,7 +685,10 @@ namespace Ideku.Migrations
                 name: "ApproverRoles");
 
             migrationBuilder.DropTable(
-                name: "Milestones");
+                name: "IdeaImplementators");
+
+            migrationBuilder.DropTable(
+                name: "MilestonePICs");
 
             migrationBuilder.DropTable(
                 name: "WorkflowConditions");
@@ -571,10 +700,13 @@ namespace Ideku.Migrations
                 name: "WorkflowStages");
 
             migrationBuilder.DropTable(
-                name: "Ideas");
+                name: "Milestones");
 
             migrationBuilder.DropTable(
                 name: "Approvers");
+
+            migrationBuilder.DropTable(
+                name: "Ideas");
 
             migrationBuilder.DropTable(
                 name: "Categories");

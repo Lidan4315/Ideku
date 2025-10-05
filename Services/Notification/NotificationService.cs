@@ -417,7 +417,7 @@ namespace Ideku.Services.Notification
                 <li><strong>Milestone Status:</strong> {milestone.Status}</li>
                 <li><strong>Start Date:</strong> {milestone.StartDate:dd/MM/yyyy}</li>
                 <li><strong>End Date:</strong> {milestone.EndDate:dd/MM/yyyy}</li>
-                <li><strong>Created by:</strong> {milestone.CreatorUser.Name}</li>
+                <li><strong>Created by:</strong> {milestone.CreatorName}</li>
             </ul>
             <p><strong>Note:</strong> {milestone.Note}</p>
             <p>Best regards,<br>Ideku System</p>";

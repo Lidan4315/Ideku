@@ -1,0 +1,160 @@
+<!-- File Preview Modal -->
+<div class="modal fade" id="attachmentModal" tabindex="-1" aria-labelledby="attachmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attachmentModalLabel">
+                    <i class="bi bi-file-earmark me-2"></i>File Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="attachment-preview">
+                <!-- Dynamic content will be loaded here -->
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Loading file preview...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Close
+                </button>
+                <a href="#" id="modalDownloadBtn" class="btn btn-primary" style="display: none;">
+                    <i class="bi bi-download me-1"></i>Download File
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// File Preview Functions - Use same pattern as Approval Review
+function initializeFilePreview() {
+    const viewButtons = document.querySelectorAll('.view-attachment-btn');
+    console.log('Found attachment buttons:', viewButtons.length);
+
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const filename = this.dataset.filename;
+            const viewUrl = this.dataset.viewUrl;
+            const downloadUrl = this.dataset.downloadUrl;
+
+            console.log('Button clicked:', filename, viewUrl, downloadUrl);
+            showFilePreview(filename, viewUrl, downloadUrl);
+        });
+    });
+}
+
+function showFilePreview(filename, viewUrl, downloadUrl) {
+    const modal = new bootstrap.Modal(document.getElementById('attachmentModal'));
+    const modalTitle = document.getElementById('attachmentModalLabel');
+    const modalBody = document.getElementById('attachment-preview');
+    const downloadBtn = document.getElementById('modalDownloadBtn');
+
+    // Update modal title
+    modalTitle.innerHTML = `<i class="bi bi-file-earmark me-2"></i>Preview: ${filename}`;
+
+    // Show loading state
+    modalBody.innerHTML = `
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading file preview...</p>
+        </div>
+    `;
+
+    // Setup download button
+    downloadBtn.href = downloadUrl;
+    downloadBtn.style.display = 'inline-block';
+
+    // Show modal
+    modal.show();
+
+    // Determine file type and show appropriate preview
+    const extension = filename.split('.').pop().toLowerCase();
+
+    setTimeout(() => {
+        loadFilePreview(extension, filename, viewUrl, downloadUrl, modalBody);
+    }, 300);
+}
+
+function loadFilePreview(extension, filename, viewUrl, downloadUrl, modalBody) {
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+        // Image preview
+        showImagePreview(viewUrl, filename, modalBody);
+    } else if (extension === 'pdf') {
+        // PDF preview
+        showPdfPreview(viewUrl, filename, modalBody);
+    } else {
+        // Other files - Download only
+        showUnsupportedFile(filename, downloadUrl, modalBody, 'file-earmark', 'File');
+    }
+};
+
+function showImagePreview(viewUrl, filename, modalBody) {
+    const img = new Image();
+
+    img.onload = function() {
+        modalBody.innerHTML = `
+            <div class="text-center p-3">
+                <img src="${viewUrl}" class="img-fluid" alt="${filename}" style="max-height: 70vh;">
+            </div>
+        `;
+    };
+
+    img.onerror = function() {
+        showErrorPreview('Failed to load image', modalBody);
+    };
+
+    img.src = viewUrl;
+};
+
+function showPdfPreview(viewUrl, filename, modalBody) {
+    modalBody.innerHTML = `
+        <div class="p-2">
+            <iframe src="${viewUrl}" style="width: 100%; height: 70vh; min-height: 400px; border: none;" title="${filename}">
+                <p>Your browser does not support PDFs. <a href="${viewUrl}">Download the PDF</a>.</p>
+            </iframe>
+        </div>
+    `;
+};
+
+function showUnsupportedFile(filename, downloadUrl, modalBody, iconClass, fileType) {
+    modalBody.innerHTML = `
+        <div class="text-center p-5">
+            <i class="bi bi-${iconClass} text-warning mb-3" style="font-size: 4rem;"></i>
+            <h5>${fileType}</h5>
+            <p class="text-muted mb-4">Preview not available for this file type</p>
+            <a href="${downloadUrl}" class="btn btn-primary btn-lg">
+                <i class="bi bi-download me-2"></i>Download ${filename}
+            </a>
+        </div>
+    `;
+};
+
+function showErrorPreview(message, modalBody) {
+    modalBody.innerHTML = `
+        <div class="text-center p-5">
+            <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+            <h5>Preview Error</h5>
+            <p class="text-muted">${message}</p>
+        </div>
+    `;
+};
+
+// Auto-initialize when document is ready - Same pattern as Approval Review
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize file preview
+    initializeFilePreview();
+});
+
+// Re-initialize on window resize (for mobile/desktop switch)
+window.addEventListener('resize', function() {
+    setTimeout(() => {
+        initializeFilePreview();
+    }, 100);
+});
+</script>

@@ -175,7 +175,9 @@ namespace Ideku.Data.Repositories
                 .CountAsync(wh => wh.ActorUserId == userId);
 
             var milestonesCount = await _context.Milestones
-                .CountAsync(m => m.CreatorUserId == userId);
+                .Include(m => m.Idea)
+                .ThenInclude(i => i.InitiatorUser)
+                .CountAsync(m => m.Idea.InitiatorUserId == userId);
 
             return ideasCount + workflowHistoryCount + milestonesCount;
         }

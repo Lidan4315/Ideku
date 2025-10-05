@@ -21,7 +21,9 @@ namespace Ideku.Data.Context
         public DbSet<Idea> Ideas { get; set; }
         public DbSet<WorkflowHistory> WorkflowHistories { get; set; }
         public DbSet<Milestone> Milestones { get; set; }
-        
+        public DbSet<IdeaImplementator> IdeaImplementators { get; set; }
+        public DbSet<MilestonePIC> MilestonePICs { get; set; }
+
         // Dynamic Workflow System DbSets
         public DbSet<Workflow> Workflows { get; set; }
         public DbSet<Approver> Approvers { get; set; }
@@ -242,12 +244,6 @@ namespace Ideku.Data.Context
                 .HasForeignKey(m => m.IdeaId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Milestone>()
-                .HasOne(m => m.CreatorUser)
-                .WithMany(u => u.CreatedMilestones)
-                .HasForeignKey(m => m.CreatorUserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             // =================== DYNAMIC WORKFLOW RELATIONSHIPS ===================
 
             // WorkflowStage-Workflow relationship
@@ -291,6 +287,79 @@ namespace Ideku.Data.Context
                 .WithMany()
                 .HasForeignKey(i => i.WorkflowId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // =================== IDEA IMPLEMENTATOR RELATIONSHIPS ===================
+
+            // IdeaImplementator-Idea relationship
+            modelBuilder.Entity<IdeaImplementator>()
+                .HasOne(ii => ii.Idea)
+                .WithMany(i => i.IdeaImplementators)
+                .HasForeignKey(ii => ii.IdeaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // IdeaImplementator-User relationship
+            modelBuilder.Entity<IdeaImplementator>()
+                .HasOne(ii => ii.User)
+                .WithMany(u => u.ImplementatorAssignments)
+                .HasForeignKey(ii => ii.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // =================== IDEA IMPLEMENTATOR INDEXES ===================
+
+            // Index for performance
+            modelBuilder.Entity<IdeaImplementator>()
+                .HasIndex(ii => ii.IdeaId)
+                .HasDatabaseName("IX_IdeaImplementators_IdeaId");
+
+            modelBuilder.Entity<IdeaImplementator>()
+                .HasIndex(ii => ii.UserId)
+                .HasDatabaseName("IX_IdeaImplementators_UserId");
+
+            modelBuilder.Entity<IdeaImplementator>()
+                .HasIndex(ii => ii.Role)
+                .HasDatabaseName("IX_IdeaImplementators_Role");
+
+            // Composite index for efficient queries
+            modelBuilder.Entity<IdeaImplementator>()
+                .HasIndex(ii => new { ii.IdeaId, ii.UserId })
+                .HasDatabaseName("IX_IdeaImplementators_IdeaId_UserId");
+
+            modelBuilder.Entity<IdeaImplementator>()
+                .HasIndex(ii => new { ii.IdeaId, ii.Role })
+                .HasDatabaseName("IX_IdeaImplementators_IdeaId_Role");
+
+            // =================== MILESTONE PIC RELATIONSHIPS ===================
+
+            // MilestonePIC-Milestone relationship
+            modelBuilder.Entity<MilestonePIC>()
+                .HasOne(mp => mp.Milestone)
+                .WithMany(m => m.MilestonePICs)
+                .HasForeignKey(mp => mp.MilestoneId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // MilestonePIC-User relationship
+            modelBuilder.Entity<MilestonePIC>()
+                .HasOne(mp => mp.User)
+                .WithMany(u => u.MilestonePICAssignments)
+                .HasForeignKey(mp => mp.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // =================== MILESTONE PIC INDEXES ===================
+
+            // Index for performance
+            modelBuilder.Entity<MilestonePIC>()
+                .HasIndex(mp => mp.MilestoneId)
+                .HasDatabaseName("IX_MilestonePICs_MilestoneId");
+
+            modelBuilder.Entity<MilestonePIC>()
+                .HasIndex(mp => mp.UserId)
+                .HasDatabaseName("IX_MilestonePICs_UserId");
+
+            // Composite index for efficient queries and uniqueness
+            modelBuilder.Entity<MilestonePIC>()
+                .HasIndex(mp => new { mp.MilestoneId, mp.UserId })
+                .IsUnique()
+                .HasDatabaseName("IX_MilestonePICs_MilestoneId_UserId");
 
         }
     }
