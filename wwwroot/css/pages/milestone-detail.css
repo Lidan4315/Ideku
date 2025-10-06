@@ -1,0 +1,204 @@
+/* =============================================================================
+   VIEW TOGGLE SECTION
+   ============================================================================= */
+
+.view-toggle-section {
+    margin-bottom: 1.5rem;
+}
+
+.view-toggle-section .btn-group {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.view-toggle-section .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.view-toggle-section .btn:hover {
+    background-color: #f8f9fa;
+    border-color: #9c1c31;
+    color: #9c1c31;
+}
+
+.view-toggle-section .btn-check:checked + .btn,
+.view-toggle-section .btn.active,
+.view-toggle-section .btn-outline-primary:checked,
+.view-toggle-section .btn-outline-primary.active {
+    background: linear-gradient(135deg, #9c1c31 0%, #5c1f25 100%);
+    border-color: #9c1c31;
+    color: white;
+    box-shadow: 0 4px 8px rgba(156, 28, 49, 0.3);
+}
+
+/* View Content */
+.view-content {
+    transition: all 0.3s ease;
+}
+
+/* =============================================================================
+   PIC DROPDOWN STYLING
+   ============================================================================= */
+
+/* Dropdown item styling */
+.pic-option {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f3f4;
+    transition: all 0.2s ease;
+}
+
+.pic-option:hover {
+    background-color: #f8f9fa;
+}
+
+.pic-option.selected {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+/* =============================================================================
+   CALENDAR VIEW STYLES
+   ============================================================================= */
+
+/* Calendar Grid */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border: 1px solid #e5e7eb;
+}
+
+.calendar-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    text-align: center;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* Calendar Cells */
+.calendar-cell {
+    border: 1px solid #e5e7eb;
+    min-height: 120px;
+    padding: 0.5rem;
+    position: relative;
+    background-color: #fff;
+    transition: background-color 0.2s ease;
+}
+
+.calendar-cell:hover {
+    background-color: #f8f9fa;
+}
+
+.calendar-cell.other-month {
+    background-color: #f9fafb;
+    color: #9ca3af;
+}
+
+.calendar-cell.today {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+}
+
+.calendar-date {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+}
+
+.calendar-cell.other-month .calendar-date {
+    color: #9ca3af;
+}
+
+/* Milestone Items in Calendar */
+.milestone-item {
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    word-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.milestone-item:hover {
+    background-color: #2563eb;
+}
+
+/* Milestone Status Colors */
+.milestone-item.status-completed {
+    background-color: #10b981;
+}
+
+.milestone-item.status-completed:hover {
+    background-color: #059669;
+}
+
+.milestone-item.status-planning {
+    background-color: #6b7280;
+}
+
+.milestone-item.status-planning:hover {
+    background-color: #4b5563;
+}
+
+.milestone-item.status-on-hold {
+    background-color: #f59e0b;
+}
+
+.milestone-item.status-on-hold:hover {
+    background-color: #d97706;
+}
+
+.milestone-item.status-cancelled {
+    background-color: #ef4444;
+}
+
+.milestone-item.status-cancelled:hover {
+    background-color: #dc2626;
+}
+
+/* =============================================================================
+   FORM STYLING
+   ============================================================================= */
+
+/* Readonly input styling */
+input[readonly] {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+
+input[readonly]:focus {
+    box-shadow: none !important;
+    border-color: #ced4da !important;
+}
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================= */
+
+@media (max-width: 768px) {
+    .view-toggle-section .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .calendar-cell {
+        min-height: 80px;
+        padding: 0.25rem;
+    }
+
+    .milestone-item {
+        font-size: 0.6rem;
+        padding: 0.125rem 0.25rem;
+    }
+}
