@@ -61,7 +61,8 @@
 }
 
 /* Hide filtered items */
-.implementator-item.d-none {
+.implementator-item.d-none,
+.edit-implementator-item.d-none {
     display: none !important;
 }
 
@@ -134,8 +135,10 @@
 }
 
 /* Role Selection Buttons */
-.role-btn {
+.role-btn,
+.edit-role-btn {
     border: none;
+    border-left: 1px solid #e5e7eb;
     background: transparent;
     transition: all 0.2s ease;
     font-size: 1rem;
@@ -147,16 +150,19 @@
     border-radius: 0;
 }
 
-.role-btn:hover {
+.role-btn:hover,
+.edit-role-btn:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
-.role-btn:focus {
+.role-btn:focus,
+.edit-role-btn:focus {
     box-shadow: none;
     outline: none;
 }
 
-.role-btn:active {
+.role-btn:active,
+.edit-role-btn:active {
     background-color: rgba(0, 0, 0, 0.1);
 }
 
