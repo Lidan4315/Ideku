@@ -20,6 +20,11 @@ function navigateToUserManagement() {
     window.location.href = '/Settings/UserManagement';
 }
 
+function navigateToChangeWorkflow() {
+    // Navigate to change workflow page
+    window.location.href = '/Settings/ChangeWorkflow';
+}
+
 function showComingSoon(featureName) {
     Swal.fire({
         icon: 'info',

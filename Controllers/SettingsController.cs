@@ -31,5 +31,10 @@ namespace Ideku.Controllers
         {
             return RedirectToAction("Index", "UserManagement");
         }
+
+        public IActionResult ChangeWorkflow()
+        {
+            return RedirectToAction("Index", "ChangeWorkflow");
+        }
     }
 }

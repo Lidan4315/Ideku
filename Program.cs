@@ -86,6 +86,7 @@ builder.Services.AddScoped<Ideku.Services.Roles.IRolesService, Ideku.Services.Ro
 builder.Services.AddScoped<Ideku.Services.UserManagement.IUserManagementService, Ideku.Services.UserManagement.UserManagementService>();
 builder.Services.AddScoped<Ideku.Services.IdeaImplementators.IIdeaImplementatorService, Ideku.Services.IdeaImplementators.IdeaImplementatorService>();
 builder.Services.AddScoped<Ideku.Services.Milestone.IMilestoneService, Ideku.Services.Milestone.MilestoneService>();
+builder.Services.AddScoped<Ideku.Services.ChangeWorkflow.IChangeWorkflowService, Ideku.Services.ChangeWorkflow.ChangeWorkflowService>();
 
 // Register Background Services
 builder.Services.AddHostedService<Ideku.Services.BackgroundServices.ActingRoleReversionService>();
