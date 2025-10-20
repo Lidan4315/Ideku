@@ -1,0 +1,62 @@
+/* VIEW TOGGLE SECTION */
+.view-toggle-section {
+    margin-bottom: 1.5rem;
+}
+
+.view-toggle-section .btn-group {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.view-toggle-section .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.view-toggle-section .btn:hover {
+    background-color: #f8f9fa;
+    border-color: #9c1c31;
+    color: #9c1c31;
+}
+
+.view-toggle-section .btn-check:checked + .btn,
+.view-toggle-section .btn.active,
+.view-toggle-section .btn-outline-primary:checked,
+.view-toggle-section .btn-outline-primary.active {
+    background: linear-gradient(135deg, #9c1c31 0%, #5c1f25 100%);
+    border-color: #9c1c31;
+    color: white;
+    box-shadow: 0 4px 8px rgba(156, 28, 49, 0.3);
+}
+
+/* View Content */
+.view-content {
+    transition: all 0.3s ease;
+}
+
+/* Fade In Animation for View Content */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.view-content {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+
+/*RESPONSIVE ADJUSTMENTS */
+@media (max-width: 768px) {
+    .view-toggle-section .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+}
