@@ -105,9 +105,10 @@
                         <label class="form-label">Stage</label>
                         <select id="selectedStage" name="selectedStage" class="form-select">
                             <option value="">All Stages</option>
-                            <option value="0" selected="@(Model.SelectedStage == 0)">Stage S0</option>
-                            <option value="1" selected="@(Model.SelectedStage == 1)">Stage S1</option>
-                            <option value="2" selected="@(Model.SelectedStage == 2)">Stage S2</option>
+                            @foreach (var stage in Model.AvailableStages)
+                            {
+                                <option value="@stage.Value" selected="@(Model.SelectedStage.ToString() == stage.Value)">@stage.Text</option>
+                            }
                         </select>
                     </div>
 

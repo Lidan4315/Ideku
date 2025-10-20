@@ -109,7 +109,10 @@ namespace Ideku.Controllers
             // Get lookup data for filters
             var divisions = await _lookupService.GetDivisionsAsync();
             var categories = await _lookupService.GetCategoriesAsync();
-            
+
+            // Get available stages from database
+            var stages = await _ideaService.GetAvailableStagesAsync();
+
             var viewModel = new IdeaListViewModel
             {
                 PagedIdeas = pagedResult,
@@ -118,7 +121,12 @@ namespace Ideku.Controllers
                 SelectedDepartment = selectedDepartment,
                 SelectedCategory = selectedCategory,
                 SelectedStage = selectedStage,
-                SelectedStatus = selectedStatus
+                SelectedStatus = selectedStatus,
+                AvailableStages = stages.Select(s => new SelectListItem
+                {
+                    Value = s.ToString(),
+                    Text = $"Stage S{s}"
+                }).ToList()
             };
 
             // Pass lookup data to view

@@ -1,5 +1,6 @@
 using Ideku.Models.Entities;
 using Ideku.ViewModels.Common;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Collections.Generic;
 
 namespace Ideku.ViewModels.IdeaList
@@ -13,37 +14,42 @@ namespace Ideku.ViewModels.IdeaList
         /// Paginated ideas for the current user
         /// </summary>
         public PagedResult<Models.Entities.Idea> PagedIdeas { get; set; } = new PagedResult<Models.Entities.Idea>();
-        
+
         // Filter Properties
         /// <summary>
         /// Search term for idea code, name
         /// </summary>
         public string? SearchTerm { get; set; }
-        
+
         /// <summary>
         /// Selected division ID for filtering
         /// </summary>
         public string? SelectedDivision { get; set; }
-        
+
         /// <summary>
         /// Selected department ID for filtering
         /// </summary>
         public string? SelectedDepartment { get; set; }
-        
+
         /// <summary>
         /// Selected category ID for filtering
         /// </summary>
         public int? SelectedCategory { get; set; }
-        
+
         /// <summary>
         /// Selected workflow stage for filtering
         /// </summary>
         public int? SelectedStage { get; set; }
-        
+
         /// <summary>
         /// Selected status for filtering
         /// </summary>
         public string? SelectedStatus { get; set; }
+
+        /// <summary>
+        /// Available stages for filtering (dynamically loaded from database)
+        /// </summary>
+        public List<SelectListItem> AvailableStages { get; set; } = new List<SelectListItem>();
         
         // Convenience Properties for backward compatibility and ease of use
         /// <summary>
