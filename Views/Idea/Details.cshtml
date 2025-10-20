@@ -1,0 +1,280 @@
+@model Ideku.ViewModels.IdeaList.IdeaDetailViewModel
+
+@{
+    ViewData["Title"] = "Idea Details";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/shared/tab-navigation.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/pages/idealist-detail.css" asp-append-version="true" />
+}
+
+<div class="container-fluid">
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="page-title text-gradient">
+                <i class="bi bi-lightbulb me-2"></i>Idea Details
+            </h2>
+            <p class="text-muted mb-0">@Model.Idea.IdeaCode - @Model.Idea.IdeaName</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Index", "Idea")" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to My Ideas
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Tab Navigation Section -->
+    <div class="view-toggle-section mb-4">
+        <div class="btn-group w-100" role="group" aria-label="View toggle">
+            <input type="radio" class="btn-check" name="viewOptions" id="detailsView" autocomplete="off" checked>
+            <label class="btn btn-outline-primary" for="detailsView">
+                <i class="bi bi-info-circle me-2"></i>Details
+            </label>
+
+            <input type="radio" class="btn-check" name="viewOptions" id="approvalHistoryView" autocomplete="off">
+            <label class="btn btn-outline-primary" for="approvalHistoryView">
+                <i class="bi bi-clock-history me-2"></i>Approval History
+            </label>
+
+            <input type="radio" class="btn-check" name="viewOptions" id="milestoneView" autocomplete="off">
+            <label class="btn btn-outline-primary" for="milestoneView">
+                <i class="bi bi-flag me-2"></i>Milestone
+            </label>
+
+            <input type="radio" class="btn-check" name="viewOptions" id="monitoringView" autocomplete="off">
+            <label class="btn btn-outline-primary" for="monitoringView">
+                <i class="bi bi-graph-up me-2"></i>Monitoring
+            </label>
+        </div>
+    </div>
+
+    <!-- Content Sections -->
+    <div id="tabContent">
+
+        <!-- Details View (Active by default) -->
+        <div id="detailsViewContent" class="view-content">
+            <!-- Use Shared Idea Details Partial -->
+            @await Html.PartialAsync("_IdeaDetails", Model.Idea)
+
+            <!-- Attachments and Team Assembly Section Side by Side -->
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Attachments Section -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="bi bi-paperclip me-2"></i>Attachments
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @await Html.PartialAsync("_IdeaAttachments", Model.Idea)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <!-- Team Assembly Section (View Only) -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h5 class="m-0 font-weight-bold text-primary">
+                                <i class="bi bi-people me-2"></i>Team Assembly
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Leader Section -->
+                            <div class="form-group-view mb-4">
+                                <label>
+                                    <i class="bi bi-star-fill text-warning me-2"></i>Leader
+                                </label>
+                                @{
+                                    var leader = Model.Implementators.FirstOrDefault(i => i.Role == "Leader");
+                                }
+                                @if (leader != null)
+                                {
+                                    <p>@leader.User?.Name</p>
+                                }
+                                else
+                                {
+                                    <p class="text-muted">
+                                        <i class="bi bi-info-circle me-2"></i>No leader assigned yet.
+                                    </p>
+                                }
+                            </div>
+
+                            <!-- Members Section -->
+                            @{
+                                var members = Model.Implementators.Where(i => i.Role == "Member").ToList();
+                            }
+                            @if (members.Any())
+                            {
+                                <!-- Members Label (only once) -->
+                                <div class="form-group-view">
+                                    <label>
+                                        <i class="bi bi-people-fill text-primary me-2"></i>Members
+                                    </label>
+                                </div>
+
+                                <!-- Individual Member Fields -->
+                                @foreach (var member in members)
+                                {
+                                    <div class="form-group-view mb-3">
+                                        <p>@member.User?.Name</p>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="form-group-view">
+                                    <label>
+                                        <i class="bi bi-people-fill text-primary me-2"></i>Members
+                                    </label>
+                                    <p class="text-muted">
+                                        <i class="bi bi-info-circle me-2"></i>No members assigned yet.
+                                    </p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approval History View -->
+        <div id="approvalHistoryViewContent" class="view-content d-none">
+            <div class="card">
+                <div class="card-header py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-clock-history me-2"></i>Approval History
+                    </h5>
+                </div>
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-clock-history display-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">Approval History</h5>
+                    <p class="text-muted">This feature will be implemented soon.</p>
+                    <p class="text-muted"><small>Track the complete approval workflow and history for this idea.</small></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Milestone View -->
+        <div id="milestoneViewContent" class="view-content d-none">
+            <div class="card">
+                <div class="card-header py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-flag me-2"></i>Milestones
+                    </h5>
+                </div>
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-flag display-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">Milestones</h5>
+                    <p class="text-muted">This feature will be implemented soon.</p>
+                    <p class="text-muted"><small>View and track milestones for this idea.</small></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitoring View -->
+        <div id="monitoringViewContent" class="view-content d-none">
+            <div class="card">
+                <div class="card-header py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-graph-up me-2"></i>Monitoring & Analytics
+                    </h5>
+                </div>
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-graph-up display-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">Monitoring & Analytics</h5>
+                    <p class="text-muted">This feature will be implemented soon.</p>
+                    <p class="text-muted"><small>Monitor progress, metrics, and analytics for this idea.</small></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Include File Preview Modal -->
+@await Html.PartialAsync("_FilePreviewModal")
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    // Initialize Tab Navigation
+    initializeTabNavigation();
+});
+
+// Tab Navigation Functions
+function initializeTabNavigation() {
+    const detailsViewBtn = document.getElementById('detailsView');
+    const approvalHistoryViewBtn = document.getElementById('approvalHistoryView');
+    const milestoneViewBtn = document.getElementById('milestoneView');
+    const monitoringViewBtn = document.getElementById('monitoringView');
+
+    const detailsViewContent = document.getElementById('detailsViewContent');
+    const approvalHistoryViewContent = document.getElementById('approvalHistoryViewContent');
+    const milestoneViewContent = document.getElementById('milestoneViewContent');
+    const monitoringViewContent = document.getElementById('monitoringViewContent');
+
+    // Details View
+    detailsViewBtn.addEventListener('change', function() {
+        if (this.checked) {
+            showView(detailsViewContent);
+            hideViews([approvalHistoryViewContent, milestoneViewContent, monitoringViewContent]);
+        }
+    });
+
+    // Approval History View
+    approvalHistoryViewBtn.addEventListener('change', function() {
+        if (this.checked) {
+            showView(approvalHistoryViewContent);
+            hideViews([detailsViewContent, milestoneViewContent, monitoringViewContent]);
+        }
+    });
+
+    // Milestone View
+    milestoneViewBtn.addEventListener('change', function() {
+        if (this.checked) {
+            showView(milestoneViewContent);
+            hideViews([detailsViewContent, approvalHistoryViewContent, monitoringViewContent]);
+        }
+    });
+
+    // Monitoring View
+    monitoringViewBtn.addEventListener('change', function() {
+        if (this.checked) {
+            showView(monitoringViewContent);
+            hideViews([detailsViewContent, approvalHistoryViewContent, milestoneViewContent]);
+        }
+    });
+}
+
+function showView(view) {
+    view.classList.remove('d-none');
+}
+
+function hideViews(views) {
+    views.forEach(view => {
+        view.classList.add('d-none');
+    });
+}
+</script>
+}

@@ -3,7 +3,10 @@
     ViewData["Title"] = "Milestone Management";
 }
 
+<link rel="stylesheet" href="~/css/shared/ideas-list.css" asp-append-version="true" />
+
 <div class="container-fluid">
+    <!-- Page Header -->
     <div class="page-header mb-4">
         <h2 class="page-title text-gradient">
             <i class="bi bi-flag me-2"></i>Milestone Management
@@ -29,95 +32,31 @@
         </div>
     }
 
-    <!-- Integrated Filter and Table Card -->
+    @* Integrated Filter and Table Card *@
     <div class="card filter-card">
+        <!-- Filter Section -->
         <div class="card-body p-4">
-            <form method="get" asp-action="Index">
-                <div class="row g-3">
-                    <!-- Search Input with Clear Button -->
-                    <div class="col-12">
-                        <div class="d-flex gap-2">
-                            <div class="input-group flex-grow-1">
-                                <span class="input-group-text">
-                                    <i class="bi bi-search"></i>
-                                </span>
-                                <input type="text"
-                                       id="searchTerm"
-                                       name="searchTerm"
-                                       value="@Model.SearchTerm"
-                                       class="form-control"
-                                       placeholder="Search by Idea ID, Title, or Initiator...">
-                            </div>
-                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary text-nowrap clear-all-btn">
-                                <i class="bi bi-arrow-clockwise me-1"></i>Clear All
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Filters in Horizontal Layout -->
-
-                    <!-- Division -->
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label">Division</label>
-                        <select id="selectedDivision" name="selectedDivision" class="form-select">
-                            <option value="">All Divisions</option>
-                            @if (ViewBag.Divisions != null)
-                            {
-                                @foreach (var division in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Divisions)
-                                {
-                                    if (!string.IsNullOrEmpty(division.Value))
-                                    {
-                                        <option value="@division.Value" selected="@(Model.SelectedDivision == division.Value)">@division.Text</option>
-                                    }
-                                }
-                            }
-                        </select>
-                    </div>
-
-                    <!-- Department -->
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label">Department</label>
-                        <select id="selectedDepartment" name="selectedDepartment" class="form-select">
-                            <option value="">Please select Division first</option>
-                        </select>
-                    </div>
-
-                    <!-- Category -->
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label">Category</label>
-                        <select id="selectedCategory" name="selectedCategory" class="form-select">
-                            <option value="">All Categories</option>
-                            @if (ViewBag.Categories != null)
-                            {
-                                @foreach (var category in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories)
-                                {
-                                    if (!string.IsNullOrEmpty(category.Value))
-                                    {
-                                        <option value="@category.Value" selected="@(Model.SelectedCategory?.ToString() == category.Value)">@category.Text</option>
-                                    }
-                                }
-                            }
-                        </select>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label">Status</label>
-                        <select id="selectedStatus" name="selectedStatus" class="form-select">
-                            <option value="">All Statuses</option>
-                            @if (ViewBag.Statuses != null)
-                            {
-                                @foreach (var status in ViewBag.Statuses as IEnumerable<string>)
-                                {
-                                    <option value="@status" selected="@(Model.SelectedStatus == status)">
-                                        @status
-                                    </option>
-                                }
-                            }
-                        </select>
-                    </div>
-                </div>
-            </form>
+            @{
+                var filterConfig = new Ideku.ViewModels.Common.IdeaFilterViewModel
+                {
+                    SearchTerm = Model.SearchTerm ?? string.Empty,
+                    SearchPlaceholder = "Search by Idea ID, Title, or Initiator...",
+                    SelectedDivision = Model.SelectedDivision ?? string.Empty,
+                    SelectedDepartment = Model.SelectedDepartment ?? string.Empty,
+                    SelectedCategory = Model.SelectedCategory,
+                    SelectedStage = Model.SelectedStage,
+                    SelectedStatus = Model.SelectedStatus ?? string.Empty,
+                    ClearAllUrl = Url.Action("Index") ?? string.Empty,
+                    ShowDivisionFilter = true,
+                    ShowDepartmentFilter = true,
+                    ShowCategoryFilter = true,
+                    ShowStageFilter = true,
+                    ShowStatusFilter = true,
+                    StatusOptions = ViewBag.Statuses as List<string>,
+                    AvailableStages = Model.AvailableStages
+                };
+            }
+            @await Html.PartialAsync("_IdeaFilterForm", filterConfig)
         </div>
 
         <!-- Table Section -->
@@ -140,13 +79,12 @@
                                 <th>Status</th>
                                 <th>Milestones</th>
                                 <th>Submitted</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="ideas-table-body">
                             @foreach (var idea in Model.Ideas)
                             {
-                                <tr>
+                                <tr style="cursor: pointer;" onclick="window.location.href='@Url.Action("Detail", new { ideaId = idea.Id })'">
                                     <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
                                     <td>
                                         <div class="truncate-title" title="@idea.IdeaName">
@@ -219,14 +157,6 @@
                                         <div>@idea.SubmittedDate.ToString("MMM dd")</div>
                                         <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
                                     </td>
-                                    <td>
-                                        <div class="btn-group-vertical btn-group-sm">
-                                            <a href="@Url.Action("Detail", new { ideaId = idea.Id })"
-                                               class="btn btn-outline-primary btn-sm">
-                                                <i class="bi bi-flag"></i> Manage
-                                            </a>
-                                        </div>
-                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -235,10 +165,10 @@
             }
             else
             {
-                <div class="text-center p-5">
-                    <i class="bi bi-search fs-1 text-muted"></i>
-                    <h4 class="mt-3">No Ideas Found</h4>
-                    <p class="text-muted">No ideas eligible for milestone management found with the current filters.</p>
+                <div class="empty-state">
+                    <i class="bi bi-search"></i>
+                    <h4>No Ideas Found</h4>
+                    <p>No ideas eligible for milestone management found with the current filters.</p>
                 </div>
             }
 
@@ -251,135 +181,20 @@
     </div>
 </div>
 
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        padding: 2rem;
-        border-radius: 1rem;
-        border: 1px solid #e5e7eb;
-    }
-
-    .page-title {
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-
-    .card {
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-radius: 1rem;
-    }
-
-    .table thead th {
-        background: #f8fafc;
-        border: none;
-        font-weight: 600;
-        color: #374151;
-    }
-
-    .text-gradient {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .table-responsive-custom {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .table-responsive-custom > .table > thead > tr > th,
-    .table-responsive-custom > .table > tbody > tr > td {
-        white-space: nowrap;
-    }
-
-    .truncate-title {
-        max-width: 250px; /* Adjust as needed */
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* Hover effects for clickable rows */
-    tbody tr {
-        transition: all 0.2s ease-in-out;
-    }
-
-    tbody tr:hover {
-        background-color: #f8fafc !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        transform: translateY(-1px);
-    }
-
-    tbody tr:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .bg-purple {
-        background-color: #8b5cf6 !important;
-    }
-
-    .bg-orange {
-        background-color: #f97316 !important;
-    }
-
-    /* Simplified Integrated Card Styling */
-    .filter-card {
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        margin-bottom: 2rem;
-    }
-
-    /* Table section styling */
-    .card-body.border-top {
-        border-top: 1px solid #e5e7eb !important;
-        padding: 1.5rem;
-        border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
-    }
-
-    /* Clear All button styling */
-    .clear-all-btn {
-        padding: 0.375rem 0.75rem;
-        height: auto;
-        min-height: calc(1.5em + 0.75rem + 2px);
-        display: flex;
-        align-items: center;
-        border-radius: 0.375rem;
-    }
-
-    .btn-outline-secondary:hover {
-        background-color: #f8f9fa !important;
-        border-color: #6c757d !important;
-        color: #6c757d !important;
-    }
-</style>
-
 <script>
-// ========================================================
-// MILESTONE PAGE - AJAX ENHANCEMENT
-// ========================================================
-// Real-time filtering without page reload (adapted from IdeaList)
-// ========================================================
-
+// Milestone page AJAX filtering (similar to IdeaList, adapted for Milestone endpoints)
 document.addEventListener('DOMContentLoaded', function() {
-
-    // DOM element references
     const searchInput = document.getElementById('searchTerm');
     const divisionSelect = document.getElementById('selectedDivision');
     const departmentSelect = document.getElementById('selectedDepartment');
     const categorySelect = document.getElementById('selectedCategory');
+    const stageSelect = document.getElementById('selectedStage');
     const statusSelect = document.getElementById('selectedStatus');
     const tableBody = document.querySelector('#ideas-table-body');
 
     let debounceTimeout;
 
-    // Initialize cascading dropdown state on page load
+    // Initialize cascading dropdown
     const initialDivision = divisionSelect?.value;
     const initialDepartment = '@Model.SelectedDepartment';
 
@@ -413,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Dropdown change events with AJAX
-    [departmentSelect, categorySelect, statusSelect].forEach(select => {
+    [departmentSelect, categorySelect, stageSelect, statusSelect].forEach(select => {
         if (select) {
             select.addEventListener('change', applyFilters);
         }
@@ -486,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedDivision = divisionSelect?.value || '';
         const selectedDepartment = departmentSelect?.value || '';
         const selectedCategory = categorySelect?.value || '';
+        const selectedStage = stageSelect?.value || '';
         const selectedStatus = statusSelect?.value || '';
 
         // Check if all filters are empty
@@ -493,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
                           !selectedDivision &&
                           !selectedDepartment &&
                           !selectedCategory &&
+                          !selectedStage &&
                           !selectedStatus;
 
         if (isAllEmpty) {
@@ -522,11 +339,22 @@ document.addEventListener('DOMContentLoaded', function() {
         if (filters.selectedCategory) {
             params.append('selectedCategory', filters.selectedCategory);
         }
+        if (filters.selectedStage) {
+            params.append('selectedStage', filters.selectedStage);
+        }
         if (filters.selectedStatus) {
             params.append('selectedStatus', filters.selectedStatus);
         }
 
         showLoadingState();
+
+        // Build URL for browser history
+        const newUrl = `/Milestone?${params.toString()}`;
+
+        // Update browser URL without reload (for bookmarking)
+        if (page !== 1 || hasActiveFilters()) {
+            history.pushState({ page, filters }, null, newUrl);
+        }
 
         const requestUrl = `/Milestone/FilterAllIdeas?${params.toString()}`;
 
@@ -575,8 +403,14 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedDivision: divisionSelect?.value || '',
             selectedDepartment: departmentSelect?.value || '',
             selectedCategory: categorySelect?.value || '',
+            selectedStage: stageSelect?.value || '',
             selectedStatus: statusSelect?.value || ''
         };
+    }
+
+    function hasActiveFilters() {
+        const filters = getCurrentFilters();
+        return Object.values(filters).some(value => value && value.toString().trim() !== '');
     }
 
     function getCurrentPageSize() {
@@ -587,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="13" class="text-center py-4">
+                    <td colspan="12" class="text-center py-4">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
@@ -605,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="13" class="text-center py-4">
+                    <td colspan="12" class="text-center py-4">
                         <div class="text-danger mb-2">
                             <i class="bi bi-exclamation-triangle"></i> ${message}
                         </div>
@@ -651,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!ideas || ideas.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="13" class="text-center py-4">
+                    <td colspan="12" class="text-center py-4">
                         <div class="empty-state">
                             <i class="bi bi-search display-4 text-muted"></i>
                             <h5 class="mt-3">No Ideas Found</h5>
@@ -682,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }).format(idea.savingCost);
 
             html += `
-                <tr>
+                <tr style="cursor: pointer;" onclick="window.location.href='${idea.detailUrl}'">
                     <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
                     <td>
                         <div class="truncate-title" title="${idea.ideaName}">
@@ -711,13 +545,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>
                         <div>${dateStr}</div>
                         <small class="text-muted">${timeStr}</small>
-                    </td>
-                    <td>
-                        <div class="btn-group-vertical btn-group-sm">
-                            <a href="${idea.detailUrl}" class="btn btn-outline-primary btn-sm" title="Manage Milestones">
-                                <i class="bi bi-flag"></i> Manage
-                            </a>
-                        </div>
                     </td>
                 </tr>
             `;
@@ -851,6 +678,32 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // Browser history management for back/forward navigation
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.filters) {
+            // Restore filter values from history state
+            const filters = event.state.filters;
+
+            if (searchInput) searchInput.value = filters.searchTerm || '';
+            if (divisionSelect) divisionSelect.value = filters.selectedDivision || '';
+            if (departmentSelect) departmentSelect.value = filters.selectedDepartment || '';
+            if (categorySelect) categorySelect.value = filters.selectedCategory || '';
+            if (stageSelect) stageSelect.value = filters.selectedStage || '';
+            if (statusSelect) statusSelect.value = filters.selectedStatus || '';
+
+            // Reload departments if division is selected
+            if (filters.selectedDivision) {
+                loadDepartmentsForDivision(filters.selectedDivision, filters.selectedDepartment);
+            }
+
+            // Load results for the restored state
+            loadFilteredResults(event.state.page || 1, getCurrentPageSize());
+        } else {
+            // No state, reload original page
+            window.location.reload();
+        }
+    });
 
     console.log('Milestone AJAX enhancement initialized');
 });

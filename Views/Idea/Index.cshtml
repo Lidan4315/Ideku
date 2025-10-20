@@ -3,6 +3,9 @@
     ViewData["Title"] = "My Ideas";
 }
 
+@* Include Shared CSS *@
+<link rel="stylesheet" href="~/css/shared/ideas-list.css" asp-append-version="true" />
+
 <div class="container-fluid">
     <div class="page-header mb-4">
         <h2 class="page-title text-gradient">
@@ -31,101 +34,30 @@
 
     <!-- Integrated Filter and Table Card -->
     <div class="card filter-card">
+        <!-- Filter Section -->
         <div class="card-body p-4">
-            <form method="get" asp-action="Index">
-                <div class="row g-3">
-                    <!-- Search Input with Clear Button -->
-                    <div class="col-12">
-                        <div class="d-flex gap-2">
-                            <div class="input-group flex-grow-1">
-                                <span class="input-group-text">
-                                    <i class="bi bi-search"></i>
-                                </span>
-                                <input type="text" 
-                                       id="searchTerm"
-                                       name="searchTerm" 
-                                       value="@Model.SearchTerm"
-                                       class="form-control" 
-                                       placeholder="Search by Idea ID or Title...">
-                            </div>
-                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary text-nowrap clear-all-btn">
-                                <i class="bi bi-arrow-clockwise me-1"></i>Clear All
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Filters in Horizontal Layout -->
-                    
-                    <!-- Division -->
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label">Division</label>
-                        <select id="selectedDivision" name="selectedDivision" class="form-select">
-                            <option value="">All Divisions</option>
-                            @if (ViewBag.Divisions != null)
-                            {
-                                @foreach (var division in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Divisions)
-                                {
-                                    if (!string.IsNullOrEmpty(division.Value))
-                                    {
-                                        <option value="@division.Value" selected="@(Model.SelectedDivision == division.Value)">@division.Text</option>
-                                    }
-                                }
-                            }
-                        </select>
-                    </div>
-
-                    <!-- Department -->
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label">Department</label>
-                        <select id="selectedDepartment" name="selectedDepartment" class="form-select">
-                            <option value="">Please select Division first</option>
-                        </select>
-                    </div>
-
-                    <!-- Category -->
-                    <div class="col-lg-2 col-md-4">
-                        <label class="form-label">Category</label>
-                        <select id="selectedCategory" name="selectedCategory" class="form-select">
-                            <option value="">All Categories</option>
-                            @if (ViewBag.Categories != null)
-                            {
-                                @foreach (var category in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories)
-                                {
-                                    if (!string.IsNullOrEmpty(category.Value))
-                                    {
-                                        <option value="@category.Value" selected="@(Model.SelectedCategory.ToString() == category.Value)">@category.Text</option>
-                                    }
-                                }
-                            }
-                        </select>
-                    </div>
-
-                    <!-- Stage -->
-                    <div class="col-lg-2 col-md-4">
-                        <label class="form-label">Stage</label>
-                        <select id="selectedStage" name="selectedStage" class="form-select">
-                            <option value="">All Stages</option>
-                            <option value="0" selected="@(Model.SelectedStage == 0)">Stage S0</option>
-                            <option value="1" selected="@(Model.SelectedStage == 1)">Stage S1</option>
-                            <option value="2" selected="@(Model.SelectedStage == 2)">Stage S2</option>
-                        </select>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="col-lg-2 col-md-4">
-                        <label class="form-label">Status</label>
-                        <select id="selectedStatus" name="selectedStatus" class="form-select">
-                            <option value="">All Statuses</option>
-                            <option value="Waiting Approval S1" selected="@(Model.SelectedStatus == "Waiting Approval S1")">Waiting Approval S1</option>
-                            <option value="Waiting Approval S2" selected="@(Model.SelectedStatus == "Waiting Approval S2")">Waiting Approval S2</option>
-                            <option value="Rejected S0" selected="@(Model.SelectedStatus == "Rejected S0")">Rejected S0</option>
-                            <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Approved</option>
-                        </select>
-                    </div>
-                </div>
-            </form>
+            @{
+                var filterConfig = new Ideku.ViewModels.Common.IdeaFilterViewModel
+                {
+                    SearchTerm = Model.SearchTerm ?? string.Empty,
+                    SearchPlaceholder = "Search by Idea ID or Title...",
+                    SelectedDivision = Model.SelectedDivision ?? string.Empty,
+                    SelectedDepartment = Model.SelectedDepartment ?? string.Empty,
+                    SelectedCategory = Model.SelectedCategory,
+                    SelectedStage = Model.SelectedStage,
+                    SelectedStatus = Model.SelectedStatus ?? string.Empty,
+                    ClearAllUrl = Url.Action("Index") ?? string.Empty,
+                    ShowDivisionFilter = true,
+                    ShowDepartmentFilter = true,
+                    ShowCategoryFilter = true,
+                    ShowStageFilter = true,
+                    ShowStatusFilter = true,
+                    AvailableStages = Model.AvailableStages
+                };
+            }
+            @await Html.PartialAsync("_IdeaFilterForm", filterConfig)
         </div>
-        
+
         <!-- Table Section -->
         <div class="card-body border-top">
             @if (Model.Ideas.Any())
@@ -145,13 +77,12 @@
                                 <th>Progress</th>
                                 <th>Saving Cost</th>
                                 <th>Submitted</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="ideas-table-body">
                             @foreach (var idea in Model.Ideas)
                             {
-                                <tr>
+                                <tr style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", new { id = idea.Id })'">
                                     <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
                                     <td>
                                         <div class="truncate-title" title="@idea.IdeaName">
@@ -219,7 +150,7 @@
                                                 5 => 100,
                                                 _ => 50
                                             };
-                                            
+
                                             var progressClass = progressPercent switch
                                             {
                                                 <= 25 => "bg-danger",
@@ -230,11 +161,11 @@
                                         }
                                         <div class="progress-container">
                                             <div class="progress" style="height: 8px; width: 80px;">
-                                                <div class="progress-bar @progressClass" 
-                                                     role="progressbar" 
-                                                     style="width: @(progressPercent)%" 
-                                                     aria-valuenow="@progressPercent" 
-                                                     aria-valuemin="0" 
+                                                <div class="progress-bar @progressClass"
+                                                     role="progressbar"
+                                                     style="width: @(progressPercent)%"
+                                                     aria-valuenow="@progressPercent"
+                                                     aria-valuemin="0"
                                                      aria-valuemax="100">
                                                 </div>
                                             </div>
@@ -251,17 +182,6 @@
                                     <td>
                                         <div>@idea.SubmittedDate.ToString("MMM dd")</div>
                                         <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group-vertical btn-group-sm">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" title="View Details">
-                                                <i class="bi bi-eye"></i> View
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" title="Edit" 
-                                                    @(idea.CurrentStatus == "Waiting Approval S1" ? "" : "disabled")>
-                                                <i class="bi bi-pencil"></i> Edit
-                                            </button>
-                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -288,184 +208,9 @@
             }
         </div>
     </div>
-
-    <!-- Statistics Card -->
-    @if (Model.HasIdeas)
-    {
-        <div class="card mt-4">
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="stat-item">
-                            <h3 class="text-primary">@Model.TotalItems</h3>
-                            <p class="text-muted mb-0">Total Ideas</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-item">
-                            <h3 class="text-warning">@Model.Ideas.Count(i => i.CurrentStatus.StartsWith("Waiting Approval"))</h3>
-                            <p class="text-muted mb-0">In Progress</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-item">
-                            <h3 class="text-success">@Model.Ideas.Count(i => i.CurrentStatus == "Completed")</h3>
-                            <p class="text-muted mb-0">Completed</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-item">
-                            <h3 class="text-info">@Model.Ideas.Sum(i => i.SavingCost).ToString("C0")</h3>
-                            <p class="text-muted mb-0">Total Saving</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
 </div>
 
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        padding: 2rem;
-        border-radius: 1rem;
-        border: 1px solid #e5e7eb;
-    }
-    
-    .page-title {
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    
-    .card {
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-radius: 1rem;
-    }
-    
-    .table thead th {
-        background: #f8fafc;
-        border: none;
-        font-weight: 600;
-        color: #374151;
-    }
-    
-    .text-gradient {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .table-responsive-custom {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .table-responsive-custom > .table > thead > tr > th,
-    .table-responsive-custom > .table > tbody > tr > td {
-        white-space: nowrap;
-    }
-
-    .truncate-title {
-        max-width: 250px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* Hover effects for clickable rows */
-    tbody tr {
-        transition: all 0.2s ease-in-out;
-    }
-
-    tbody tr:hover {
-        background-color: #f8fafc !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        transform: translateY(-1px);
-    }
-
-    tbody tr:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .bg-purple {
-        background-color: #8b5cf6 !important;
-    }
-
-    .bg-orange {
-        background-color: #f97316 !important;
-    }
-
-    /* Progress bar styling */
-    .progress-container {
-        display: flex;
-        align-items: center;
-    }
-    
-    .progress {
-        border-radius: 10px;
-        background-color: #e9ecef;
-    }
-    
-    .progress-bar {
-        border-radius: 10px;
-    }
-
-    /* Simplified Integrated Card Styling */
-    .filter-card {
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        margin-bottom: 2rem;
-    }
-
-    /* Table section styling */
-    .card-body.border-top {
-        border-top: 1px solid #e5e7eb !important;
-        padding: 1.5rem;
-        border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
-    }
-
-    /* Clear All button styling */
-    .clear-all-btn {
-        padding: 0.375rem 0.75rem;
-        height: auto;
-        min-height: calc(1.5em + 0.75rem + 2px);
-        display: flex;
-        align-items: center;
-        border-radius: 0.375rem;
-    }
-
-    .btn-outline-secondary:hover {
-        background-color: #f8f9fa !important;
-        border-color: #6c757d !important;
-        color: #6c757d !important;
-    }
-
-    /* Statistics styling */
-    .stat-item {
-        padding: 1rem;
-    }
-    
-    .stat-item h3 {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-</style>
-
 <script>
-// ========================================================
-// MY IDEAS PAGE - AJAX ENHANCEMENT
-// ========================================================
-// Real-time filtering without page reload
-// ========================================================
 
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -608,11 +353,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function loadFilteredResults(page = 1, pageSize = 10) {
         const filters = getCurrentFilters();
-        
+
         const params = new URLSearchParams();
         params.append('page', page.toString());
         params.append('pageSize', pageSize.toString());
-        
+
         if (filters.searchTerm && filters.searchTerm.trim()) {
             params.append('searchTerm', filters.searchTerm.trim());
         }
@@ -634,8 +379,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         showLoadingState();
 
+        // Build URL for browser history
+        const newUrl = `/Idea?${params.toString()}`;
+
+        // Update browser URL without reload (for bookmarking)
+        if (page !== 1 || hasActiveFilters()) {
+            history.pushState({ page, filters }, null, newUrl);
+        }
+
         const requestUrl = `/Idea/FilterMyIdeas?${params.toString()}`;
-        
+
         fetch(requestUrl, {
             method: 'GET',
             headers: {
@@ -686,6 +439,11 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    function hasActiveFilters() {
+        const filters = getCurrentFilters();
+        return Object.values(filters).some(value => value && value.toString().trim() !== '');
+    }
+
     function getCurrentPageSize() {
         return parseInt(document.querySelector('.pagination select')?.value) || 10;
     }
@@ -694,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="text-center py-4">
+                    <td colspan="11" class="text-center py-4">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
@@ -712,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="text-center py-4">
+                    <td colspan="11" class="text-center py-4">
                         <div class="text-danger mb-2">
                             <i class="bi bi-exclamation-triangle"></i> ${message}
                         </div>
@@ -730,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!ideas || ideas.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="text-center py-4">
+                    <td colspan="11" class="text-center py-4">
                         <div class="empty-state">
                             <i class="bi bi-lightbulb display-4 text-muted"></i>
                             <h5 class="mt-3">No Ideas Found</h5>
@@ -799,7 +557,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }).format(idea.savingCost);
 
             html += `
-                <tr>
+                <tr style="cursor: pointer;" onclick="window.location.href='${idea.detailUrl}'">
                     <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
                     <td>
                         <div class="truncate-title" title="${idea.ideaName}">
@@ -823,11 +581,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>
                         <div class="progress-container">
                             <div class="progress" style="height: 8px; width: 80px;">
-                                <div class="progress-bar ${progressClass}" 
-                                     role="progressbar" 
-                                     style="width: ${progressPercentage}%" 
-                                     aria-valuenow="${progressPercentage}" 
-                                     aria-valuemin="0" 
+                                <div class="progress-bar ${progressClass}"
+                                     role="progressbar"
+                                     style="width: ${progressPercentage}%"
+                                     aria-valuenow="${progressPercentage}"
+                                     aria-valuemin="0"
                                      aria-valuemax="100">
                                 </div>
                             </div>
@@ -841,18 +599,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>
                         <div>${dateStr}</div>
                         <small class="text-muted">${timeStr}</small>
-                    </td>
-                    <td>
-                        <div class="btn-group-vertical btn-group-sm">
-                            <button type="button" class="btn btn-outline-primary btn-sm" title="View Details" onclick="window.location.href='${idea.viewUrl}'">
-                                <i class="bi bi-eye"></i> View
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" title="Edit" 
-                                    ${idea.currentStatus === "Waiting Approval S1" ? "" : "disabled"}
-                                    onclick="window.location.href='${idea.editUrl}'">
-                                <i class="bi bi-pencil"></i> Edit
-                            </button>
-                        </div>
                     </td>
                 </tr>
             `;
@@ -995,6 +741,32 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // Browser history management for back/forward navigation
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.filters) {
+            // Restore filter values from history state
+            const filters = event.state.filters;
+
+            if (searchInput) searchInput.value = filters.searchTerm || '';
+            if (divisionSelect) divisionSelect.value = filters.selectedDivision || '';
+            if (departmentSelect) departmentSelect.value = filters.selectedDepartment || '';
+            if (categorySelect) categorySelect.value = filters.selectedCategory || '';
+            if (stageSelect) stageSelect.value = filters.selectedStage || '';
+            if (statusSelect) statusSelect.value = filters.selectedStatus || '';
+
+            // Reload departments if division is selected
+            if (filters.selectedDivision) {
+                loadDepartmentsForDivision(filters.selectedDivision, filters.selectedDepartment);
+            }
+
+            // Load results for the restored state
+            loadFilteredResults(event.state.page || 1, getCurrentPageSize());
+        } else {
+            // No state, reload original page
+            window.location.reload();
+        }
+    });
 
     console.log('My Ideas AJAX enhancement initialized');
 });

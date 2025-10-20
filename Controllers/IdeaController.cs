@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Ideku.Services.Idea;
 using Ideku.ViewModels;
 using Ideku.ViewModels.IdeaList;
 using Ideku.Services.Workflow;
+using Ideku.Services.IdeaImplementators;
 using Ideku.Models;
 using Ideku.Extensions;
 using Ideku.Services.Lookup;
@@ -16,6 +18,7 @@ namespace Ideku.Controllers
         private readonly IIdeaService _ideaService;
         private readonly IWorkflowService _workflowService;
         private readonly ILookupService _lookupService;
+        private readonly IIdeaImplementatorService _implementatorService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<IdeaController> _logger;
 
@@ -23,12 +26,14 @@ namespace Ideku.Controllers
             IIdeaService ideaService,
             IWorkflowService workflowService,
             ILookupService lookupService,
+            IIdeaImplementatorService implementatorService,
             IServiceScopeFactory serviceScopeFactory,
             ILogger<IdeaController> logger)
         {
             _ideaService = ideaService;
             _workflowService = workflowService;
             _lookupService = lookupService;
+            _implementatorService = implementatorService;
             _serviceScopeFactory = serviceScopeFactory;
             _logger = logger;
         }
@@ -325,8 +330,8 @@ namespace Ideku.Controllers
             var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
             
             // Return JSON with paginated results
-            return Json(new { 
-                success = true, 
+            return Json(new {
+                success = true,
                 ideas = pagedResult.Items.Select(i => new {
                     ideaCode = i.IdeaCode,
                     ideaName = i.IdeaName,
@@ -339,8 +344,7 @@ namespace Ideku.Controllers
                     savingCostValidated = i.SavingCostValidated,
                     currentStatus = i.CurrentStatus,
                     submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
-                    viewUrl = Url.Action("View", new { id = i.Id }),
-                    editUrl = Url.Action("Edit", new { id = i.Id })
+                    detailUrl = Url.Action("Details", new { id = i.Id })
                 }),
                 pagination = new {
                     currentPage = pagedResult.Page,
@@ -368,12 +372,55 @@ namespace Ideku.Controllers
             {
                 // Use real data from LookupService (returns List<object>)
                 var departments = await _lookupService.GetDepartmentsByDivisionForAjaxAsync(divisionId);
-                
+
                 return Json(new { success = true, departments });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // GET: Idea/Details/{id}
+        public async Task<IActionResult> Details(long id)
+        {
+            try
+            {
+                var username = User.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return RedirectToAction("Login", "Auth");
+                }
+
+                // Get the idea
+                var ideasQuery = await _ideaService.GetUserIdeasAsync(username);
+                var idea = await ideasQuery
+                    .Where(i => i.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (idea == null)
+                {
+                    TempData["ErrorMessage"] = "Idea not found or you don't have permission to view it";
+                    return RedirectToAction("Index");
+                }
+
+                // Get implementators for the idea (view-only)
+                var implementators = await _implementatorService.GetImplementatorsByIdeaIdAsync(id);
+
+                // Create view model with idea and implementators
+                var viewModel = new IdeaDetailViewModel
+                {
+                    Idea = idea,
+                    Implementators = implementators.ToList()
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading idea details: {IdeaId}", id);
+                TempData["ErrorMessage"] = "Error loading idea details";
+                return RedirectToAction("Index");
             }
         }
     }
