@@ -27,6 +27,7 @@ namespace Ideku.Services.Milestone
             string? selectedDivision = null,
             string? selectedDepartment = null,
             int? selectedCategory = null,
+            int? selectedStage = null,
             string? selectedStatus = null)
         {
             var query = _milestoneRepository.GetIdeasWithMilestoneEligibility();
@@ -53,6 +54,11 @@ namespace Ideku.Services.Milestone
             if (selectedCategory.HasValue)
             {
                 query = query.Where(i => i.CategoryId == selectedCategory.Value);
+            }
+
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(selectedStatus))

@@ -1,0 +1,145 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model Ideku.ViewModels.Common.IdeaFilterViewModel
+
+@*
+    Shared Filter Form for Ideas List Pages
+    ========================================
+    Configurable filter form used across Approval, IdeaList, Milestone, and MyIdeas pages
+
+    NOTE: This partial only renders the FORM CONTENT (without card wrapper)
+          The calling page is responsible for wrapping this in a card structure
+
+    Required Model Properties:
+    - SearchTerm: string
+    - SearchPlaceholder: string
+    - SelectedDivision: string
+    - SelectedDepartment: string
+    - SelectedCategory: int?
+    - SelectedStage: int?
+    - SelectedStatus: string
+    - ClearAllUrl: string
+    - ShowDivisionFilter: bool
+    - ShowDepartmentFilter: bool
+    - ShowCategoryFilter: bool
+    - ShowStageFilter: bool
+    - ShowStatusFilter: bool
+*@
+
+<form method="get" asp-action="Index">
+    <div class="row g-3">
+        <!-- Search Input with Clear Button -->
+        <div class="col-12">
+            <div class="d-flex gap-2">
+                <div class="input-group flex-grow-1">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text"
+                           id="searchTerm"
+                           name="searchTerm"
+                           value="@Model.SearchTerm"
+                           class="form-control"
+                           placeholder="@Model.SearchPlaceholder">
+                </div>
+                <a href="@Model.ClearAllUrl" class="btn btn-outline-secondary text-nowrap clear-all-btn">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Clear All
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters in Horizontal Layout -->
+
+        @if (Model.ShowDivisionFilter)
+        {
+            <!-- Division -->
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label">Division</label>
+                <select id="selectedDivision" name="selectedDivision" class="form-select">
+                    <option value="">All Divisions</option>
+                    @if (ViewBag.Divisions != null)
+                    {
+                        @foreach (var division in (IEnumerable<SelectListItem>)ViewBag.Divisions)
+                        {
+                            if (!string.IsNullOrEmpty(division.Value))
+                            {
+                                <option value="@division.Value" selected="@(Model.SelectedDivision == division.Value)">@division.Text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+        }
+
+        @if (Model.ShowDepartmentFilter)
+        {
+            <!-- Department -->
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label">Department</label>
+                <select id="selectedDepartment" name="selectedDepartment" class="form-select">
+                    <option value="">Please select Division first</option>
+                </select>
+            </div>
+        }
+
+        @if (Model.ShowCategoryFilter)
+        {
+            <!-- Category -->
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label">Category</label>
+                <select id="selectedCategory" name="selectedCategory" class="form-select">
+                    <option value="">All Categories</option>
+                    @if (ViewBag.Categories != null)
+                    {
+                        @foreach (var category in (IEnumerable<SelectListItem>)ViewBag.Categories)
+                        {
+                            if (!string.IsNullOrEmpty(category.Value))
+                            {
+                                <option value="@category.Value" selected="@(Model.SelectedCategory?.ToString() == category.Value)">@category.Text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+        }
+
+        @if (Model.ShowStageFilter)
+        {
+            <!-- Stage -->
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label">Stage</label>
+                <select id="selectedStage" name="selectedStage" class="form-select">
+                    <option value="">All Stages</option>
+                    @foreach (var stage in Model.AvailableStages)
+                    {
+                        <option value="@stage.Value" selected="@(Model.SelectedStage?.ToString() == stage.Value)">@stage.Text</option>
+                    }
+                </select>
+            </div>
+        }
+
+        @if (Model.ShowStatusFilter)
+        {
+            <!-- Status -->
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label">Status</label>
+                <select id="selectedStatus" name="selectedStatus" class="form-select">
+                    <option value="">All Statuses</option>
+                    @if (Model.StatusOptions != null)
+                    {
+                        @foreach (var status in Model.StatusOptions)
+                        {
+                            <option value="@status" selected="@(Model.SelectedStatus == status)">@status</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="Waiting Approval S1" selected="@(Model.SelectedStatus == "Waiting Approval S1")">Waiting Approval S1</option>
+                        <option value="Waiting Approval S2" selected="@(Model.SelectedStatus == "Waiting Approval S2")">Waiting Approval S2</option>
+                        <option value="Rejected S0" selected="@(Model.SelectedStatus == "Rejected S0")">Rejected S0</option>
+                        <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Approved</option>
+                    }
+                </select>
+            </div>
+        }
+    </div>
+</form>

@@ -15,6 +15,7 @@ namespace Ideku.Services.Milestone
         /// <param name="selectedDivision">Division filter</param>
         /// <param name="selectedDepartment">Department filter</param>
         /// <param name="selectedCategory">Category filter</param>
+        /// <param name="selectedStage">Stage filter</param>
         /// <param name="selectedStatus">Status filter</param>
         /// <returns>Paginated result of eligible ideas</returns>
         Task<PagedResult<Models.Entities.Idea>> GetMilestoneEligibleIdeasAsync(
@@ -24,6 +25,7 @@ namespace Ideku.Services.Milestone
             string? selectedDivision = null,
             string? selectedDepartment = null,
             int? selectedCategory = null,
+            int? selectedStage = null,
             string? selectedStatus = null);
 
         /// <summary>

@@ -1,8 +1,10 @@
 using Ideku.Services.Milestone;
 using Ideku.Services.Lookup;
+using Ideku.Services.Idea;
 using Ideku.ViewModels.Milestone;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Security.Claims;
 
 namespace Ideku.Controllers
@@ -12,15 +14,18 @@ namespace Ideku.Controllers
     {
         private readonly IMilestoneService _milestoneService;
         private readonly ILookupService _lookupService;
+        private readonly IIdeaService _ideaService;
         private readonly ILogger<MilestoneController> _logger;
 
         public MilestoneController(
             IMilestoneService milestoneService,
             ILookupService lookupService,
+            IIdeaService ideaService,
             ILogger<MilestoneController> logger)
         {
             _milestoneService = milestoneService;
             _lookupService = lookupService;
+            _ideaService = ideaService;
             _logger = logger;
         }
 
@@ -32,12 +37,21 @@ namespace Ideku.Controllers
             string? selectedDivision = null,
             string? selectedDepartment = null,
             int? selectedCategory = null,
+            int? selectedStage = null,
             string? selectedStatus = null)
         {
             try
             {
                 var pagedIdeas = await _milestoneService.GetMilestoneEligibleIdeasAsync(
-                    page, pageSize, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStatus);
+                    page, pageSize, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
+
+                // Get lookup data for filters
+                var divisions = await _lookupService.GetDivisionsAsync();
+                var categories = await _lookupService.GetCategoriesAsync();
+
+                // Get available stages from database (only S2 and above for milestone-eligible ideas)
+                var stages = await _ideaService.GetAvailableStagesAsync();
+                var milestoneStages = stages.Where(s => s >= 2).ToList();
 
                 var viewModel = new MilestoneListViewModel
                 {
@@ -46,12 +60,14 @@ namespace Ideku.Controllers
                     SelectedDivision = selectedDivision,
                     SelectedDepartment = selectedDepartment,
                     SelectedCategory = selectedCategory,
-                    SelectedStatus = selectedStatus
+                    SelectedStage = selectedStage,
+                    SelectedStatus = selectedStatus,
+                    AvailableStages = milestoneStages.Select(s => new SelectListItem
+                    {
+                        Value = s.ToString(),
+                        Text = $"Stage S{s}"
+                    }).ToList()
                 };
-
-                // Get lookup data for filters
-                var divisions = await _lookupService.GetDivisionsAsync();
-                var categories = await _lookupService.GetCategoriesAsync();
 
                 // Pass lookup data to view
                 ViewBag.Divisions = divisions;
@@ -231,6 +247,7 @@ namespace Ideku.Controllers
             string? selectedDivision = null,
             string? selectedDepartment = null,
             int? selectedCategory = null,
+            int? selectedStage = null,
             string? selectedStatus = null)
         {
             try
@@ -241,7 +258,7 @@ namespace Ideku.Controllers
 
                 // Get milestone eligible ideas with filters
                 var pagedResult = await _milestoneService.GetMilestoneEligibleIdeasAsync(
-                    page, pageSize, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStatus);
+                    page, pageSize, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
 
                 // Return JSON with paginated results
                 return Json(new
