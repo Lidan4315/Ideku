@@ -1,6 +1,7 @@
 using Ideku.Data.Repositories;
 using Ideku.Services.Workflow;
 using Ideku.Services.IdeaRelation;
+using Ideku.Services.Idea;
 using Ideku.ViewModels.Approval;
 using Ideku.ViewModels.DTOs;
 using Ideku.Extensions;
@@ -22,16 +23,18 @@ namespace Ideku.Controllers
         private readonly IWorkflowRepository _workflowRepository;
         private readonly ILookupRepository _lookupRepository;
         private readonly IIdeaRelationService _ideaRelationService;
+        private readonly IIdeaService _ideaService;
         private readonly IWebHostEnvironment _hostEnvironment;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<ApprovalController> _logger;
 
         public ApprovalController(
-            IWorkflowService workflowService, 
-            IUserRepository userRepository, 
-            IWorkflowRepository workflowRepository, 
+            IWorkflowService workflowService,
+            IUserRepository userRepository,
+            IWorkflowRepository workflowRepository,
             ILookupRepository lookupRepository,
             IIdeaRelationService ideaRelationService,
+            IIdeaService ideaService,
             IWebHostEnvironment hostEnvironment,
             IServiceScopeFactory serviceScopeFactory,
             ILogger<ApprovalController> logger)
@@ -41,6 +44,7 @@ namespace Ideku.Controllers
             _workflowRepository = workflowRepository;
             _lookupRepository = lookupRepository;
             _ideaRelationService = ideaRelationService;
+            _ideaService = ideaService;
             _hostEnvironment = hostEnvironment;
             _serviceScopeFactory = serviceScopeFactory;
             _logger = logger;
@@ -114,7 +118,10 @@ namespace Ideku.Controllers
             // Get lookup data for dropdowns
             var divisions = await _lookupRepository.GetDivisionsAsync();
             var categories = await _lookupRepository.GetCategoriesAsync();
-            
+
+            // Get available stages from database
+            var stages = await _ideaService.GetAvailableStagesAsync();
+
             var viewModel = new ApprovalListViewModel
             {
                 PagedIdeas = pagedResult,
@@ -123,7 +130,12 @@ namespace Ideku.Controllers
                 SelectedDepartment = selectedDepartment,
                 SelectedCategory = selectedCategory,
                 SelectedStage = selectedStage,
-                SelectedStatus = selectedStatus
+                SelectedStatus = selectedStatus,
+                AvailableStages = stages.Select(s => new SelectListItem
+                {
+                    Value = s.ToString(),
+                    Text = $"Stage S{s}"
+                }).ToList()
             };
 
             // Pass lookup data to view

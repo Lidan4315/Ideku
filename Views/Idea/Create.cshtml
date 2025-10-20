@@ -348,11 +348,11 @@
                             departmentSelect.empty();
                             // Add placeholder first
                             departmentSelect.append('<option value="">-- Select To Department --</option>');
-                            
+
                             $.each(data, function(index, item) {
                                 departmentSelect.append($('<option>', {
-                                    value: item.value,
-                                    text: item.text
+                                    value: item.id,
+                                    text: item.name
                                 }));
                             });
                         })

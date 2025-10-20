@@ -36,7 +36,11 @@ namespace Ideku.Services.Lookup
         public async Task<List<object>> GetDepartmentsByDivisionForAjaxAsync(string divisionId)
         {
             var departments = await _lookupRepository.GetDepartmentsByDivisionAsync(divisionId);
-            return departments.Select(d => new { value = d.Value, text = d.Text }).ToList<object>();
+            // Return id and name to match JavaScript expectations (same format as ApprovalController)
+            return departments
+                .Where(d => !string.IsNullOrEmpty(d.Value)) // Filter out empty options
+                .Select(d => new { id = d.Value, name = d.Text })
+                .ToList<object>();
         }
     }
 }
