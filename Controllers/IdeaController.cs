@@ -9,6 +9,7 @@ using Ideku.Services.IdeaImplementators;
 using Ideku.Models;
 using Ideku.Extensions;
 using Ideku.Services.Lookup;
+using Ideku.Services.Milestone;
 
 namespace Ideku.Controllers
 {
@@ -20,6 +21,7 @@ namespace Ideku.Controllers
         private readonly ILookupService _lookupService;
         private readonly IIdeaImplementatorService _implementatorService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly IMilestoneService _milestoneService;
         private readonly ILogger<IdeaController> _logger;
 
         public IdeaController(
@@ -27,14 +29,17 @@ namespace Ideku.Controllers
             IWorkflowService workflowService,
             ILookupService lookupService,
             IIdeaImplementatorService implementatorService,
+            IMilestoneService milestoneService,
             IServiceScopeFactory serviceScopeFactory,
             ILogger<IdeaController> logger)
         {
             _ideaService = ideaService;
             _workflowService = workflowService;
             _lookupService = lookupService;
+            _milestoneService = milestoneService;
             _implementatorService = implementatorService;
             _serviceScopeFactory = serviceScopeFactory;
+
             _logger = logger;
         }
 
@@ -407,11 +412,15 @@ namespace Ideku.Controllers
                 // Get implementators for the idea (view-only)
                 var implementators = await _implementatorService.GetImplementatorsByIdeaIdAsync(id);
 
+                // Get milestones for the idea
+                var milestones = await _milestoneService.GetMilestonesByIdeaIdAsync(id);
+
                 // Create view model with idea and implementators
                 var viewModel = new IdeaDetailViewModel
                 {
                     Idea = idea,
-                    Implementators = implementators.ToList()
+                    Implementators = implementators.ToList(),
+                    Milestones = milestones.ToList()
                 };
 
                 return View(viewModel);
