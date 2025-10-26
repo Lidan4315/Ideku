@@ -16,6 +16,13 @@ namespace Ideku.Data.Repositories
         /// <returns>List of active workstream leaders</returns>
         Task<List<User>> GetWorkstreamLeadersByDivisionsAsync(List<string> divisionIds);
 
+        /// <summary>
+        /// Get workstream leaders from specific department
+        /// </summary>
+        /// <param name="departmentId">Department ID</param>
+        /// <returns>List of active workstream leaders in the specified department</returns>
+        Task<List<User>> GetWorkstreamLeadersByDepartmentAsync(string departmentId);
+
         // =================== USER MANAGEMENT OPERATIONS ===================
 
         /// <summary>

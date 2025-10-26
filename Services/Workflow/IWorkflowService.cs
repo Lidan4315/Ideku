@@ -67,5 +67,13 @@ namespace Ideku.Services.Workflow
         /// <param name="toStage">New stage number</param>
         /// <returns>Task</returns>
         Task RenameFilesToNewStageAsync(long ideaId, int fromStage, int toStage);
+
+        /// <summary>
+        /// Submit idea to next stage approval (used when milestone is ready for S3 approval)
+        /// </summary>
+        /// <param name="ideaId">ID of the idea</param>
+        /// <param name="username">Username of the user submitting</param>
+        /// <returns>Workflow result indicating success or failure</returns>
+        Task<WorkflowResult> SubmitForNextStageApprovalAsync(long ideaId, string username);
     }
 }
