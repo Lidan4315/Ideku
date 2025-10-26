@@ -755,14 +755,24 @@ namespace Ideku.Services.Idea
         /// <summary>
         /// Get all available stages from workflow configuration (0 to MaxStage)
         /// This ensures dropdown shows all possible stages regardless of current idea data
+        /// Returns empty list if no ideas exist yet
         /// </summary>
         public async Task<List<int>> GetAvailableStagesAsync()
         {
             // Get the highest MaxStage from all workflows in the system
-            var maxStageFromWorkflows = await _ideaRepository.GetQueryableWithIncludes()
+            var maxStageQuery = await _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted)
                 .Select(i => i.MaxStage)
-                .MaxAsync();
+                .ToListAsync();
+
+            // If no ideas exist yet, return empty list (dropdown will be empty)
+            if (!maxStageQuery.Any())
+            {
+                return new List<int>();
+            }
+
+            // Get the highest MaxStage value
+            var maxStageFromWorkflows = maxStageQuery.Max();
 
             // Generate list from 0 to maxStage (e.g., if maxStage is 8, returns [0,1,2,3,4,5,6,7,8])
             var stages = Enumerable.Range(0, maxStageFromWorkflows + 1).ToList();
