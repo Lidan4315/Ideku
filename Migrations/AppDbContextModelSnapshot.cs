@@ -570,7 +570,6 @@ namespace Ideku.Migrations
                         .HasColumnName("IdeaId");
 
                     b.Property<string>("Note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("Note");
 

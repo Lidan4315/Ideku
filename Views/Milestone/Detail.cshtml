@@ -90,7 +90,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table mb-0">
                         <thead class="table-light">
                             <tr>
                                 <th>Title</th>
@@ -271,14 +271,14 @@
                     <!-- Milestone Title -->
                     <div class="mb-3">
                         <label class="form-label">Milestone Title <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="title" maxlength="50" required placeholder="Enter milestone title">
+                        <input type="text" class="form-control" name="title" maxlength="50" placeholder="Enter milestone title">
                         <div class="form-text">Maximum 50 characters</div>
                     </div>
 
                     <!-- Description -->
                     <div class="mb-3">
-                        <label class="form-label">Description <span class="text-danger">*</span></label>
-                        <textarea class="form-control" name="note" rows="3" required placeholder="Describe the milestone objectives and deliverables"></textarea>
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="note" rows="3" placeholder="Describe the milestone objectives and deliverables (optional)"></textarea>
                     </div>
 
                     <!-- Date Range -->
@@ -308,10 +308,10 @@
 
                     <!-- Person In Charge (PIC) -->
                     <div class="mb-3">
-                        <label class="form-label">Person In Charge (PIC)</label>
+                        <label class="form-label">Person In Charge (PIC) <span class="text-danger">*</span></label>
 
                         <!-- Hidden input to store selected PIC IDs -->
-                        <input type="hidden" name="selectedPICUserIds" id="selectedPICInput" />
+                        <input type="hidden" name="selectedPICUserIds" id="selectedPICInput" required />
 
                         <!-- Button + Tags Interface - Same as Related Division -->
                         <div class="tag-selection-container">
@@ -413,14 +413,14 @@
                     <!-- Milestone Title -->
                     <div class="mb-3">
                         <label class="form-label">Milestone Title <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="editTitle" name="title" maxlength="50" required placeholder="Enter milestone title">
+                        <input type="text" class="form-control" id="editTitle" name="title" maxlength="50" placeholder="Enter milestone title">
                         <div class="form-text">Maximum 50 characters</div>
                     </div>
 
                     <!-- Description -->
                     <div class="mb-3">
-                        <label class="form-label">Description <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="editNote" name="note" rows="3" required placeholder="Describe the milestone objectives and deliverables"></textarea>
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="editNote" name="note" rows="3" placeholder="Describe the milestone objectives and deliverables (optional)"></textarea>
                     </div>
 
                     <!-- Date Range -->
@@ -453,10 +453,10 @@
 
                     <!-- Person In Charge (PIC) -->
                     <div class="mb-3">
-                        <label class="form-label">Person In Charge (PIC)</label>
+                        <label class="form-label">Person In Charge (PIC) <span class="text-danger">*</span></label>
 
                         <!-- Hidden input to store selected PIC IDs -->
-                        <input type="hidden" name="selectedEditPICUserIds" id="selectedEditPICInput" />
+                        <input type="hidden" name="selectedEditPICUserIds" id="selectedEditPICInput" required />
 
                         <!-- Button + Tags Interface - Same as Add Modal -->
                         <div class="tag-selection-container" id="editPICContainer">
@@ -548,6 +548,7 @@ $(document).ready(function() {
     // Handle milestone form submission
     $('#addMilestoneForm').on('submit', function(e) {
         e.preventDefault();
+        console.log('🔍 Form submit event triggered!');
 
         // Collect form data
         const formData = {
@@ -562,21 +563,50 @@ $(document).ready(function() {
             selectedPICUserIds: getSelectedPICIds()
         };
 
-        console.log('Form data to submit:', formData);
+        console.log('📋 Form data to submit:', formData);
 
-        // Validate form
-        if (!formData.title || !formData.note || !formData.startDate || !formData.endDate || !formData.status) {
+        // Validate title
+        if (!formData.title || formData.title.trim() === '') {
+            console.log('❌ Validation failed: Title is empty');
             Swal.fire({
                 icon: 'warning',
                 title: 'Validation Error!',
-                text: 'Please fill in all required fields.',
+                text: 'Please enter a milestone title.',
                 confirmButtonColor: '#dc2626'
             });
             return;
         }
+        console.log('✅ Title validation passed');
+
+        // Validate other required fields (dates and status have defaults, but check anyway)
+        if (!formData.startDate || !formData.endDate || !formData.status) {
+            console.log('❌ Validation failed: Missing required fields');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Please fill in all required fields (Start Date, End Date, Status).',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+        console.log('✅ Required fields validation passed');
+
+        // Validate PIC selection
+        if (!formData.selectedPICUserIds || formData.selectedPICUserIds.length === 0) {
+            console.log('❌ Validation failed: No PIC selected');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Please select at least 1 Person In Charge (PIC).',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+        console.log('✅ PIC validation passed');
 
         // Validate creator information
         if (!formData.creatorName || formData.creatorName === 'Unknown User') {
+            console.log('❌ Validation failed: Creator name invalid');
             Swal.fire({
                 icon: 'error',
                 title: 'Authentication Error!',
@@ -585,32 +615,28 @@ $(document).ready(function() {
             });
             return;
         }
+        console.log('✅ Creator validation passed');
 
         // Validate dates
         const startDate = new Date(formData.startDate);
         const endDate = new Date(formData.endDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
 
-        if (startDate < today) {
+        console.log('📅 Date validation:');
+        console.log('  Start Date:', formData.startDate, '→', startDate);
+        console.log('  End Date:', formData.endDate, '→', endDate);
+        console.log('  Is endDate < startDate?', endDate < startDate);
+
+        if (endDate < startDate) {
+            console.log('❌ CLIENT-SIDE VALIDATION FAILED: End date before start date');
             Swal.fire({
                 icon: 'warning',
                 title: 'Validation Error!',
-                text: 'Start date cannot be in the past.',
+                text: 'End date cannot be before start date.',
                 confirmButtonColor: '#dc2626'
             });
             return;
         }
-
-        if (endDate <= startDate) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Validation Error!',
-                text: 'End date must be after start date.',
-                confirmButtonColor: '#dc2626'
-            });
-            return;
-        }
+        console.log('✅ Date validation passed - Proceeding to server submission');
 
         // Show loading state
         const submitBtn = $(this).find('button[type="submit"]');
@@ -788,7 +814,9 @@ function initializePICTagsInterface() {
 
         selectedPICs.forEach((pic, index) => {
             const tag = document.createElement('div');
-            tag.className = 'selection-tag tag-member';
+            // Use tag-leader for Leader role, tag-member for Member role
+            const roleClass = pic.role === 'Leader' ? 'tag-leader' : 'tag-member';
+            tag.className = `selection-tag ${roleClass}`;
             tag.innerHTML = `
                 <span>${pic.name} (${pic.empId}) - ${pic.role}</span>
                 <button type="button" class="tag-remove-btn" data-index="${index}" title="Remove ${pic.name}">
@@ -933,9 +961,14 @@ function renderCalendar() {
     const milestones = @Html.Raw(Json.Serialize(Model.Milestones.Select(m => new {
         id = m.Id,
         title = m.TitleMilestone,
+        note = m.Note,
         startDate = m.StartDate.ToString("yyyy-MM-dd"),
         endDate = m.EndDate.ToString("yyyy-MM-dd"),
-        status = m.Status
+        status = m.Status,
+        pics = m.MilestonePICs.Select(p => new {
+            name = p.User.Name,
+            empId = p.User.Employee.EMP_ID
+        }).ToList()
     })));
 
     // Create calendar grid
@@ -972,15 +1005,20 @@ function renderCalendar() {
         const dayMilestones = milestones.filter(milestone => {
             const startDate = new Date(milestone.startDate);
             const endDate = new Date(milestone.endDate);
-            return cellDate >= startDate && cellDate <= endDate;
+            // Check if the cellDate falls within the milestone's date range
+            return cellDate >= new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()) &&
+                   cellDate <= new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
         });
 
         let milestonesHTML = '';
         dayMilestones.forEach(milestone => {
             const statusClass = `status-${milestone.status.toLowerCase().replace(' ', '-')}`;
+            const milestoneData = JSON.stringify(milestone).replace(/"/g, '&quot;');
             milestonesHTML += `
-                <div class="milestone-item ${statusClass}" title="${milestone.title} (${milestone.status})">
-                    ${milestone.title}
+                <div class="milestone-item ${statusClass} milestone-clickable"
+                     data-milestone='${milestoneData}'
+                     onclick="showMilestoneDetailModal(event, this)">
+                    <i class="bi bi-info-circle me-1"></i>${milestone.title}
                 </div>
             `;
         });
@@ -1007,6 +1045,150 @@ function renderCalendar() {
 
     // Update calendar container
     document.getElementById('calendar-container').innerHTML = calendarHTML;
+}
+
+// Milestone Detail Modal Functions
+function showMilestoneDetailModal(event, element) {
+    event.stopPropagation();
+
+    const milestoneData = JSON.parse(element.getAttribute('data-milestone').replace(/&quot;/g, '"'));
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('milestoneDetailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    const existingOverlay = document.getElementById('milestoneModalOverlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+
+    // Get status badge class
+    const statusBadgeClass = {
+        'Completed': 'bg-success',
+        'In Progress': 'bg-primary',
+        'Planning': 'bg-secondary',
+        'On Hold': 'bg-warning',
+        'Cancelled': 'bg-danger'
+    }[milestoneData.status] || 'bg-secondary';
+
+    // Format dates
+    const startDate = new Date(milestoneData.startDate);
+    const endDate = new Date(milestoneData.endDate);
+    const dateRange = `${startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} - ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+
+    // Build PICs HTML
+    let picsHTML = '';
+    if (milestoneData.pics && milestoneData.pics.length > 0) {
+        picsHTML = '<ul class="modal-pics-list">';
+        milestoneData.pics.forEach(pic => {
+            picsHTML += `
+                <li class="modal-pic-item">
+                    <i class="bi bi-person-circle"></i>
+                    <span>${pic.name} <small class="text-muted">(${pic.empId})</small></span>
+                </li>
+            `;
+        });
+        picsHTML += '</ul>';
+    } else {
+        picsHTML = '<p class="text-muted mb-0">No PIC assigned</p>';
+    }
+
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'milestoneModalOverlay';
+    overlay.className = 'milestone-modal-overlay';
+    overlay.onclick = closeMilestoneDetailModal;
+    document.body.appendChild(overlay);
+
+    // Create modal using app-modal classes
+    const modal = document.createElement('div');
+    modal.id = 'milestoneDetailModal';
+    modal.className = 'milestone-detail-modal app-modal';
+    modal.innerHTML = `
+        <div class="app-modal-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="modal-icon">
+                    <i class="bi bi-flag-fill"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0" style="font-size: 0.9rem;">${milestoneData.title}</h6>
+                </div>
+            </div>
+            <button type="button" class="btn-close" onclick="closeMilestoneDetailModal()"></button>
+        </div>
+        <div class="app-modal-body">
+            <!-- Description -->
+            <div class="modal-info-row">
+                <div class="modal-info-label">
+                    <i class="bi bi-file-text"></i>
+                    Description
+                </div>
+                <div class="modal-info-value">${milestoneData.note || 'No description'}</div>
+            </div>
+
+            <!-- Date Range -->
+            <div class="modal-info-row">
+                <div class="modal-info-label">
+                    <i class="bi bi-calendar-range"></i>
+                    Date Range
+                </div>
+                <div class="modal-info-value">${dateRange}</div>
+            </div>
+
+            <!-- Status -->
+            <div class="modal-info-row">
+                <div class="modal-info-label">
+                    <i class="bi bi-hourglass-split"></i>
+                    Status
+                </div>
+                <div class="modal-info-value">
+                    <span class="badge ${statusBadgeClass}">${milestoneData.status}</span>
+                </div>
+            </div>
+
+            <!-- PICs -->
+            <div class="modal-info-row">
+                <div class="modal-info-label">
+                    <i class="bi bi-people"></i>
+                    Person In Charge (PIC)
+                </div>
+                <div class="modal-info-value">
+                    ${picsHTML}
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Position modal (center of screen)
+    setTimeout(() => {
+        const modalRect = modal.getBoundingClientRect();
+        modal.style.left = `${(window.innerWidth - modalRect.width) / 2}px`;
+        modal.style.top = `${(window.innerHeight - modalRect.height) / 2}px`;
+
+        // Show modal with animation
+        setTimeout(() => {
+            overlay.classList.add('show');
+            modal.classList.add('show');
+        }, 10);
+    }, 10);
+}
+
+function closeMilestoneDetailModal() {
+    const modal = document.getElementById('milestoneDetailModal');
+    const overlay = document.getElementById('milestoneModalOverlay');
+
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 200);
+    }
+
+    if (overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 200);
+    }
 }
 
 // Edit Modal Functions
@@ -1038,7 +1220,7 @@ function loadCurrentPICs(milestoneId) {
             id = p.User.Id,
             name = p.User.Name,
             empId = p.User.Employee.EMP_ID,
-            role = p.User.Role
+            role = m.Idea.IdeaImplementators.FirstOrDefault(ii => ii.UserId == p.UserId)?.Role ?? "Member"
         })
     })));
 
@@ -1123,7 +1305,9 @@ function initializeEditPICTagsInterface() {
 
         selectedEditPICs.forEach((pic, index) => {
             const tag = document.createElement('div');
-            tag.className = 'selection-tag tag-member';
+            // Use tag-leader for Leader role, tag-member for Member role
+            const roleClass = pic.role === 'Leader' ? 'tag-leader' : 'tag-member';
+            tag.className = `selection-tag ${roleClass}`;
             tag.innerHTML = `
                 <span>${pic.name} (${pic.empId}) - ${pic.role}</span>
                 <button type="button" class="tag-remove-btn" data-index="${index}" title="Remove ${pic.name}">
@@ -1228,12 +1412,34 @@ $(document).ready(function() {
 
         console.log('Edit form data to submit:', formData);
 
-        // Validate form (startDate not required since it's readonly)
-        if (!formData.title || !formData.note || !formData.endDate || !formData.status) {
+        // Validate title
+        if (!formData.title || formData.title.trim() === '') {
             Swal.fire({
                 icon: 'warning',
                 title: 'Validation Error!',
-                text: 'Please fill in all required fields.',
+                text: 'Please enter a milestone title.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        // Validate other required fields (startDate is readonly, endDate and status have defaults)
+        if (!formData.endDate || !formData.status) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Please fill in all required fields (End Date, Status).',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        // Validate PIC selection
+        if (!formData.selectedPICUserIds || formData.selectedPICUserIds.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Please select at least 1 Person In Charge (PIC).',
                 confirmButtonColor: '#dc2626'
             });
             return;
@@ -1243,11 +1449,11 @@ $(document).ready(function() {
         const startDate = new Date(formData.startDate);
         const endDate = new Date(formData.endDate);
 
-        if (endDate <= startDate) {
+        if (endDate < startDate) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Validation Error!',
-                text: 'End date must be after the start date.',
+                text: 'End date cannot be before start date.',
                 confirmButtonColor: '#dc2626'
             });
             return;

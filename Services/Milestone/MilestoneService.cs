@@ -88,7 +88,7 @@ namespace Ideku.Services.Milestone
         public async Task<(bool Success, string Message, Models.Entities.Milestone? Milestone)> CreateMilestoneAsync(
             long ideaId,
             string title,
-            string note,
+            string? note,
             DateTime startDate,
             DateTime endDate,
             string status,
@@ -149,7 +149,7 @@ namespace Ideku.Services.Milestone
         public async Task<(bool Success, string Message, Models.Entities.Milestone? Milestone)> UpdateMilestoneAsync(
             long milestoneId,
             string title,
-            string note,
+            string? note,
             DateTime startDate,
             DateTime endDate,
             string status,
@@ -240,24 +240,21 @@ namespace Ideku.Services.Milestone
 
         public (bool IsValid, string Message) ValidateMilestoneDates(DateTime startDate, DateTime endDate)
         {
-            if (startDate >= endDate)
+            if (startDate > endDate)
             {
-                return (false, "End date must be after start date.");
+                return (false, "End date cannot be before start date.");
             }
 
-            if (startDate < DateTime.Today)
-            {
-                return (false, "Start date cannot be in the past.");
-            }
+            // Allow past dates for start date (removed validation)
 
             return (true, string.Empty);
         }
 
         public (bool IsValid, string Message) ValidateMilestoneDatesForUpdate(DateTime startDate, DateTime endDate)
         {
-            if (startDate >= endDate)
+            if (startDate > endDate)
             {
-                return (false, "End date must be after start date.");
+                return (false, "End date cannot be before start date.");
             }
 
             // No past date validation for updates since start date is readonly

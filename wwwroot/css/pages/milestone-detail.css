@@ -1,4 +1,13 @@
 /* =============================================================================
+   MILESTONE LIST TABLE
+   ============================================================================= */
+
+/* Disable hover effect on milestone list table rows */
+#list-view .table tbody tr:hover {
+    background-color: transparent !important;
+}
+
+/* =============================================================================
    PIC DROPDOWN STYLING
    ============================================================================= */
 
@@ -123,6 +132,109 @@
 
 .milestone-item.status-cancelled:hover {
     background-color: #dc2626;
+}
+
+/* =============================================================================
+   MILESTONE DETAIL MODAL (Using existing app-modal classes)
+   ============================================================================= */
+
+/* Milestone clickable styling */
+.milestone-clickable {
+    cursor: pointer;
+}
+
+/* Milestone detail modal - smaller size */
+.milestone-detail-modal {
+    position: fixed;
+    z-index: 9999;
+    width: 340px;
+    max-width: 90vw;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.milestone-detail-modal.show {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+/* Info rows */
+.modal-info-row {
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-info-row:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.modal-info-label {
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.modal-info-value {
+    color: #1f2937;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* PICs list */
+.modal-pics-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.modal-pic-item {
+    padding: 0.4rem 0.5rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.modal-pic-item:last-child {
+    margin-bottom: 0;
+}
+
+.modal-pic-item i {
+    color: #9c1c31;
+}
+
+/* Overlay */
+.milestone-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 9998;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.milestone-modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* =============================================================================

@@ -136,7 +136,7 @@ namespace Ideku.Controllers
         public async Task<IActionResult> CreateMilestone(
             long ideaId,
             string title,
-            string note,
+            string? note,
             DateTime startDate,
             DateTime endDate,
             string status,
@@ -278,7 +278,11 @@ namespace Ideku.Controllers
                         savingCost = i.SavingCost,
                         savingCostValidated = i.SavingCostValidated,
                         currentStatus = i.CurrentStatus,
-                        milestonesCount = i.Milestones.Count(),
+                        implementators = i.IdeaImplementators.Select(impl => new
+                        {
+                            name = impl.User.Name,
+                            role = impl.Role
+                        }).ToList(),
                         submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
                         detailUrl = Url.Action("Detail", new { ideaId = i.Id })
                     }),
@@ -287,7 +291,10 @@ namespace Ideku.Controllers
                         currentPage = pagedResult.Page,
                         pageSize = pagedResult.PageSize,
                         totalCount = pagedResult.TotalCount,
+                        totalItems = pagedResult.TotalCount,
                         totalPages = pagedResult.TotalPages,
+                        hasPreviousPage = pagedResult.HasPrevious,
+                        hasNextPage = pagedResult.HasNext,
                         hasPrevious = pagedResult.HasPrevious,
                         hasNext = pagedResult.HasNext,
                         firstItemIndex = pagedResult.FirstItemIndex,
@@ -325,7 +332,7 @@ namespace Ideku.Controllers
         public long MilestoneId { get; set; }
         public long IdeaId { get; set; }
         public string Title { get; set; } = string.Empty;
-        public string Note { get; set; } = string.Empty;
+        public string? Note { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public string Status { get; set; } = string.Empty;

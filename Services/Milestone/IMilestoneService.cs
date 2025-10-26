@@ -65,7 +65,7 @@ namespace Ideku.Services.Milestone
         Task<(bool Success, string Message, Models.Entities.Milestone? Milestone)> CreateMilestoneAsync(
             long ideaId,
             string title,
-            string note,
+            string? note,
             DateTime startDate,
             DateTime endDate,
             string status,
@@ -87,7 +87,7 @@ namespace Ideku.Services.Milestone
         Task<(bool Success, string Message, Models.Entities.Milestone? Milestone)> UpdateMilestoneAsync(
             long milestoneId,
             string title,
-            string note,
+            string? note,
             DateTime startDate,
             DateTime endDate,
             string status,
