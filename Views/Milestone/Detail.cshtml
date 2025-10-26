@@ -26,14 +26,6 @@
                 </h2>
                 <p class="text-muted">@Model.Idea.IdeaName</p>
             </div>
-            @if (Model.CanManageMilestones)
-            {
-                <div class="col-auto">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal">
-                        <i class="bi bi-plus-circle me-1"></i>Add Milestone
-                    </button>
-                </div>
-            }
         </div>
     </div>
 
@@ -74,6 +66,19 @@
     <div id="milestonesContent">
         <!-- List View -->
         <div id="listViewContent" class="view-content">
+            @if (Model.CanManageMilestones)
+            {
+                @* Show "Send to Approval S3" button if: Stage 2, has milestone, not yet approved *@
+                @if (Model.Idea.CurrentStage == 2 && Model.Idea.IsMilestoneCreated && Model.Idea.CurrentStatus != "Approved")
+                {
+                    <div class="mb-3 d-flex justify-content-end">
+                        <button type="button" class="btn btn-md btn-success" id="sendToS3ApprovalBtn">
+                            <i class="bi bi-send me-1"></i>Send to Approval S3
+                        </button>
+                    </div>
+                }
+            }
+
             @if (Model.Milestones.Any())
             {
                 <div class="card">
@@ -527,13 +532,16 @@
 
 @section Scripts {
 <script>
+// Define ideaId in global scope to ensure accessibility
+var ideaId = @Model.Idea.Id;
+
 $(document).ready(function() {
-    const ideaId = @Model.Idea.Id;
-    const currentUser = {
+    var currentUser = {
         name: '@(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity.Name ?? "Unknown User")',
         employeeId: '@(User.FindFirst("EmployeeId")?.Value ?? "Unknown")'
     };
 
+    console.log('Initialized with ideaId:', ideaId);
     console.log('Current user info:', currentUser);
 
     // Initialize View Toggle
@@ -1507,6 +1515,76 @@ $(document).ready(function() {
     // Reset modal when closed
     $('#editMilestoneModal').on('hidden.bs.modal', function() {
         resetEditPICSelection();
+    });
+
+    // Send to Approval S3 button handler
+    $('#sendToS3ApprovalBtn').on('click', function() {
+        console.log('Send to S3 button clicked, ideaId:', ideaId);
+        Swal.fire({
+            title: 'Send to Stage 3 Approval?',
+            html: `
+                <p>Are you sure you want to send this idea to Stage 3 approval?</p>
+                <p class="text-muted mb-0">This will notify Stage 3 approvers to review the idea and milestone plan.</p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-send me-2"></i>Yes, Send to S3',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Send AJAX request
+                $.ajax({
+                    url: '@Url.Action("SendToStage3Approval", "Milestone")',
+                    type: 'POST',
+                    data: {
+                        ideaId: ideaId,
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    beforeSend: function() {
+                        // Show loading state
+                        Swal.fire({
+                            title: 'Sending...',
+                            text: 'Please wait...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sent Successfully!',
+                                text: response.message || 'Idea has been sent to Stage 3 approvers.',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.message || 'Failed to send to Stage 3 approval.',
+                                confirmButtonColor: '#dc2626'
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Send to S3 error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'An error occurred. Please try again.',
+                            confirmButtonColor: '#dc2626'
+                        });
+                    }
+                });
+            }
+        });
     });
 });
 </script>

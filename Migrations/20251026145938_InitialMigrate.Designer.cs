@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251026100550_InitialMigrate")]
+    [Migration("20251026145938_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -350,6 +350,10 @@ namespace Ideku.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
                         .HasColumnName("IsDeleted");
+
+                    b.Property<bool>("IsMilestoneCreated")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsMilestoneCreated");
 
                     b.Property<bool>("IsRejected")
                         .HasColumnType("bit")

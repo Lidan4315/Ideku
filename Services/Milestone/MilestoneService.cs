@@ -11,13 +11,16 @@ namespace Ideku.Services.Milestone
     {
         private readonly IMilestoneRepository _milestoneRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IIdeaRepository _ideaRepository;
 
         public MilestoneService(
             IMilestoneRepository milestoneRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IIdeaRepository ideaRepository)
         {
             _milestoneRepository = milestoneRepository;
             _userRepository = userRepository;
+            _ideaRepository = ideaRepository;
         }
 
         public async Task<PagedResult<Models.Entities.Idea>> GetMilestoneEligibleIdeasAsync(
@@ -136,6 +139,14 @@ namespace Ideku.Services.Milestone
                     });
 
                     await _milestoneRepository.AddMilestonePICsAsync(pics);
+                }
+
+                // Set IsMilestoneCreated flag on the idea
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea != null && !idea.IsMilestoneCreated)
+                {
+                    idea.IsMilestoneCreated = true;
+                    await _ideaRepository.UpdateAsync(idea);
                 }
 
                 return (true, "Milestone created successfully.", createdMilestone);

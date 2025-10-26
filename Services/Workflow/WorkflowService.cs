@@ -447,18 +447,36 @@ namespace Ideku.Services.Workflow
 
                 // Send approval notification to initiator
                 await _notificationService.NotifyIdeaApproved(idea, user);
-                _logger.LogInformation("Approval confirmation email sent to initiator {InitiatorEmail} for Idea {IdeaId}", 
+                _logger.LogInformation("Approval confirmation email sent to initiator {InitiatorEmail} for Idea {IdeaId}",
                     idea.InitiatorUser.Employee.EMAIL, approvalData.IdeaId);
 
-                // Send notifications to next stage approvers if needed
-                if (idea.CurrentStage < idea.MaxStage && idea.CurrentStatus != "Approved")
+                // Check if idea just reached Stage 2
+                if (idea.CurrentStage == 2 && idea.CurrentStatus != "Approved")
+                {
+                    // Send email to Workstream Leaders in the idea's target department
+                    var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
+
+                    if (workstreamLeaders.Any())
+                    {
+                        await _notificationService.NotifyMilestoneCreationRequiredAsync(idea, workstreamLeaders);
+                        _logger.LogInformation("Milestone creation required email sent for Idea {IdeaId} to {WorkstreamLeaderCount} workstream leaders in department {DepartmentId}",
+                            approvalData.IdeaId, workstreamLeaders.Count, idea.ToDepartmentId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No Workstream Leaders found in department {DepartmentId} for Idea {IdeaId}",
+                            idea.ToDepartmentId, approvalData.IdeaId);
+                    }
+                }
+                // Send notifications to next stage approvers if NOT Stage 2 (Stage 2 requires milestone first)
+                else if (idea.CurrentStage < idea.MaxStage && idea.CurrentStage != 2 && idea.CurrentStatus != "Approved")
                 {
                     var nextStageApprovers = await GetApproversForNextStageAsync(idea);
-                    
+
                     if (nextStageApprovers.Any())
                     {
                         await _notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers);
-                        _logger.LogInformation("Next stage approval emails sent for Idea {IdeaId} to {ApproverCount} approvers", 
+                        _logger.LogInformation("Next stage approval emails sent for Idea {IdeaId} to {ApproverCount} approvers",
                             approvalData.IdeaId, nextStageApprovers.Count);
                     }
                 }
@@ -694,23 +712,72 @@ namespace Ideku.Services.Workflow
             {
                 if (targetStage > idea.MaxStage)
                 {
-                    _logger.LogInformation("Idea {IdeaId} target stage {TargetStage} exceeds max stage {MaxStage}, no approvers needed", 
+                    _logger.LogInformation("Idea {IdeaId} target stage {TargetStage} exceeds max stage {MaxStage}, no approvers needed",
                         idea.Id, targetStage, idea.MaxStage);
                     return new List<User>();
                 }
-                
+
                 var approvers = await _workflowManagementService.GetApproversForWorkflowStageAsync(
                     idea.WorkflowId, targetStage, idea.ToDivisionId, idea.ToDepartmentId);
-                
-                _logger.LogInformation("Found {ApproverCount} approvers for idea {IdeaId} at stage {Stage}", 
+
+                _logger.LogInformation("Found {ApproverCount} approvers for idea {IdeaId} at stage {Stage}",
                     approvers.Count(), idea.Id, targetStage);
-                
+
                 return approvers.ToList();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get approvers for stage {TargetStage} for idea {IdeaId}", targetStage, idea.Id);
                 return new List<User>();
+            }
+        }
+
+        public async Task<WorkflowResult> SubmitForNextStageApprovalAsync(long ideaId, string username)
+        {
+            try
+            {
+                _logger.LogInformation("User {Username} submitting idea {IdeaId} for next stage approval", username, ideaId);
+
+                // Get idea
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return WorkflowResult.Failure("Idea not found.");
+                }
+
+                // Get next stage approvers
+                var nextStageApprovers = await GetApproversForNextStageAsync(idea);
+                if (!nextStageApprovers.Any())
+                {
+                    return WorkflowResult.Failure("No approvers found for the next stage.");
+                }
+
+                // Send notification to next stage approvers in background (fire and forget)
+                var approverCount = nextStageApprovers.Count;
+                var nextStage = idea.CurrentStage + 1;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers);
+                        _logger.LogInformation("Idea {IdeaId} notification emails sent to {ApproverCount} approvers for stage {NextStage}",
+                            ideaId, approverCount, nextStage);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send notification emails for idea {IdeaId}", ideaId);
+                    }
+                });
+
+                _logger.LogInformation("Idea {IdeaId} submission request accepted, emails will be sent to {ApproverCount} approvers for stage {NextStage}",
+                    ideaId, approverCount, nextStage);
+
+                return WorkflowResult.Success($"Idea successfully submitted for Stage {nextStage} review. Notification emails will be sent to approver shortly.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting idea {IdeaId} for next stage approval", ideaId);
+                return WorkflowResult.Failure($"Error submitting idea: {ex.Message}");
             }
         }
     }

@@ -460,9 +460,138 @@ namespace Ideku.Services.Notification
             }
         }
 
+        public async Task NotifyMilestoneCreationRequiredAsync(Models.Entities.Idea idea, List<User> implementators)
+        {
+            try
+            {
+                if (!implementators.Any())
+                {
+                    _logger.LogWarning("No implementators to notify for idea {IdeaId}", idea.Id);
+                    return;
+                }
+
+                var emailMessages = new List<EmailMessage>();
+
+                foreach (var implementator in implementators)
+                {
+                    var emailMessage = new EmailMessage
+                    {
+                        To = implementator.Employee.EMAIL,
+                        Subject = $"[Action Required] Create Milestone for Idea {idea.IdeaCode} - {idea.IdeaName}",
+                        Body = GenerateMilestoneCreationRequiredEmailBody(idea, implementator),
+                        IsHtml = true
+                    };
+                    emailMessages.Add(emailMessage);
+                }
+
+                if (emailMessages.Any())
+                {
+                    await _emailService.SendBulkEmailAsync(emailMessages);
+                    _logger.LogInformation("Sent milestone creation required notifications for Idea ID: {IdeaId} to {Count} implementators",
+                        idea.Id, emailMessages.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send milestone creation required notifications for Idea ID: {IdeaId}", idea.Id);
+            }
+        }
+
+        private string GenerateMilestoneCreationRequiredEmailBody(Models.Entities.Idea idea, User workstreamLeader)
+        {
+            var milestoneUrl = $"{_emailSettings.BaseUrl}/Milestone/Detail/{idea.Id}";
+
+            return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
+        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .header {{ background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
+        .header h1 {{ margin: 0; font-size: 28px; }}
+        .content {{ line-height: 1.6; color: #333; }}
+        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
+        .warning-box {{ background-color: #fff3cd; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #f59e0b; }}
+        .action-button {{ display: inline-block; background-color: #f59e0b; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; font-weight: bold; }}
+        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
+        .checklist {{ background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0; }}
+        .checklist li {{ margin-bottom: 10px; }}
+        @media screen and (max-width: 768px) {{
+            .container {{ max-width: 95%; padding: 20px; }}
+            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
+            .header h1 {{ font-size: 24px; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>⚠️ Action Required: Create Milestone</h1>
+        </div>
+
+        <div class='content'>
+            <p>Hello {workstreamLeader.Name},</p>
+
+            <p>An idea targeted to your department has been approved to <strong>Stage 2</strong> and requires milestone planning.</p>
+
+            <div class='idea-details'>
+                <h3>{idea.IdeaName}</h3>
+                <p><strong>Idea Code:</strong> {idea.IdeaCode}</p>
+                <p><strong>Initiator:</strong> {idea.InitiatorUser?.Name}</p>
+                <p><strong>Current Stage:</strong> Stage {idea.CurrentStage}</p>
+                <p><strong>Target Division:</strong> {idea.TargetDivision?.NameDivision}</p>
+                <p><strong>Target Department:</strong> {idea.TargetDepartment?.NameDepartment}</p>
+                <p><strong>Saving Cost:</strong> {idea.SavingCost:C}</p>
+            </div>
+
+            <div class='warning-box'>
+                <h4>📋 Next Steps Required</h4>
+                <p><strong>As the Workstream Leader of this department, you need to create a milestone plan for this idea to proceed to Stage 3 approval.</strong></p>
+                <p>The milestone should outline the implementation timeline and deliverables.</p>
+            </div>
+
+            <div class='checklist'>
+                <h4>What You Need to Do:</h4>
+                <ol>
+                    <li>Click the button below to access the Milestone Management page</li>
+                    <li>Review the idea details and implementation plan</li>
+                    <li>Create at least one milestone with:
+                        <ul>
+                            <li>Milestone title and description</li>
+                            <li>Start and end dates</li>
+                            <li>Assign Person In Charge (PIC) from the implementators</li>
+                        </ul>
+                    </li>
+                    <li>Once milestone is created, click ""Send to Approval S3"" button to request Stage 3 approval</li>
+                </ol>
+            </div>
+
+            <a href='{milestoneUrl}' class='action-button' style='color: white !important;'>Create Milestone Now</a>
+
+            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
+            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{milestoneUrl}</p>
+
+            <p><strong>Important:</strong> Stage 3 approval can only be requested after at least one milestone has been created.</p>
+
+            <p>If you have questions about milestone creation, please contact the Innovation Team or refer to the system documentation.</p>
+
+            <p>Best regards,<br>The Ideku Team</p>
+        </div>
+
+        <div class='footer'>
+            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>";
+        }
+
         private string GenerateWorkstreamLeaderNotificationEmailBody(Models.Entities.Idea idea, User workstreamLeader)
         {
-            var ideaUrl = $"https://yourdomain.com/Idea/Details/{idea.Id}"; // Replace with actual base URL
+            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
             
             return $@"
 <!DOCTYPE html>

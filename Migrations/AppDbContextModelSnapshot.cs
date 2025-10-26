@@ -348,6 +348,10 @@ namespace Ideku.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("IsDeleted");
 
+                    b.Property<bool>("IsMilestoneCreated")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsMilestoneCreated");
+
                     b.Property<bool>("IsRejected")
                         .HasColumnType("bit")
                         .HasColumnName("IsRejected");

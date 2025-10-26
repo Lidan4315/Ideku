@@ -115,6 +115,9 @@ namespace Ideku.Models.Entities
         [Column("IsDeleted")]
         public bool IsDeleted { get; set; } = false;
 
+        [Column("IsMilestoneCreated")]
+        public bool IsMilestoneCreated { get; set; } = false;
+
         // Related Divisions - JSON storage
         [Column("RelatedDivisions")]
         [StringLength(500)]

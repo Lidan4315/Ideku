@@ -1,6 +1,7 @@
 using Ideku.Services.Milestone;
 using Ideku.Services.Lookup;
 using Ideku.Services.Idea;
+using Ideku.Services.Workflow;
 using Ideku.ViewModels.Milestone;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,17 +16,20 @@ namespace Ideku.Controllers
         private readonly IMilestoneService _milestoneService;
         private readonly ILookupService _lookupService;
         private readonly IIdeaService _ideaService;
+        private readonly IWorkflowService _workflowService;
         private readonly ILogger<MilestoneController> _logger;
 
         public MilestoneController(
             IMilestoneService milestoneService,
             ILookupService lookupService,
             IIdeaService ideaService,
+            IWorkflowService workflowService,
             ILogger<MilestoneController> logger)
         {
             _milestoneService = milestoneService;
             _lookupService = lookupService;
             _ideaService = ideaService;
+            _workflowService = workflowService;
             _logger = logger;
         }
 
@@ -235,6 +239,64 @@ namespace Ideku.Controllers
                 _logger.LogError(ex, "Error deleting milestone {MilestoneId}", milestoneId);
                 TempData["ErrorMessage"] = "An error occurred while deleting the milestone.";
                 return RedirectToAction(nameof(Detail), new { ideaId });
+            }
+        }
+
+        // POST: /Milestone/SendToStage3Approval
+        [HttpPost]
+        public async Task<IActionResult> SendToStage3Approval(long ideaId)
+        {
+            try
+            {
+                // Verify user has permission
+                var canManage = await _milestoneService.CanUserManageMilestonesAsync(User.Identity!.Name!, ideaId);
+                if (!canManage)
+                {
+                    return Json(new { success = false, message = "You don't have permission to send this idea to approval." });
+                }
+
+                // Get idea
+                var idea = await _milestoneService.GetMilestoneEligibleIdeaByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return Json(new { success = false, message = "Idea not found." });
+                }
+
+                // Validate: must be Stage 2
+                if (idea.CurrentStage != 2)
+                {
+                    return Json(new { success = false, message = "Only Stage 2 ideas can be sent to Stage 3 approval." });
+                }
+
+                // Validate: must have milestone created
+                if (!idea.IsMilestoneCreated)
+                {
+                    return Json(new { success = false, message = "Please create at least one milestone before requesting Stage 3 approval." });
+                }
+
+                // Validate: not already approved
+                if (idea.CurrentStatus == "Approved")
+                {
+                    return Json(new { success = false, message = "This idea has already been fully approved." });
+                }
+
+                // Submit to next stage approval (S3)
+                var result = await _workflowService.SubmitForNextStageApprovalAsync(ideaId, User.Identity!.Name!);
+
+                if (result.IsSuccess)
+                {
+                    _logger.LogInformation("Idea {IdeaId} sent to Stage 3 approval by {Username}", ideaId, User.Identity!.Name);
+                    return Json(new { success = true, message = result.SuccessMessage ?? "Idea has been successfully sent to Stage 3 approvers for review." });
+                }
+                else
+                {
+                    return Json(new { success = false, message = result.ErrorMessage ?? "Failed to send to Stage 3 approval." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending idea {IdeaId} to Stage 3 approval", ideaId);
+                return Json(new { success = false, message = "An error occurred while sending to Stage 3 approval." });
             }
         }
 

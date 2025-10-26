@@ -53,11 +53,29 @@ namespace Ideku.Data.Repositories
                 .Include(u => u.Employee)
                     .ThenInclude(e => e.DivisionNavigation)
                 .Include(u => u.Role)
-                .Where(u => u.Role.RoleName == "Workstream Leader" && 
+                .Where(u => u.Role.RoleName == "Workstream Leader" &&
                            divisionIds.Contains(u.Employee.DIVISION) &&
                            u.Employee.EMP_STATUS == "Active")
                 .OrderBy(u => u.Employee.DivisionNavigation.NameDivision)
                 .ThenBy(u => u.Name)
+                .ToListAsync();
+        }
+
+        public async Task<List<User>> GetWorkstreamLeadersByDepartmentAsync(string departmentId)
+        {
+            if (string.IsNullOrWhiteSpace(departmentId))
+                return new List<User>();
+
+            return await _context.Users
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e.DepartmentNavigation)
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e.DivisionNavigation)
+                .Include(u => u.Role)
+                .Where(u => u.Role.RoleName == "Workstream Leader" &&
+                           u.Employee.DEPARTEMENT == departmentId &&
+                           u.Employee.EMP_STATUS == "Active")
+                .OrderBy(u => u.Name)
                 .ToListAsync();
         }
 
