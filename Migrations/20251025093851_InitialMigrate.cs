@@ -397,6 +397,33 @@ namespace Ideku.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "IdeaMonitorings",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IdeaId = table.Column<long>(type: "bigint", nullable: false),
+                    MonitoringName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    MonthFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    MonthTo = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CostSavePlan = table.Column<long>(type: "bigint", nullable: false),
+                    CostSaveActual = table.Column<long>(type: "bigint", nullable: true),
+                    CostSaveActualValidated = table.Column<long>(type: "bigint", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IdeaMonitorings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_IdeaMonitorings_Ideas_IdeaId",
+                        column: x => x.IdeaId,
+                        principalTable: "Ideas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Milestones",
                 columns: table => new
                 {
@@ -537,6 +564,26 @@ namespace Ideku.Migrations
                 name: "IX_IdeaImplementators_UserId",
                 table: "IdeaImplementators",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaMonitorings_IdeaId",
+                table: "IdeaMonitorings",
+                column: "IdeaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaMonitorings_IdeaId_Period",
+                table: "IdeaMonitorings",
+                columns: new[] { "IdeaId", "MonthFrom", "MonthTo" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaMonitorings_MonthFrom",
+                table: "IdeaMonitorings",
+                column: "MonthFrom");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IdeaMonitorings_MonthTo",
+                table: "IdeaMonitorings",
+                column: "MonthTo");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Ideas_CategoryId",
@@ -686,6 +733,9 @@ namespace Ideku.Migrations
 
             migrationBuilder.DropTable(
                 name: "IdeaImplementators");
+
+            migrationBuilder.DropTable(
+                name: "IdeaMonitorings");
 
             migrationBuilder.DropTable(
                 name: "MilestonePICs");

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251005020740_InitialMigrate")]
+    [Migration("20251025093851_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -474,6 +474,69 @@ namespace Ideku.Migrations
                         .HasDatabaseName("IX_IdeaImplementators_IdeaId_UserId");
 
                     b.ToTable("IdeaImplementators");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.IdeaMonitoring", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("CostSaveActual")
+                        .HasColumnType("bigint")
+                        .HasColumnName("CostSaveActual");
+
+                    b.Property<long?>("CostSaveActualValidated")
+                        .HasColumnType("bigint")
+                        .HasColumnName("CostSaveActualValidated");
+
+                    b.Property<long>("CostSavePlan")
+                        .HasColumnType("bigint")
+                        .HasColumnName("CostSavePlan");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<long>("IdeaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("IdeaId");
+
+                    b.Property<string>("MonitoringName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("MonitoringName");
+
+                    b.Property<DateTime>("MonthFrom")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("MonthFrom");
+
+                    b.Property<DateTime>("MonthTo")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("MonthTo");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UpdatedAt");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdeaId")
+                        .HasDatabaseName("IX_IdeaMonitorings_IdeaId");
+
+                    b.HasIndex("MonthFrom")
+                        .HasDatabaseName("IX_IdeaMonitorings_MonthFrom");
+
+                    b.HasIndex("MonthTo")
+                        .HasDatabaseName("IX_IdeaMonitorings_MonthTo");
+
+                    b.HasIndex("IdeaId", "MonthFrom", "MonthTo")
+                        .HasDatabaseName("IX_IdeaMonitorings_IdeaId_Period");
+
+                    b.ToTable("IdeaMonitorings");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
@@ -1018,6 +1081,17 @@ namespace Ideku.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.IdeaMonitoring", b =>
+                {
+                    b.HasOne("Ideku.Models.Entities.Idea", "Idea")
+                        .WithMany("IdeaMonitorings")
+                        .HasForeignKey("IdeaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Idea");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
                 {
                     b.HasOne("Ideku.Models.Entities.Idea", "Idea")
@@ -1178,6 +1252,8 @@ namespace Ideku.Migrations
             modelBuilder.Entity("Ideku.Models.Entities.Idea", b =>
                 {
                     b.Navigation("IdeaImplementators");
+
+                    b.Navigation("IdeaMonitorings");
 
                     b.Navigation("Milestones");
 

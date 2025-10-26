@@ -23,6 +23,7 @@ namespace Ideku.Data.Context
         public DbSet<Milestone> Milestones { get; set; }
         public DbSet<IdeaImplementator> IdeaImplementators { get; set; }
         public DbSet<MilestonePIC> MilestonePICs { get; set; }
+        public DbSet<IdeaMonitoring> IdeaMonitorings { get; set; }
 
         // Dynamic Workflow System DbSets
         public DbSet<Workflow> Workflows { get; set; }
@@ -360,6 +361,35 @@ namespace Ideku.Data.Context
                 .HasIndex(mp => new { mp.MilestoneId, mp.UserId })
                 .IsUnique()
                 .HasDatabaseName("IX_MilestonePICs_MilestoneId_UserId");
+
+            // =================== IDEA MONITORING RELATIONSHIPS ===================
+
+            // IdeaMonitoring-Idea relationship (Many-to-One)
+            modelBuilder.Entity<IdeaMonitoring>()
+                .HasOne(im => im.Idea)
+                .WithMany(i => i.IdeaMonitorings)
+                .HasForeignKey(im => im.IdeaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // =================== IDEA MONITORING INDEXES ===================
+
+            // Index for performance
+            modelBuilder.Entity<IdeaMonitoring>()
+                .HasIndex(im => im.IdeaId)
+                .HasDatabaseName("IX_IdeaMonitorings_IdeaId");
+
+            modelBuilder.Entity<IdeaMonitoring>()
+                .HasIndex(im => im.MonthFrom)
+                .HasDatabaseName("IX_IdeaMonitorings_MonthFrom");
+
+            modelBuilder.Entity<IdeaMonitoring>()
+                .HasIndex(im => im.MonthTo)
+                .HasDatabaseName("IX_IdeaMonitorings_MonthTo");
+
+            // Composite index for efficient queries by IdeaId and period
+            modelBuilder.Entity<IdeaMonitoring>()
+                .HasIndex(im => new { im.IdeaId, im.MonthFrom, im.MonthTo })
+                .HasDatabaseName("IX_IdeaMonitorings_IdeaId_Period");
 
         }
     }

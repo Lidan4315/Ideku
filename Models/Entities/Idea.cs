@@ -135,5 +135,6 @@ namespace Ideku.Models.Entities
         public ICollection<WorkflowHistory> WorkflowHistories { get; set; } = new List<WorkflowHistory>();
         public ICollection<Milestone> Milestones { get; set; } = new List<Milestone>();
         public ICollection<IdeaImplementator> IdeaImplementators { get; set; } = new List<IdeaImplementator>();
+        public ICollection<IdeaMonitoring> IdeaMonitorings { get; set; } = new List<IdeaMonitoring>();
     }
 }

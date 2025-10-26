@@ -87,6 +87,7 @@ builder.Services.AddScoped<Ideku.Services.UserManagement.IUserManagementService,
 builder.Services.AddScoped<Ideku.Services.IdeaImplementators.IIdeaImplementatorService, Ideku.Services.IdeaImplementators.IdeaImplementatorService>();
 builder.Services.AddScoped<Ideku.Services.Milestone.IMilestoneService, Ideku.Services.Milestone.MilestoneService>();
 builder.Services.AddScoped<Ideku.Services.ChangeWorkflow.IChangeWorkflowService, Ideku.Services.ChangeWorkflow.ChangeWorkflowService>();
+builder.Services.AddScoped<Ideku.Services.IdeaMonitoring.IIdeaMonitoringService, Ideku.Services.IdeaMonitoring.IdeaMonitoringService>();
 
 // Register Background Services
 builder.Services.AddHostedService<Ideku.Services.BackgroundServices.ActingRoleReversionService>();
@@ -102,6 +103,7 @@ builder.Services.AddScoped<IWorkflowManagementRepository, WorkflowManagementRepo
 builder.Services.AddScoped<Ideku.Data.Repositories.IRolesRepository, Ideku.Data.Repositories.RolesRepository>();
 builder.Services.AddScoped<Ideku.Data.Repositories.IdeaImplementators.IIdeaImplementatorRepository, Ideku.Data.Repositories.IdeaImplementators.IdeaImplementatorRepository>();
 builder.Services.AddScoped<IMilestoneRepository, MilestoneRepository>();
+builder.Services.AddScoped<IIdeaMonitoringRepository, IdeaMonitoringRepository>();
 
 var app = builder.Build();
 

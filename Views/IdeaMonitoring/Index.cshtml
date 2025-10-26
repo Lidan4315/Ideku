@@ -1,0 +1,672 @@
+@model Ideku.ViewModels.IdeaList.IdeaListViewModel
+@{
+    ViewData["Title"] = "Cost Saving Monitoring";
+}
+
+<link rel="stylesheet" href="~/css/shared/ideas-list.css" asp-append-version="true" />
+
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title text-gradient">
+            <i class="bi bi-graph-up-arrow me-2"></i>Cost Saving Monitoring
+        </h2>
+        <p class="text-muted">Monitor and track cost savings for all ideas in the system.</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @* Integrated Filter and Table Card *@
+    <div class="card filter-card">
+        <!-- Filter Section -->
+        <div class="card-body p-4">
+            @{
+                var filterConfig = new Ideku.ViewModels.Common.IdeaFilterViewModel
+                {
+                    SearchTerm = Model.SearchTerm ?? string.Empty,
+                    SearchPlaceholder = "Search by Idea ID, Title, or Initiator...",
+                    SelectedDivision = Model.SelectedDivision ?? string.Empty,
+                    SelectedDepartment = Model.SelectedDepartment ?? string.Empty,
+                    SelectedCategory = Model.SelectedCategory,
+                    SelectedStage = Model.SelectedStage,
+                    SelectedStatus = Model.SelectedStatus ?? string.Empty,
+                    ClearAllUrl = Url.Action("Index") ?? string.Empty,
+                    ShowDivisionFilter = true,
+                    ShowDepartmentFilter = true,
+                    ShowCategoryFilter = true,
+                    ShowStageFilter = true,
+                    ShowStatusFilter = true,
+                    AvailableStages = Model.AvailableStages
+                };
+            }
+            @await Html.PartialAsync("_IdeaFilterForm", filterConfig)
+        </div>
+
+        <!-- Table Section -->
+        <div class="card-body border-top">
+            @if (Model.Ideas.Any())
+            {
+                <div class="table-responsive-custom">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Idea ID</th>
+                                <th style="min-width: 250px;">Idea Title</th>
+                                <th style="min-width: 150px;">Initiator</th>
+                                <th style="min-width: 200px;">Division</th>
+                                <th style="min-width: 200px;">Department</th>
+                                <th>Category</th>
+                                <th>Event</th>
+                                <th>Stage</th>
+                                <th>Saving Cost</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ideas-table-body">
+                            @foreach (var idea in Model.Ideas)
+                            {
+                                <tr style="cursor: pointer;" onclick="window.location='@Url.Action("Details", "IdeaMonitoring", new { ideaId = idea.Id })'">
+                                    <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
+                                    <td>
+                                        <div class="truncate-title" title="@idea.IdeaName">
+                                            @idea.IdeaName
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.InitiatorUser?.Employee?.NAME</strong>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.TargetDivision?.NameDivision</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@idea.TargetDepartment?.NameDepartment</small>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var categoryClass = idea.Category?.CategoryName switch
+                                            {
+                                                "Cost Reduction (CR)" => "bg-success",
+                                                "Digitalization" => "bg-primary",
+                                                "General Transformation" => "bg-info text-dark",
+                                                "Increase Revenue" => "bg-warning text-dark",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @categoryClass">@idea.Category?.CategoryName</span>
+                                    </td>
+                                    <td>
+                                        @if (idea.Event != null)
+                                        {
+                                            var eventClass = idea.Event.EventName switch
+                                            {
+                                                "CI Academy" => "bg-purple text-white",
+                                                "Hackathon" => "bg-orange text-white",
+                                                _ => "bg-light text-dark"
+                                            };
+                                            <span class="badge @eventClass">@idea.Event.EventName</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">@idea.SavingCost.ToString("C")</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var statusClass = idea.CurrentStatus switch
+                                            {
+                                                var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
+                                                var s when s.StartsWith("Rejected S") => "bg-danger",
+                                                "Approved" => "bg-success",
+                                                "Rejected" => "bg-danger",
+                                                "Completed" => "bg-primary",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @statusClass">@idea.CurrentStatus</span>
+                                    </td>
+                                    <td>
+                                        <div>@idea.SubmittedDate.ToString("MMM dd")</div>
+                                        <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-5">
+                    <i class="bi bi-search fs-1 text-muted"></i>
+                    <h4 class="mt-3">No Ideas Found</h4>
+                    <p class="text-muted">No ideas match your current filters.</p>
+                </div>
+            }
+
+            <!-- Pagination Controls -->
+            @if (Model.ShowPagination)
+            {
+                @await Html.PartialAsync("_PaginationPartial", Model.PagedIdeas)
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript tetap sama seperti original, hanya URL endpoint yang disesuaikan
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchTerm');
+    const divisionSelect = document.getElementById('selectedDivision');
+    const departmentSelect = document.getElementById('selectedDepartment');
+    const categorySelect = document.getElementById('selectedCategory');
+    const stageSelect = document.getElementById('selectedStage');
+    const statusSelect = document.getElementById('selectedStatus');
+    const tableBody = document.querySelector('#ideas-table-body');
+
+    let debounceTimeout;
+
+    // Initialize cascading dropdown
+    const initialDivision = divisionSelect?.value;
+    const initialDepartment = '@Model.SelectedDepartment';
+
+    if (initialDivision && initialDivision !== '') {
+        loadDepartmentsForDivision(initialDivision, initialDepartment);
+    }
+
+    // Prevent form submission
+    const filterForm = document.querySelector('form[method="get"]');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            applyFilters();
+        });
+    }
+
+    // Search input handlers
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyFilters();
+            }
+        });
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => applyFilters(), 300);
+        });
+    }
+
+    // Dropdown handlers
+    [departmentSelect, categorySelect, stageSelect, statusSelect].forEach(select => {
+        if (select) {
+            select.addEventListener('change', applyFilters);
+        }
+    });
+
+    // Division cascading
+    if (divisionSelect) {
+        divisionSelect.addEventListener('change', function() {
+            const divisionId = this.value;
+
+            if (departmentSelect) {
+                departmentSelect.innerHTML = '<option value="">Please select Division first</option>';
+                departmentSelect.value = '';
+            }
+
+            if (!divisionId) {
+                applyFilters();
+                return;
+            }
+
+            loadDepartmentsForDivision(divisionId);
+            setTimeout(() => applyFilters(), 500);
+        });
+    }
+
+    function loadDepartmentsForDivision(divisionId, selectedDepartmentId = '') {
+        if (!departmentSelect) return;
+
+        if (!divisionId) {
+            departmentSelect.innerHTML = '<option value="">Please select Division first</option>';
+            departmentSelect.value = '';
+            return;
+        }
+
+        departmentSelect.innerHTML = '<option value="">Loading departments...</option>';
+        departmentSelect.disabled = true;
+
+        fetch(`/IdeaMonitoring/GetDepartmentsByDivision?divisionId=${divisionId}`)
+            .then(response => response.json())
+            .then(data => {
+                departmentSelect.innerHTML = '<option value="">All Departments</option>';
+
+                if (data.success && data.departments) {
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        if (selectedDepartmentId && dept.id === selectedDepartmentId) {
+                            option.selected = true;
+                        }
+                        departmentSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching departments:', error);
+                departmentSelect.innerHTML = '<option value="">Error loading departments</option>';
+            })
+            .finally(() => {
+                departmentSelect.disabled = false;
+            });
+    }
+
+    function applyFilters() {
+        const searchTerm = searchInput?.value || '';
+        const selectedDivision = divisionSelect?.value || '';
+        const selectedDepartment = departmentSelect?.value || '';
+        const selectedCategory = categorySelect?.value || '';
+        const selectedStage = stageSelect?.value || '';
+        const selectedStatus = statusSelect?.value || '';
+
+        const isAllEmpty = !searchTerm.trim() &&
+                          !selectedDivision &&
+                          !selectedDepartment &&
+                          !selectedCategory &&
+                          !selectedStage &&
+                          !selectedStatus;
+
+        if (isAllEmpty) {
+            window.location.href = window.location.pathname;
+            return;
+        }
+
+        loadFilteredResults(1, getCurrentPageSize());
+    }
+
+    function getCurrentPageSize() {
+        return parseInt(document.querySelector('.pagination select')?.value) || @Model.PageSize;
+    }
+
+    function getCurrentFilters() {
+        return {
+            searchTerm: searchInput?.value?.trim() || '',
+            selectedDivision: divisionSelect?.value || '',
+            selectedDepartment: departmentSelect?.value || '',
+            selectedCategory: categorySelect?.value || '',
+            selectedStage: stageSelect?.value || '',
+            selectedStatus: statusSelect?.value || ''
+        };
+    }
+
+    function hasActiveFilters() {
+        const filters = getCurrentFilters();
+        return Object.values(filters).some(value => value && value.toString().trim() !== '');
+    }
+
+    function loadFilteredResults(page = 1, pageSize = @Model.PageSize) {
+        const filters = getCurrentFilters();
+
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('pageSize', pageSize.toString());
+
+        if (filters.searchTerm && filters.searchTerm.trim()) {
+            params.append('searchTerm', filters.searchTerm.trim());
+        }
+        if (filters.selectedDivision) {
+            params.append('selectedDivision', filters.selectedDivision);
+        }
+        if (filters.selectedDepartment) {
+            params.append('selectedDepartment', filters.selectedDepartment);
+        }
+        if (filters.selectedCategory) {
+            params.append('selectedCategory', filters.selectedCategory);
+        }
+        if (filters.selectedStage) {
+            params.append('selectedStage', filters.selectedStage);
+        }
+        if (filters.selectedStatus) {
+            params.append('selectedStatus', filters.selectedStatus);
+        }
+
+        showLoadingState();
+
+        // Build URL for browser history
+        const newUrl = `/IdeaMonitoring?${params.toString()}`;
+
+        // Update browser URL without reload (for bookmarking)
+        if (page !== 1 || hasActiveFilters()) {
+            history.pushState({ page, filters }, null, newUrl);
+        }
+
+        const requestUrl = `/IdeaMonitoring/FilterAllIdeas?${params.toString()}`;
+
+        fetch(requestUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const ideas = data.ideas || [];
+                const pagination = data.pagination || {};
+
+                updateAllIdeasTable(ideas, pagination);
+                regeneratePaginationHTML(pagination, filters);
+                updatePaginationLinks(pagination, filters);
+
+                hideLoadingState();
+            } else {
+                showErrorState(data.message || 'Error loading data');
+            }
+        })
+        .catch(error => {
+            console.error('AJAX Filter Error:', error);
+            showErrorState(`Error: ${error.message}`);
+        });
+    }
+
+    function showLoadingState() {
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="mt-2 text-muted">Filtering ideas...</div>
+                    </td>
+                </tr>`;
+        }
+    }
+
+    function hideLoadingState() {
+        // Loading state will be replaced by updateAllIdeasTable()
+    }
+
+    function showErrorState(message) {
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center py-4">
+                        <div class="text-danger mb-2">
+                            <i class="bi bi-exclamation-triangle"></i> ${message}
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise"></i> Retry
+                        </button>
+                    </td>
+                </tr>`;
+        }
+    }
+
+    function updateAllIdeasTable(ideas, pagination) {
+        if (!tableBody) return;
+
+        if (!ideas || ideas.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center py-4">
+                        <div class="empty-state">
+                            <i class="bi bi-search display-4 text-muted"></i>
+                            <h5 class="mt-3">No Ideas Found</h5>
+                            <p class="text-muted">No ideas match your current filters.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        let html = '';
+        ideas.forEach(idea => {
+            const categoryClass = getCategoryClass(idea.categoryName);
+            const eventClass = getEventClass(idea.eventName);
+            const statusClass = getStatusClass(idea.currentStatus);
+
+            const submittedDate = new Date(idea.submittedDate);
+            const dateStr = submittedDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+            const timeStr = submittedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            const savingCostFormatted = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(idea.savingCost);
+
+            html += `
+                <tr style="cursor: pointer;" onclick="window.location='${idea.detailUrl}'">
+                    <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
+                    <td>
+                        <div class="truncate-title" title="${idea.ideaName}">
+                            ${idea.ideaName}
+                        </div>
+                    </td>
+                    <td><strong>${idea.initiatorName || ''}</strong></td>
+                    <td><strong>${idea.divisionName || ''}</strong></td>
+                    <td><small class="text-muted">${idea.departmentName || ''}</small></td>
+                    <td>
+                        ${idea.categoryName ? `<span class="badge ${categoryClass}">${idea.categoryName}</span>` : ''}
+                    </td>
+                    <td>
+                        ${idea.eventName ? `<span class="badge ${eventClass}">${idea.eventName}</span>` : ''}
+                    </td>
+                    <td><span class="badge bg-secondary">S${idea.currentStage}</span></td>
+                    <td>
+                        ${idea.savingCost ? `<span class="fw-bold text-success">${savingCostFormatted}</span>` : ''}
+                    </td>
+                    <td><span class="badge ${statusClass}">${idea.currentStatus}</span></td>
+                    <td>
+                        <div>${dateStr}</div>
+                        <small class="text-muted">${timeStr}</small>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tableBody.innerHTML = html;
+    }
+
+    function getCategoryClass(categoryName) {
+        switch (categoryName) {
+            case 'Cost Reduction (CR)': return 'bg-success';
+            case 'Digitalization': return 'bg-primary';
+            case 'General Transformation': return 'bg-info text-dark';
+            case 'Increase Revenue': return 'bg-warning text-dark';
+            default: return 'bg-secondary';
+        }
+    }
+
+    function getEventClass(eventName) {
+        switch (eventName) {
+            case 'CI Academy': return 'bg-purple text-white';
+            case 'Hackathon': return 'bg-orange text-white';
+            default: return 'bg-light text-dark';
+        }
+    }
+
+    function getStatusClass(status) {
+        if (status.startsWith('Waiting Approval')) return 'bg-warning text-dark';
+        if (status.startsWith('Rejected S')) return 'bg-danger';
+        if (status === 'Approved') return 'bg-success';
+        if (status === 'Rejected') return 'bg-danger';
+        if (status === 'Completed') return 'bg-primary';
+        return 'bg-secondary';
+    }
+
+    function regeneratePaginationHTML(paginationData, filters = {}) {
+        const paginationNav = document.querySelector('.pagination-navigation ul.pagination');
+        const paginationContainer = document.querySelector('.pagination-container-single-row');
+        if (!paginationNav) return;
+
+        const {
+            currentPage = 1,
+            totalPages = 1,
+            pageSize = 10,
+            totalItems = 0,
+            hasPreviousPage = false,
+            hasNextPage = false
+        } = paginationData;
+
+        if (totalPages <= 1) {
+            if (paginationContainer) {
+                paginationContainer.style.display = 'none';
+            }
+            return;
+        } else {
+            if (paginationContainer) {
+                paginationContainer.style.display = 'flex';
+            }
+        }
+
+        let paginationHTML = '';
+
+        // Previous button
+        if (hasPreviousPage) {
+            paginationHTML += `
+                <li class="page-item">
+                    <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>`;
+        } else {
+            paginationHTML += `
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo;</span>
+                </li>`;
+        }
+
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages && totalPages > maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        if (startPage > 1) {
+            paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+            if (startPage > 2) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === currentPage) {
+                paginationHTML += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+            } else {
+                paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+            }
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+            paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+        }
+
+        if (hasNextPage) {
+            paginationHTML += `
+                <li class="page-item">
+                    <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>`;
+        } else {
+            paginationHTML += `
+                <li class="page-item disabled">
+                    <span class="page-link">&raquo;</span>
+                </li>`;
+        }
+
+        paginationNav.innerHTML = paginationHTML;
+
+        const paginationInfo = document.querySelector('.pagination-info');
+        if (paginationInfo) {
+            const startItem = totalItems > 0 ? ((currentPage - 1) * pageSize) + 1 : 0;
+            const endItem = Math.min(currentPage * pageSize, totalItems);
+            paginationInfo.textContent = `Showing ${startItem} to ${endItem} of ${totalItems} items`;
+        }
+    }
+
+    function updatePaginationLinks(paginationData, filters) {
+        const paginationLinks = document.querySelectorAll('.pagination .page-link[data-page]');
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const page = parseInt(this.getAttribute('data-page'));
+                const pageSize = getCurrentPageSize();
+                loadFilteredResults(page, pageSize);
+            });
+        });
+
+        const pageSizeSelector = document.querySelector('.pagination select');
+        if (pageSizeSelector) {
+            pageSizeSelector.addEventListener('change', function() {
+                const newPageSize = parseInt(this.value);
+                const currentPage = Math.min(paginationData.currentPage || 1, Math.ceil(paginationData.totalItems / newPageSize));
+                loadFilteredResults(currentPage, newPageSize);
+            });
+        }
+    }
+
+    // Browser history management for back/forward navigation
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.filters) {
+            // Restore filter values from history state
+            const filters = event.state.filters;
+
+            if (searchInput) searchInput.value = filters.searchTerm || '';
+            if (divisionSelect) divisionSelect.value = filters.selectedDivision || '';
+            if (departmentSelect) departmentSelect.value = filters.selectedDepartment || '';
+            if (categorySelect) categorySelect.value = filters.selectedCategory || '';
+            if (stageSelect) stageSelect.value = filters.selectedStage || '';
+            if (statusSelect) statusSelect.value = filters.selectedStatus || '';
+
+            // Reload departments if division is selected
+            if (filters.selectedDivision) {
+                loadDepartmentsForDivision(filters.selectedDivision, filters.selectedDepartment);
+            }
+
+            // Load results for the restored state
+            loadFilteredResults(event.state.page || 1, getCurrentPageSize());
+        } else {
+            // No state, reload original page
+            window.location.reload();
+        }
+    });
+
+    console.log('IdeaList AJAX initialized');
+});
+</script>

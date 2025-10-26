@@ -71,8 +71,14 @@
                             <span>Idea List</span>
                         </a>
                     </li>
+                    <li>
+                        <a asp-controller="IdeaMonitoring" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaMonitoring" ? "active" : "")">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            <span>Monitoring</span>
+                        </a>
+                    </li>
                 }
-                
+
                 @if (User.Identity.IsAuthenticated && (User.IsInRole("Superuser") || User.IsInRole("Admin")))
                 {
                     <li>
