@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251025093851_InitialMigrate")]
+    [Migration("20251026100550_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -573,7 +573,6 @@ namespace Ideku.Migrations
                         .HasColumnName("IdeaId");
 
                     b.Property<string>("Note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("Note");
 

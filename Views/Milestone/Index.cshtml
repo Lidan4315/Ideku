@@ -70,6 +70,7 @@
                                 <th>Idea ID</th>
                                 <th style="min-width: 250px;">Idea Title</th>
                                 <th style="min-width: 150px;">Initiator</th>
+                                <th style="min-width: 200px;">Implementor</th>
                                 <th style="min-width: 200px;">Division</th>
                                 <th style="min-width: 200px;">Department</th>
                                 <th>Category</th>
@@ -77,7 +78,6 @@
                                 <th>Stage</th>
                                 <th>Saving Cost</th>
                                 <th>Status</th>
-                                <th>Milestones</th>
                                 <th>Submitted</th>
                             </tr>
                         </thead>
@@ -93,7 +93,23 @@
                                     </td>
                                     <td>
                                         <strong>@idea.InitiatorUser?.Employee?.NAME</strong>
-                                        <br><small class="text-muted">@idea.InitiatorUser?.Employee?.EMP_ID</small>
+                                    </td>
+                                    <td>
+                                        @if (idea.IdeaImplementators != null && idea.IdeaImplementators.Any())
+                                        {
+                                            <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                                                @foreach (var implementator in idea.IdeaImplementators)
+                                                {
+                                                    <li class="mb-1">
+                                                        <i class="bi bi-dot text-primary me-1"></i>@implementator.User.Name <small class="text-muted">(@implementator.Role)</small>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted" style="font-size: 0.9rem;">No implementor</span>
+                                        }
                                     </td>
                                     <td>
                                         <strong>@idea.TargetDivision?.NameDivision</strong>
@@ -149,9 +165,6 @@
                                             };
                                         }
                                         <span class="badge @statusClass">@idea.CurrentStatus</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-warning text-dark">@idea.Milestones.Count() milestones</span>
                                     </td>
                                     <td>
                                         <div>@idea.SubmittedDate.ToString("MMM dd")</div>
@@ -515,6 +528,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 minimumFractionDigits: 0
             }).format(idea.savingCost);
 
+            // Build implementors HTML
+            let implementorsHTML = '';
+            if (idea.implementators && idea.implementators.length > 0) {
+                implementorsHTML = '<ul class="list-unstyled mb-0" style="font-size: 0.9rem;">';
+                idea.implementators.forEach(imp => {
+                    implementorsHTML += `
+                        <li class="mb-1">
+                            <i class="bi bi-dot text-primary me-1"></i>${imp.name} <small class="text-muted">(${imp.role})</small>
+                        </li>
+                    `;
+                });
+                implementorsHTML += '</ul>';
+            } else {
+                implementorsHTML = '<span class="text-muted" style="font-size: 0.9rem;">No implementor</span>';
+            }
+
             html += `
                 <tr style="cursor: pointer;" onclick="window.location.href='${idea.detailUrl}'">
                     <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
@@ -525,8 +554,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                     <td>
                         <strong>${idea.initiatorName || ''}</strong>
-                        <br><small class="text-muted">${idea.initiatorBadge || ''}</small>
                     </td>
+                    <td>${implementorsHTML}</td>
                     <td><strong>${idea.divisionName || ''}</strong></td>
                     <td><small class="text-muted">${idea.departmentName || ''}</small></td>
                     <td>
@@ -541,7 +570,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${idea.savingCostValidated ? `<br><small class="text-success">Validated: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(idea.savingCostValidated)}</small>` : ''}
                     </td>
                     <td><span class="badge ${statusClass}">${idea.currentStatus}</span></td>
-                    <td><span class="badge bg-warning text-dark">${idea.milestonesCount || 0} milestones</span></td>
                     <td>
                         <div>${dateStr}</div>
                         <small class="text-muted">${timeStr}</small>

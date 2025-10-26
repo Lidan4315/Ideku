@@ -34,9 +34,8 @@ namespace Ideku.Models.Entities
         [StringLength(20)]
         public string Status { get; set; } = string.Empty;
 
-        [Required]
         [Column("Note")]
-        public string Note { get; set; } = string.Empty;
+        public string? Note { get; set; }
 
         [Required]
         [Column("StartDate")]

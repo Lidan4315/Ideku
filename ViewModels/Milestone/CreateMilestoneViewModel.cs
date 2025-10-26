@@ -23,9 +23,8 @@ namespace Ideku.ViewModels.Milestone
         /// <summary>
         /// Milestone description/note
         /// </summary>
-        [Required(ErrorMessage = "Milestone description is required.")]
         [Display(Name = "Description")]
-        public string Note { get; set; } = string.Empty;
+        public string? Note { get; set; }
 
         /// <summary>
         /// Milestone start date
