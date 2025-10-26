@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Ideku.Data.Context;
+using Ideku.Data.Repositories;
 using Ideku.Data.Repositories.IdeaImplementators;
 using Ideku.Models.Entities;
 
@@ -8,15 +9,18 @@ namespace Ideku.Services.IdeaImplementators
     public class IdeaImplementatorService : IIdeaImplementatorService
     {
         private readonly IIdeaImplementatorRepository _implementatorRepository;
+        private readonly IUserRepository _userRepository;
         private readonly AppDbContext _context;
         private readonly ILogger<IdeaImplementatorService> _logger;
 
         public IdeaImplementatorService(
             IIdeaImplementatorRepository implementatorRepository,
+            IUserRepository userRepository,
             AppDbContext context,
             ILogger<IdeaImplementatorService> logger)
         {
             _implementatorRepository = implementatorRepository;
+            _userRepository = userRepository;
             _context = context;
             _logger = logger;
         }
@@ -204,6 +208,20 @@ namespace Ideku.Services.IdeaImplementators
                     }
                 }
 
+                // Check if assigning as Member and limit is reached
+                if (role == "Member")
+                {
+                    var currentMemberCount = await _implementatorRepository.GetMemberCountAsync(ideaId);
+
+                    // Check if limit is 5 (will be checked later if user is not superuser)
+                    // This is just a soft check, actual enforcement is in controller
+                    if (currentMemberCount >= 5)
+                    {
+                        // Don't block here, let controller check if user is superuser
+                        _logger.LogInformation("Member count is {Count}, may exceed limit for non-superuser", currentMemberCount);
+                    }
+                }
+
                 return (true, "Assignment is valid");
             }
             catch (Exception ex)
@@ -211,6 +229,74 @@ namespace Ideku.Services.IdeaImplementators
                 _logger.LogError(ex, "Error validating assignment: UserId={UserId}, IdeaId={IdeaId}, Role={Role}",
                     userId, ideaId, role);
                 return (false, "An error occurred during validation");
+            }
+        }
+
+        public async Task<bool> CanUserManageImplementatorsAsync(string username, long ideaId)
+        {
+            try
+            {
+                var user = await _userRepository.GetByUsernameAsync(username);
+                if (user == null) return false;
+
+                // Superuser can manage any idea's implementators
+                if (user.Role.RoleName == "Superuser")
+                {
+                    return true;
+                }
+
+                // Workstream Leader can manage if department matches idea's target department
+                if (user.Role.RoleName == "Workstream Leader")
+                {
+                    var idea = await _context.Ideas
+                        .FirstOrDefaultAsync(i => i.Id == ideaId);
+
+                    if (idea == null) return false;
+
+                    // Get workstream leaders for this department
+                    var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
+
+                    // Check if current user is one of the workstream leaders for this department
+                    return workstreamLeaders.Any(wl => wl.Id == user.Id);
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking if user can manage implementators: Username={Username}, IdeaId={IdeaId}",
+                    username, ideaId);
+                return false;
+            }
+        }
+
+        public async Task<bool> CanAddMoreMembersAsync(string username, long ideaId)
+        {
+            try
+            {
+                var user = await _userRepository.GetByUsernameAsync(username);
+                if (user == null) return false;
+
+                // Superuser has no limit
+                if (user.Role.RoleName == "Superuser")
+                {
+                    return true;
+                }
+
+                // Workstream Leader has limit of 5 members
+                if (user.Role.RoleName == "Workstream Leader")
+                {
+                    var currentMemberCount = await _implementatorRepository.GetMemberCountAsync(ideaId);
+                    return currentMemberCount < 5;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking if user can add more members: Username={Username}, IdeaId={IdeaId}",
+                    username, ideaId);
+                return false;
             }
         }
     }

@@ -355,13 +355,13 @@ namespace Ideku.Services.Idea
 
                 // Workstream Leader can see:
                 // 1. Ideas for their division and department
-                // 2. Ideas where RelatedDivisions contains their division
-                return baseQuery.Where(idea => 
+                // 2. Ideas where their division is in RelatedDivisionsJson
+                return baseQuery.Where(idea =>
                     // Ideas targeted to their division/department
-                    (idea.ToDivisionId == userDivision && 
+                    (idea.ToDivisionId == userDivision &&
                      (string.IsNullOrEmpty(userDepartment) || idea.ToDepartmentId == userDepartment)) ||
-                    // Ideas where their division is in RelatedDivisions
-                    (idea.RelatedDivisions != null && idea.RelatedDivisions.Contains(userDivision))
+                    // Ideas where their division is in RelatedDivisionsJson (stored as JSON string)
+                    (idea.RelatedDivisionsJson != null && idea.RelatedDivisionsJson.Contains(userDivision))
                 ).OrderByDescending(idea => idea.SubmittedDate)
                 .ThenByDescending(idea => idea.Id);
             }

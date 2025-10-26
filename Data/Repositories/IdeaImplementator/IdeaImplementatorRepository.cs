@@ -99,5 +99,12 @@ namespace Ideku.Data.Repositories.IdeaImplementators
                 .ThenBy(ii => ii.CreatedAt)
                 .ToListAsync();
         }
+
+        public async Task<int> GetMemberCountAsync(long ideaId)
+        {
+            return await _context.IdeaImplementators
+                .Where(ii => ii.IdeaId == ideaId && ii.Role == "Member")
+                .CountAsync();
+        }
     }
 }

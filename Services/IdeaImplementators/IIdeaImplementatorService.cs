@@ -56,5 +56,21 @@ namespace Ideku.Services.IdeaImplementators
         /// <param name="role">Role to assign</param>
         /// <returns>Validation result with message</returns>
         Task<(bool IsValid, string Message)> ValidateAssignmentAsync(long ideaId, long userId, string role);
+
+        /// <summary>
+        /// Check if current user can manage implementators for an idea
+        /// </summary>
+        /// <param name="username">Username of current user</param>
+        /// <param name="ideaId">Idea ID</param>
+        /// <returns>True if user can manage, false otherwise</returns>
+        Task<bool> CanUserManageImplementatorsAsync(string username, long ideaId);
+
+        /// <summary>
+        /// Check if user can add more members (based on role limits)
+        /// </summary>
+        /// <param name="username">Username of current user</param>
+        /// <param name="ideaId">Idea ID</param>
+        /// <returns>True if can add more members, false otherwise</returns>
+        Task<bool> CanAddMoreMembersAsync(string username, long ideaId);
     }
 }
