@@ -351,12 +351,29 @@ namespace Ideku.Controllers
         {
             try
             {
+                // Check if user has permission to manage implementators
+                var canManage = await _implementatorService.CanUserManageImplementatorsAsync(User.Identity!.Name!, ideaId);
+                if (!canManage)
+                {
+                    return Json(new { success = false, message = "You don't have permission to assign implementators for this idea." });
+                }
+
+                // Check if trying to add member and limit is reached
+                if (role == "Member")
+                {
+                    var canAddMore = await _implementatorService.CanAddMoreMembersAsync(User.Identity!.Name!, ideaId);
+                    if (!canAddMore)
+                    {
+                        return Json(new { success = false, message = "Maximum limit of 5 members has been reached." });
+                    }
+                }
+
                 var result = await _implementatorService.AssignImplementatorAsync(ideaId, userId, role);
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("Successfully assigned user {UserId} as {Role} to idea {IdeaId}",
-                        userId, role, ideaId);
+                    _logger.LogInformation("Successfully assigned user {UserId} as {Role} to idea {IdeaId} by {Username}",
+                        userId, role, ideaId, User.Identity!.Name);
                 }
 
                 return Json(new { success = result.Success, message = result.Message });
@@ -371,15 +388,23 @@ namespace Ideku.Controllers
 
         // AJAX: Remove implementator
         [HttpPost]
-        public async Task<JsonResult> RemoveImplementator(long implementatorId)
+        public async Task<JsonResult> RemoveImplementator(long implementatorId, long ideaId)
         {
             try
             {
+                // Check if user has permission to manage implementators
+                var canManage = await _implementatorService.CanUserManageImplementatorsAsync(User.Identity!.Name!, ideaId);
+                if (!canManage)
+                {
+                    return Json(new { success = false, message = "You don't have permission to remove implementators for this idea." });
+                }
+
                 var result = await _implementatorService.RemoveImplementatorAsync(implementatorId);
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("Successfully removed implementator {ImplementatorId}", implementatorId);
+                    _logger.LogInformation("Successfully removed implementator {ImplementatorId} by {Username}",
+                        implementatorId, User.Identity!.Name);
                 }
 
                 return Json(new { success = result.Success, message = result.Message });

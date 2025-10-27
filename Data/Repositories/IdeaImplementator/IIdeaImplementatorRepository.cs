@@ -18,5 +18,12 @@ namespace Ideku.Data.Repositories.IdeaImplementators
         /// Get implementators with User details included for display purposes
         /// </summary>
         Task<IEnumerable<IdeaImplementator>> GetByIdeaIdWithUserAsync(long ideaId);
+
+        /// <summary>
+        /// Get count of members (not leaders) for an idea
+        /// </summary>
+        /// <param name="ideaId">Idea ID</param>
+        /// <returns>Count of members assigned to the idea</returns>
+        Task<int> GetMemberCountAsync(long ideaId);
     }
 }

@@ -52,15 +52,18 @@
                     <div class="d-flex gap-2">
                         @if (Model.Implementators.Any())
                         {
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditTeamModal()">
-                                <i class="bi bi-pencil"></i>
-                                <span class="d-none d-md-inline ms-1">Edit Team</span>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="openEditTeamModal()">
+                                <i class="bi bi-people"></i>
+                                <span class="d-none d-md-inline ms-1">Manage Team</span>
                             </button>
                         }
-                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addImplementatorModal">
-                            <i class="bi bi-plus-circle"></i>
-                            <span class="d-none d-md-inline ms-1">Add Member</span>
-                        </button>
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addImplementatorModal">
+                                <i class="bi bi-plus-circle"></i>
+                                <span class="d-none d-md-inline ms-1">Add Member</span>
+                            </button>
+                        }
                     </div>
                 </div>
                 <div class="card-body">
@@ -1155,9 +1158,7 @@ function handleTeamUpdateComplete(errorCount, submitBtn, originalText) {
             icon: 'success',
             title: 'Success!',
             text: 'Team assembly has been updated successfully.',
-            confirmButtonColor: '#3b82f6',
-            timer: 2000,
-            timerProgressBar: true
+            confirmButtonColor: '#3b82f6'
         }).then(() => {
             if (editTeamModal) {
                 editTeamModal.hide();
