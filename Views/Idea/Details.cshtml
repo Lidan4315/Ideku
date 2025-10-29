@@ -178,27 +178,7 @@
 
         <!-- Milestone View -->
         <div id="milestoneViewContent" class="view-content d-none">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-calendar3 me-2"></i>Milestone Calendar
-                    </h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="prevMonth">
-                            <i class="bi bi-chevron-left"></i>
-                        </button>
-                        <span class="fw-semibold" id="currentMonth"></span>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="nextMonth">
-                            <i class="bi bi-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div id="calendar-container">
-                        <!-- Calendar will be rendered here -->
-                    </div>
-                </div>
-            </div>
+            @await Html.PartialAsync("_MilestoneCalendar", Model.Milestones)
         </div>
 
         <!-- Monitoring View -->
@@ -226,22 +206,9 @@
 
 @section Scripts {
 <script>
-let currentDate = new Date(); // Define currentDate globally or within a scope that persists
-
 $(document).ready(function() {
     // Initialize Tab Navigation
     initializeTabNavigation();
-
-    // Set up calendar navigation buttons once
-    document.getElementById('prevMonth').addEventListener('click', function() {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar();
-    });
-
-    document.getElementById('nextMonth').addEventListener('click', function() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar();
-    });
 });
 
 // Tab Navigation Functions
@@ -277,7 +244,11 @@ function initializeTabNavigation() {
         if (this.checked) {
             showView(milestoneViewContent);
             hideViews([detailsViewContent, approvalHistoryViewContent, monitoringViewContent]);
-            renderCalendar(); // <-- Call renderCalendar directly when Milestone tab is selected
+            // Calendar will render automatically via partial's embedded script
+            // Trigger re-render when switching to milestone view
+            if (typeof window.renderMilestoneCalendar === 'function') {
+                window.renderMilestoneCalendar();
+            }
         }
     });
 
@@ -301,103 +272,7 @@ function hideViews(views) {
 }
 
 // Calendar Functions
-function renderCalendar() {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-
-    // Update month display
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-    document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
-
-    // Get first day of month and number of days
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    // Get milestones data
-    const milestones = @Html.Raw(Json.Serialize(Model.Milestones.Select(m => new {
-        id = m.Id,
-        title = m.TitleMilestone,
-        startDate = m.StartDate.ToString("yyyy-MM-dd"),
-        endDate = m.EndDate.ToString("yyyy-MM-dd"),
-        status = m.Status
-    })));
-
-    // Create calendar grid
-    let calendarHTML = `
-        <div class="calendar-grid">
-            <div class="calendar-header">Sun</div>
-            <div class="calendar-header">Mon</div>
-            <div class="calendar-header">Tue</div>
-            <div class="calendar-header">Wed</div>
-            <div class="calendar-header">Thu</div>
-            <div class="calendar-header">Fri</div>
-            <div class="calendar-header">Sat</div>
-    `;
-
-    // Add previous month's trailing days
-    const prevMonthDate = new Date(year, month - 1, 0);
-    const prevMonthDays = prevMonthDate.getDate();
-
-    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-        const day = prevMonthDays - i;
-        calendarHTML += `<div class="calendar-cell other-month">
-            <div class="calendar-date">${day}</div>
-        </div>`;
-    }
-
-    // Add current month's days
-    const today = new Date();
-    for (let day = 1; day <= daysInMonth; day++) {
-        const cellDate = new Date(year, month, day);
-        const isToday = cellDate.toDateString() === today.toDateString();
-        const cellClass = isToday ? 'calendar-cell today' : 'calendar-cell';
-
-        // Find milestones for this date
-        const dayMilestones = milestones.filter(milestone => {
-            const startDate = new Date(milestone.startDate);
-            const endDate = new Date(milestone.endDate);
-            // Check if the cellDate falls within the milestone's date range
-            return cellDate >= new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()) &&
-                   cellDate <= new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-        });
-
-        let milestonesHTML = '';
-        dayMilestones.forEach(milestone => {
-            const statusClass = `status-${milestone.status.toLowerCase().replace(' ', '-')}`;
-            milestonesHTML += `
-                <div class="milestone-item ${statusClass}" title="${milestone.title} (${milestone.status})">
-                    ${milestone.title}
-                </div>
-            `;
-        });
-
-        calendarHTML += `
-            <div class="${cellClass}">
-                <div class="calendar-date">${day}</div>
-                ${milestonesHTML}
-            </div>
-        `;
-    }
-
-    // Add next month's leading days
-    const totalCells = Math.ceil((startingDayOfWeek + daysInMonth) / 7) * 7;
-    const remainingCells = totalCells - (startingDayOfWeek + daysInMonth);
-
-    for (let day = 1; day <= remainingCells; day++) {
-        calendarHTML += `<div class="calendar-cell other-month">
-            <div class="calendar-date">${day}</div>
-        </div>`;
-    }
-
-    calendarHTML += '</div>';
-
-    // Update calendar container
-    document.getElementById('calendar-container').innerHTML = calendarHTML;
-}
+// Note: Calendar rendering is now handled by _MilestoneCalendar.cshtml partial
+// The partial includes its own self-contained JavaScript for rendering and modal interactions
 </script>
 }
