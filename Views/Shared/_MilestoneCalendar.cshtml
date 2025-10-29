@@ -1,0 +1,332 @@
+@model IEnumerable<Ideku.Models.Entities.Milestone>
+
+@{
+    // This partial view renders a calendar with milestones
+    // It includes its own JavaScript for rendering and interactions
+}
+
+<!-- Calendar Container -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-calendar3 me-2"></i>Milestone Calendar
+        </h5>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="prevMonth">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <span class="fw-semibold" id="currentMonth"></span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="nextMonth">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div id="calendar-container">
+            <!-- Calendar will be rendered here by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Milestone Detail Modal (will be dynamically created) -->
+<!-- Modal and overlay are created by JavaScript when needed -->
+
+<script>
+(function() {
+    // Encapsulate in IIFE to avoid global scope pollution
+    let currentDate = new Date();
+
+    // Serialize milestones data from server
+    const milestones = @Html.Raw(Json.Serialize(Model.Select(m => new {
+        id = m.Id,
+        title = m.TitleMilestone,
+        note = m.Note,
+        startDate = m.StartDate.ToString("yyyy-MM-dd"),
+        endDate = m.EndDate.ToString("yyyy-MM-dd"),
+        status = m.Status,
+        pics = m.MilestonePICs.Select(p => new {
+            name = p.User.Name,
+            empId = p.User.Employee.EMP_ID
+        }).ToList()
+    })));
+
+    // Initialize calendar when DOM is ready
+    function initializeCalendar() {
+        // Set up navigation buttons
+        const prevBtn = document.getElementById('prevMonth');
+        const nextBtn = document.getElementById('nextMonth');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function() {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function() {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+        }
+
+        // Initial render
+        renderCalendar();
+    }
+
+    // Render calendar function
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        // Update month display
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        const monthDisplay = document.getElementById('currentMonth');
+        if (monthDisplay) {
+            monthDisplay.textContent = `${monthNames[month]} ${year}`;
+        }
+
+        // Get first day of month and number of days
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDayOfWeek = firstDay.getDay();
+
+        // Create calendar grid
+        let calendarHTML = `
+            <div class="calendar-grid">
+                <div class="calendar-header">Sun</div>
+                <div class="calendar-header">Mon</div>
+                <div class="calendar-header">Tue</div>
+                <div class="calendar-header">Wed</div>
+                <div class="calendar-header">Thu</div>
+                <div class="calendar-header">Fri</div>
+                <div class="calendar-header">Sat</div>
+        `;
+
+        // Add previous month's trailing days
+        const prevMonth = new Date(year, month - 1, 0);
+        const prevMonthDays = prevMonth.getDate();
+
+        for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+            const day = prevMonthDays - i;
+            calendarHTML += `<div class="calendar-cell other-month">
+                <div class="calendar-date">${day}</div>
+            </div>`;
+        }
+
+        // Add current month's days
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const cellDate = new Date(year, month, day);
+            const isToday = cellDate.toDateString() === today.toDateString();
+            const cellClass = isToday ? 'calendar-cell today' : 'calendar-cell';
+
+            // Find milestones for this date
+            const dayMilestones = milestones.filter(milestone => {
+                const startDate = new Date(milestone.startDate);
+                const endDate = new Date(milestone.endDate);
+                // Check if the cellDate falls within the milestone's date range
+                return cellDate >= new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()) &&
+                       cellDate <= new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+            });
+
+            let milestonesHTML = '';
+            dayMilestones.forEach(milestone => {
+                const statusClass = `status-${milestone.status.toLowerCase().replace(' ', '-')}`;
+                const milestoneData = JSON.stringify(milestone).replace(/"/g, '&quot;');
+                milestonesHTML += `
+                    <div class="milestone-item ${statusClass} milestone-clickable"
+                         data-milestone='${milestoneData}'
+                         onclick="window.showMilestoneDetailModal(event, this)">
+                        <i class="bi bi-info-circle me-1"></i>${milestone.title}
+                    </div>
+                `;
+            });
+
+            calendarHTML += `
+                <div class="${cellClass}">
+                    <div class="calendar-date">${day}</div>
+                    ${milestonesHTML}
+                </div>
+            `;
+        }
+
+        // Add next month's leading days
+        const totalCells = Math.ceil((startingDayOfWeek + daysInMonth) / 7) * 7;
+        const remainingCells = totalCells - (startingDayOfWeek + daysInMonth);
+
+        for (let day = 1; day <= remainingCells; day++) {
+            calendarHTML += `<div class="calendar-cell other-month">
+                <div class="calendar-date">${day}</div>
+            </div>`;
+        }
+
+        calendarHTML += '</div>';
+
+        // Update calendar container
+        const container = document.getElementById('calendar-container');
+        if (container) {
+            container.innerHTML = calendarHTML;
+        }
+    }
+
+    // Show milestone detail modal
+    window.showMilestoneDetailModal = function(event, element) {
+        event.stopPropagation();
+
+        const milestoneData = JSON.parse(element.getAttribute('data-milestone').replace(/&quot;/g, '"'));
+
+        // Remove existing modal if any
+        const existingModal = document.getElementById('milestoneDetailModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        const existingOverlay = document.getElementById('milestoneModalOverlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+
+        // Get status badge class
+        const statusBadgeClass = {
+            'Completed': 'bg-success',
+            'In Progress': 'bg-primary',
+            'Planning': 'bg-secondary',
+            'On Hold': 'bg-warning',
+            'Cancelled': 'bg-danger'
+        }[milestoneData.status] || 'bg-secondary';
+
+        // Format dates
+        const startDate = new Date(milestoneData.startDate);
+        const endDate = new Date(milestoneData.endDate);
+        const dateRange = `${startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} - ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+
+        // Build PICs HTML
+        let picsHTML = '';
+        if (milestoneData.pics && milestoneData.pics.length > 0) {
+            picsHTML = '<ul class="modal-pics-list">';
+            milestoneData.pics.forEach(pic => {
+                picsHTML += `
+                    <li class="modal-pic-item">
+                        <i class="bi bi-person-circle"></i>
+                        <span>${pic.name} <small class="text-muted">(${pic.empId})</small></span>
+                    </li>
+                `;
+            });
+            picsHTML += '</ul>';
+        } else {
+            picsHTML = '<p class="text-muted mb-0">No PIC assigned</p>';
+        }
+
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'milestoneModalOverlay';
+        overlay.className = 'milestone-modal-overlay';
+        overlay.onclick = window.closeMilestoneDetailModal;
+        document.body.appendChild(overlay);
+
+        // Create modal using app-modal classes
+        const modal = document.createElement('div');
+        modal.id = 'milestoneDetailModal';
+        modal.className = 'milestone-detail-modal app-modal';
+        modal.innerHTML = `
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-flag-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0" style="font-size: 0.9rem;">${milestoneData.title}</h6>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" onclick="window.closeMilestoneDetailModal()"></button>
+            </div>
+            <div class="app-modal-body">
+                <!-- Description -->
+                <div class="modal-info-row">
+                    <div class="modal-info-label">
+                        <i class="bi bi-file-text"></i>
+                        Description
+                    </div>
+                    <div class="modal-info-value">${milestoneData.note || 'No description'}</div>
+                </div>
+
+                <!-- Date Range -->
+                <div class="modal-info-row">
+                    <div class="modal-info-label">
+                        <i class="bi bi-calendar-range"></i>
+                        Date Range
+                    </div>
+                    <div class="modal-info-value">${dateRange}</div>
+                </div>
+
+                <!-- Status -->
+                <div class="modal-info-row">
+                    <div class="modal-info-label">
+                        <i class="bi bi-hourglass-split"></i>
+                        Status
+                    </div>
+                    <div class="modal-info-value">
+                        <span class="badge ${statusBadgeClass}">${milestoneData.status}</span>
+                    </div>
+                </div>
+
+                <!-- PICs -->
+                <div class="modal-info-row">
+                    <div class="modal-info-label">
+                        <i class="bi bi-people"></i>
+                        Person In Charge (PIC)
+                    </div>
+                    <div class="modal-info-value">
+                        ${picsHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Position modal (center of screen)
+        setTimeout(() => {
+            const modalRect = modal.getBoundingClientRect();
+            modal.style.left = `${(window.innerWidth - modalRect.width) / 2}px`;
+            modal.style.top = `${(window.innerHeight - modalRect.height) / 2}px`;
+
+            // Show modal with animation
+            setTimeout(() => {
+                overlay.classList.add('show');
+                modal.classList.add('show');
+            }, 10);
+        }, 10);
+    };
+
+    // Close milestone detail modal
+    window.closeMilestoneDetailModal = function() {
+        const modal = document.getElementById('milestoneDetailModal');
+        const overlay = document.getElementById('milestoneModalOverlay');
+
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => modal.remove(), 200);
+        }
+
+        if (overlay) {
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 200);
+        }
+    };
+
+    // Expose render function globally for external triggers
+    window.renderMilestoneCalendar = renderCalendar;
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeCalendar);
+    } else {
+        initializeCalendar();
+    }
+})();
+</script>
