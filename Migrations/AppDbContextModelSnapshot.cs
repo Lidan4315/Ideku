@@ -494,7 +494,7 @@ namespace Ideku.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("CostSaveActualValidated");
 
-                    b.Property<long>("CostSavePlan")
+                    b.Property<long?>("CostSavePlan")
                         .HasColumnType("bigint")
                         .HasColumnName("CostSavePlan");
 

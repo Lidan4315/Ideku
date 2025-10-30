@@ -26,9 +26,8 @@ namespace Ideku.Models.Entities
         [Column("MonthTo")]
         public DateTime MonthTo { get; set; }
 
-        [Required]
         [Column("CostSavePlan")]
-        public long CostSavePlan { get; set; } = 0;
+        public long? CostSavePlan { get; set; }
 
         [Column("CostSaveActual")]
         public long? CostSaveActual { get; set; }

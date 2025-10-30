@@ -72,7 +72,7 @@ namespace Ideku.Services.IdeaMonitoring
                         MonitoringName = $"Cost Saving - {currentMonth:MMM yyyy}",
                         MonthFrom = monthStart,
                         MonthTo = monthEnd,
-                        CostSavePlan = 0,
+                        CostSavePlan = null,
                         CostSaveActual = null,
                         CostSaveActualValidated = null,
                         CreatedAt = DateTime.Now
@@ -111,7 +111,7 @@ namespace Ideku.Services.IdeaMonitoring
 
         public async Task<(bool Success, string Message)> UpdateCostSavingsAsync(
             long monitoringId,
-            long costSavePlan,
+            long? costSavePlan,
             long? costSaveActual,
             string username)
         {
@@ -130,7 +130,7 @@ namespace Ideku.Services.IdeaMonitoring
                 }
 
                 // Validate amounts
-                if (costSavePlan < 0)
+                if (costSavePlan.HasValue && costSavePlan < 0)
                 {
                     return (false, "Cost Save Plan cannot be negative");
                 }
@@ -140,9 +140,18 @@ namespace Ideku.Services.IdeaMonitoring
                     return (false, "Cost Save Actual cannot be negative");
                 }
 
-                // Update values
-                monitoring.CostSavePlan = costSavePlan;
-                monitoring.CostSaveActual = costSaveActual;
+                // Update values - only update fields that are provided
+                // If the parameter has a value (including 0), update it
+                // If the parameter is null, keep the existing database value unchanged
+                if (costSavePlan.HasValue)
+                {
+                    monitoring.CostSavePlan = costSavePlan;
+                }
+
+                if (costSaveActual.HasValue)
+                {
+                    monitoring.CostSaveActual = costSaveActual;
+                }
 
                 await _monitoringRepository.UpdateAsync(monitoring);
 
@@ -320,7 +329,7 @@ namespace Ideku.Services.IdeaMonitoring
                         MonitoringName = $"Cost Saving - {currentMonth:MMM yyyy}",
                         MonthFrom = monthStart,
                         MonthTo = monthEnd,
-                        CostSavePlan = 0,
+                        CostSavePlan = null,
                         CostSaveActual = null,
                         CostSaveActualValidated = null,
                         CreatedAt = DateTime.Now

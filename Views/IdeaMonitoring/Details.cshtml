@@ -167,11 +167,11 @@
         }
 
         .value-actual {
-            color: #198754;
+            color: #0dcaf0;
         }
 
         .value-validated {
-            color: #0dcaf0;
+            color: #198754;
         }
 
         /* Inline input styling */
@@ -202,11 +202,11 @@
         }
 
         .value-input.actual {
-            border-color: #198754;
+            border-color: #0dcaf0;
         }
 
         .value-input.validated {
-            border-color: #0dcaf0;
+            border-color: #198754;
         }
 
         .edit-mode {
@@ -325,7 +325,7 @@
                             <div class="month-value">
                                 <!-- View Mode -->
                                 <div class="view-mode">
-                                    <span class="value-display value-plan">USD @monitoring.CostSavePlan.ToString("N0")</span>
+                                    <span class="value-display value-plan">USD @(monitoring.CostSavePlan?.ToString("N0") ?? "0")</span>
                                 </div>
                                 <!-- Edit Mode -->
                                 @if (Model.CanEditCostSavings)
@@ -335,8 +335,8 @@
                                                class="value-input plan"
                                                data-monitoring-id="@monitoring.Id"
                                                data-field="plan"
-                                               data-original="@monitoring.CostSavePlan"
-                                               value="@monitoring.CostSavePlan"
+                                               data-original="@(monitoring.CostSavePlan ?? 0)"
+                                               value="@(monitoring.CostSavePlan ?? 0)"
                                                min="0"
                                                placeholder="0" />
                                     </div>
@@ -347,7 +347,7 @@
                             <div class="month-value">
                                 <!-- View Mode -->
                                 <div class="view-mode">
-                                    <span class="value-display value-actual">@(monitoring.CostSaveActual.HasValue ? "USD " + monitoring.CostSaveActual.Value.ToString("N0") : "-")</span>
+                                    <span class="value-display value-actual">@(monitoring.CostSaveActual.HasValue ? "USD " + monitoring.CostSaveActual.Value.ToString("N0") : "USD 0")</span>
                                 </div>
                                 <!-- Edit Mode -->
                                 @if (Model.CanEditCostSavings)
@@ -369,7 +369,7 @@
                             <div class="month-value">
                                 <!-- View Mode -->
                                 <div class="view-mode">
-                                    <span class="value-display value-validated">@(monitoring.CostSaveActualValidated.HasValue ? "USD " + monitoring.CostSaveActualValidated.Value.ToString("N0") : "-")</span>
+                                    <span class="value-display value-validated">@(monitoring.CostSaveActualValidated.HasValue ? "USD " + monitoring.CostSaveActualValidated.Value.ToString("N0") : "Not Validated Yet")</span>
                                 </div>
                                 <!-- Edit Mode -->
                                 @if (Model.CanValidateCostSavings)
@@ -392,7 +392,7 @@
 
                 <div class="total-column">
                     <div class="total-value value-plan">
-                        USD @orderedMonitorings.Sum(m => m.CostSavePlan).ToString("N0")
+                        USD @orderedMonitorings.Sum(m => m.CostSavePlan ?? 0).ToString("N0")
                     </div>
                     <div class="total-value value-actual">
                         USD @orderedMonitorings.Sum(m => m.CostSaveActual ?? 0).ToString("N0")
@@ -623,14 +623,20 @@ $(document).ready(function() {
         const updates = [];
         let hasError = false;
 
-        // Collect all input values
+        // Collect all input values - only if changed from original
         $('.value-input').each(function() {
             const input = $(this);
             const monitoringId = input.data('monitoring-id');
             const field = input.data('field');
-            const value = parseInt(input.val()) || 0;
+            const originalValue = parseInt(input.data('original'));
+            const currentValue = parseInt(input.val()) || 0;
 
-            if (value < 0) {
+            // Skip if value hasn't changed
+            if (currentValue === originalValue) {
+                return; // continue to next iteration
+            }
+
+            if (currentValue < 0) {
                 hasError = true;
                 alert('Values cannot be negative');
                 return false;
@@ -645,11 +651,11 @@ $(document).ready(function() {
 
             // Add field value
             if (field === 'plan') {
-                update.costSavePlan = value;
+                update.costSavePlan = currentValue;
             } else if (field === 'actual') {
-                update.costSaveActual = value;
+                update.costSaveActual = currentValue;
             } else if (field === 'validated') {
-                update.costSaveActualValidated = value;
+                update.costSaveActualValidated = currentValue;
             }
         });
 
@@ -670,8 +676,8 @@ $(document).ready(function() {
                     type: 'POST',
                     data: {
                         MonitoringId: update.monitoringId,
-                        CostSavePlan: update.costSavePlan || 0,
-                        CostSaveActual: update.costSaveActual || null,
+                        CostSavePlan: update.costSavePlan !== undefined ? update.costSavePlan : null,
+                        CostSaveActual: update.costSaveActual !== undefined ? update.costSaveActual : null,
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
                     success: function(response) {
