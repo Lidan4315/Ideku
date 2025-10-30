@@ -7,10 +7,9 @@ namespace Ideku.ViewModels.IdeaMonitoring
         [Required]
         public long MonitoringId { get; set; }
 
-        [Required(ErrorMessage = "Cost Save Plan is required")]
         [Range(0, long.MaxValue, ErrorMessage = "Cost Save Plan must be non-negative")]
         [Display(Name = "Cost Save Plan (USD)")]
-        public long CostSavePlan { get; set; }
+        public long? CostSavePlan { get; set; }
 
         [Range(0, long.MaxValue, ErrorMessage = "Cost Save Actual must be non-negative")]
         [Display(Name = "Cost Save Actual (USD)")]

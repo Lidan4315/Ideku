@@ -407,7 +407,7 @@ namespace Ideku.Migrations
                     MonitoringName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     MonthFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
                     MonthTo = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CostSavePlan = table.Column<long>(type: "bigint", nullable: false),
+                    CostSavePlan = table.Column<long>(type: "bigint", nullable: true),
                     CostSaveActual = table.Column<long>(type: "bigint", nullable: true),
                     CostSaveActualValidated = table.Column<long>(type: "bigint", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),

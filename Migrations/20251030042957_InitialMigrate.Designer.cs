@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251026145938_InitialMigrate")]
+    [Migration("20251030042957_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -497,7 +497,7 @@ namespace Ideku.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("CostSaveActualValidated");
 
-                    b.Property<long>("CostSavePlan")
+                    b.Property<long?>("CostSavePlan")
                         .HasColumnType("bigint")
                         .HasColumnName("CostSavePlan");
 

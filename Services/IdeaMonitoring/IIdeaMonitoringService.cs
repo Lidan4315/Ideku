@@ -22,7 +22,7 @@ namespace Ideku.Services.IdeaMonitoring
         /// <summary>
         /// Update CostSavePlan and CostSaveActual (for Leader/Member/Workstream Leader)
         /// </summary>
-        Task<(bool Success, string Message)> UpdateCostSavingsAsync(long monitoringId, long costSavePlan, long? costSaveActual, string username);
+        Task<(bool Success, string Message)> UpdateCostSavingsAsync(long monitoringId, long? costSavePlan, long? costSaveActual, string username);
 
         /// <summary>
         /// Update CostSaveActualValidated (for SCFO only)
