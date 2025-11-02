@@ -120,6 +120,7 @@
                                     <input type="hidden" name="initiatorBadgeNumber" id="exportInitiatorBadgeNumber" />
                                     <input type="hidden" name="ideaId" id="exportIdeaId" />
                                     <input type="hidden" name="initiatorDivision" id="exportInitiatorDivision" />
+                                    <input type="hidden" name="selectedStatus" id="exportStatus" />
                                 </form>
                             </div>
                         </div>
@@ -239,6 +240,21 @@
                                            class="form-control form-control-sm"
                                            id="filterIdeaId"
                                            placeholder="Search by idea id...">
+                                </div>
+
+                                <!-- Status Filter -->
+                                <div class="mb-3">
+                                    <label class="form-label small mb-1">Status</label>
+                                    <select id="filterStatus" class="form-select form-select-sm">
+                                        <option value="">All Statuses</option>
+                                        @if (ViewBag.AvailableStatuses != null)
+                                        {
+                                            @foreach (var status in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.AvailableStatuses)
+                                            {
+                                                <option value="@status.Value">@status.Text</option>
+                                            }
+                                        }
+                                    </select>
                                 </div>
                             </div>
                         </div>

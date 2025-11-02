@@ -385,7 +385,7 @@ namespace Ideku.Services.Idea
 
         #region Dashboard
 
-        public async Task<DashboardData> GetDashboardDataAsync(string username, DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null)
+        public async Task<DashboardData> GetDashboardDataAsync(string username, DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -449,6 +449,12 @@ namespace Ideku.Services.Idea
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
             }
 
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
             var activeIdeas = await query.ToListAsync();
 
             var actingStats = await _userManagementService.GetActingStatisticsAsync();
@@ -466,7 +472,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetIdeasByStatusChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null)
+        public async Task<object> GetIdeasByStatusChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -527,6 +533,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var activeIdeas = await query.ToListAsync();
@@ -544,7 +556,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetIdeasByDivisionChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null)
+        public async Task<object> GetIdeasByDivisionChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -605,6 +617,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var activeIdeas = await query.ToListAsync();
@@ -624,7 +642,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetIdeasByDepartmentChartAsync(string divisionId, DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null)
+        public async Task<object> GetIdeasByDepartmentChartAsync(string divisionId, DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -685,6 +703,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var activeIdeas = await query.ToListAsync();
@@ -708,7 +732,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetIdeasByAllDepartmentsChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null)
+        public async Task<object> GetIdeasByAllDepartmentsChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -769,6 +793,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var activeIdeas = await query.ToListAsync();
@@ -787,7 +817,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetInitiativeByStageAndDivisionChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null)
+        public async Task<object> GetInitiativeByStageAndDivisionChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -848,6 +878,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var allIdeas = await query.ToListAsync();
@@ -907,7 +943,8 @@ namespace Ideku.Services.Idea
             string? initiatorName = null,
             string? initiatorBadgeNumber = null,
             string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
         {
             var workstreamLeaders = await _userRepository.GetAllUsersWithDetailsAsync();
             workstreamLeaders = workstreamLeaders
@@ -974,6 +1011,12 @@ namespace Ideku.Services.Idea
                     query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
                 }
 
+                // Apply Status filter
+                if (!string.IsNullOrWhiteSpace(selectedStatus))
+                {
+                    query = query.Where(i => i.CurrentStatus == selectedStatus);
+                }
+
                 var ideasByStage = await query
                     .GroupBy(i => i.CurrentStage)
                     .Select(g => new { Stage = g.Key, Count = g.Count() })
@@ -1008,7 +1051,8 @@ namespace Ideku.Services.Idea
             string? initiatorName = null,
             string? initiatorBadgeNumber = null,
             string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
         {
             var query = _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted);
@@ -1065,6 +1109,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var ideas = await query
@@ -1102,7 +1152,8 @@ namespace Ideku.Services.Idea
             string? initiatorName = null,
             string? initiatorBadgeNumber = null,
             string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
         {
             var query = _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted);
@@ -1159,6 +1210,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var orderedQuery = query
@@ -1193,7 +1250,7 @@ namespace Ideku.Services.Idea
                 .Select(i => i.MaxStage)
                 .ToListAsync();
 
-            // If no ideas exist yet, return empty list (dropdown will be empty)gse
+            // If no ideas exist yet, return empty list (dropdown will be empty)gsese
             if (!maxStageQuery.Any())
             {
                 return new List<int>();
@@ -1208,6 +1265,19 @@ namespace Ideku.Services.Idea
             return stages;
         }
 
+        public async Task<List<string>> GetAvailableStatusesAsync()
+        {
+            // Get all distinct CurrentStatus values from ideas that are not deleted
+            var statuses = await _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted && !string.IsNullOrWhiteSpace(i.CurrentStatus))
+                .Select(i => i.CurrentStatus)
+                .Distinct()
+                .OrderBy(s => s)
+                .ToListAsync();
+
+            return statuses;
+        }
+
         public async Task<List<TeamRoleItemDto>> GetTeamRoleListAsync(
             DateTime? startDate = null,
             DateTime? endDate = null,
@@ -1217,7 +1287,8 @@ namespace Ideku.Services.Idea
             string? initiatorName = null,
             string? initiatorBadgeNumber = null,
             string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
         {
             var query = _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted);
@@ -1278,6 +1349,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             // Join with IdeaImplementators and get team role data
@@ -1312,7 +1389,8 @@ namespace Ideku.Services.Idea
             string? initiatorName = null,
             string? initiatorBadgeNumber = null,
             string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
         {
             var query = _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted);
@@ -1375,6 +1453,12 @@ namespace Ideku.Services.Idea
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
             }
 
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
             // Join with IdeaImplementators and get team role data with pagination
             var orderedQuery = query
                 .SelectMany(i => i.IdeaImplementators, (idea, implementator) => new
@@ -1401,7 +1485,7 @@ namespace Ideku.Services.Idea
             string? selectedDivision = null, int? selectedStage = null,
             string? savingCostRange = null, string? initiatorName = null,
             string? initiatorBadgeNumber = null, string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null, string? selectedStatus = null)
         {
             var query = _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted);
@@ -1465,6 +1549,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             // Join with WorkflowHistory to get approval history
@@ -1502,7 +1592,7 @@ namespace Ideku.Services.Idea
             string? selectedDivision = null, int? selectedStage = null,
             string? savingCostRange = null, string? initiatorName = null,
             string? initiatorBadgeNumber = null, string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null, string? selectedStatus = null)
         {
             var query = _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted);
@@ -1566,6 +1656,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             // Join with WorkflowHistory to get approval history with pagination
@@ -1607,7 +1703,8 @@ namespace Ideku.Services.Idea
             string? initiatorName = null,
             string? initiatorBadgeNumber = null,
             string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
         {
             var query = _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted);
@@ -1668,6 +1765,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var costSavingData = await query
@@ -1697,7 +1800,8 @@ namespace Ideku.Services.Idea
             string? initiatorName = null,
             string? initiatorBadgeNumber = null,
             string? ideaId = null,
-            string? initiatorDivision = null)
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
         {
             var query = _ideaRepository.GetQueryableWithIncludes()
                 .Where(i => !i.IsDeleted);
@@ -1758,6 +1862,12 @@ namespace Ideku.Services.Idea
             if (!string.IsNullOrWhiteSpace(initiatorDivision))
             {
                 query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var orderedQuery = query

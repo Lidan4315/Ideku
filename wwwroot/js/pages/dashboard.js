@@ -799,6 +799,9 @@ const DashboardCharts = {
         if (DashboardFilter.currentInitiatorDivision) {
             params.set('initiatorDivision', DashboardFilter.currentInitiatorDivision);
         }
+        if (DashboardFilter.currentStatus) {
+            params.set('selectedStatus', DashboardFilter.currentStatus);
+        }
 
         return params;
     },
@@ -2016,6 +2019,7 @@ const DateFilter = {
         const stageInput = document.getElementById('exportStage');
         const savingCostInput = document.getElementById('exportSavingCost');
         const initiatorDivisionInput = document.getElementById('exportInitiatorDivision');
+        const statusInput = document.getElementById('exportStatus');
         const initiatorNameInput = document.getElementById('exportInitiatorName');
         const initiatorBadgeNumberInput = document.getElementById('exportInitiatorBadgeNumber');
         const ideaIdInput = document.getElementById('exportIdeaId');
@@ -2060,11 +2064,17 @@ const DateFilter = {
             savingCostInput.value = '';
         }
 
-        // Set 4 advanced filter values
+        // Set 5 advanced filter values (added Status)
         if (DashboardFilter.currentInitiatorDivision) {
             initiatorDivisionInput.value = DashboardFilter.currentInitiatorDivision;
         } else {
             initiatorDivisionInput.value = '';
+        }
+
+        if (DashboardFilter.currentStatus) {
+            statusInput.value = DashboardFilter.currentStatus;
+        } else {
+            statusInput.value = '';
         }
 
         if (DashboardFilter.currentInitiatorName) {
@@ -2295,6 +2305,7 @@ const DashboardFilter = {
         const stageSelect = document.getElementById('filterStage');
         const savingCostSelect = document.getElementById('filterSavingCost');
         const initiatorDivisionSelect = document.getElementById('filterInitiatorDivision');
+        const statusSelect = document.getElementById('filterStatus');
         const initiatorNameInput = document.getElementById('filterInitiatorName');
         const initiatorBadgeNumberInput = document.getElementById('filterInitiatorBadgeNumber');
         const ideaIdInput = document.getElementById('filterIdeaId');
@@ -2314,6 +2325,10 @@ const DashboardFilter = {
 
         if (initiatorDivisionSelect) {
             initiatorDivisionSelect.addEventListener('change', () => this.applyFilters());
+        }
+
+        if (statusSelect) {
+            statusSelect.addEventListener('change', () => this.applyFilters());
         }
 
         // Auto-apply for text inputs with debounce (500ms)
@@ -2354,6 +2369,7 @@ const DashboardFilter = {
         const stageSelect = document.getElementById('filterStage');
         const savingCostSelect = document.getElementById('filterSavingCost');
         const initiatorDivisionSelect = document.getElementById('filterInitiatorDivision');
+        const statusSelect = document.getElementById('filterStatus');
         const initiatorNameInput = document.getElementById('filterInitiatorName');
         const initiatorBadgeNumberInput = document.getElementById('filterInitiatorBadgeNumber');
         const ideaIdInput = document.getElementById('filterIdeaId');
@@ -2392,6 +2408,15 @@ const DashboardFilter = {
             this.currentInitiatorDivision = urlInitiatorDivision;
         } else {
             this.currentInitiatorDivision = initiatorDivisionSelect?.value || null;
+        }
+
+        // Load Status filter from URL
+        const urlStatus = urlParams.get('selectedStatus');
+        if (urlStatus && statusSelect) {
+            statusSelect.value = urlStatus;
+            this.currentStatus = urlStatus;
+        } else {
+            this.currentStatus = statusSelect?.value || null;
         }
 
         // Load Initiator Name filter from URL
@@ -2442,13 +2467,15 @@ const DashboardFilter = {
         this.currentStage = stageSelect?.value || null;
         this.currentSavingCost = savingCostSelect?.value || null;
 
-        // Get 4 advanced filter values
+        // Get 5 advanced filter values (added Status)
         const initiatorDivisionSelect = document.getElementById('filterInitiatorDivision');
+        const statusSelect = document.getElementById('filterStatus');
         const initiatorNameInput = document.getElementById('filterInitiatorName');
         const initiatorBadgeNumberInput = document.getElementById('filterInitiatorBadgeNumber');
         const ideaIdInput = document.getElementById('filterIdeaId');
 
         this.currentInitiatorDivision = initiatorDivisionSelect?.value || null;
+        this.currentStatus = statusSelect?.value || null;
         this.currentInitiatorName = initiatorNameInput?.value || null;
         this.currentInitiatorBadgeNumber = initiatorBadgeNumberInput?.value || null;
         this.currentIdeaId = ideaIdInput?.value || null;
@@ -2498,9 +2525,12 @@ const DashboardFilter = {
             params.append('savingCostRange', this.currentSavingCost);
         }
 
-        // 4 Advanced filters
+        // 5 Advanced filters (added Status)
         if (this.currentInitiatorDivision) {
             params.append('initiatorDivision', this.currentInitiatorDivision);
+        }
+        if (this.currentStatus) {
+            params.append('selectedStatus', this.currentStatus);
         }
         if (this.currentInitiatorName) {
             params.append('initiatorName', this.currentInitiatorName);
@@ -2572,6 +2602,7 @@ const DashboardFilter = {
         const stageSelect = document.getElementById('filterStage');
         const savingCostSelect = document.getElementById('filterSavingCost');
         const initiatorDivisionSelect = document.getElementById('filterInitiatorDivision');
+        const statusSelect = document.getElementById('filterStatus');
         const initiatorNameInput = document.getElementById('filterInitiatorName');
         const initiatorBadgeNumberInput = document.getElementById('filterInitiatorBadgeNumber');
         const ideaIdInput = document.getElementById('filterIdeaId');
@@ -2580,6 +2611,7 @@ const DashboardFilter = {
         if (stageSelect) stageSelect.value = '';
         if (savingCostSelect) savingCostSelect.value = '';
         if (initiatorDivisionSelect) initiatorDivisionSelect.value = '';
+        if (statusSelect) statusSelect.value = '';
         if (initiatorNameInput) initiatorNameInput.value = '';
         if (initiatorBadgeNumberInput) initiatorBadgeNumberInput.value = '';
         if (ideaIdInput) ideaIdInput.value = '';
@@ -2588,6 +2620,7 @@ const DashboardFilter = {
         this.currentStage = null;
         this.currentSavingCost = null;
         this.currentInitiatorDivision = null;
+        this.currentStatus = null;
         this.currentInitiatorName = null;
         this.currentInitiatorBadgeNumber = null;
         this.currentIdeaId = null;

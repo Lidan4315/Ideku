@@ -40,7 +40,8 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
@@ -55,7 +56,8 @@ public class HomeController : Controller
                 initiatorName,
                 initiatorBadgeNumber,
                 ideaId,
-                initiatorDivision);
+                initiatorDivision,
+                selectedStatus);
 
             // Get divisions for filter dropdown (reuse existing LookupService)
             ViewBag.Divisions = await _lookupService.GetDivisionsAsync();
@@ -66,6 +68,14 @@ public class HomeController : Controller
             {
                 Value = s.ToString(),
                 Text = $"Stage S{s}"
+            }).ToList();
+
+            // Get available statuses from database
+            var statuses = await _ideaService.GetAvailableStatusesAsync();
+            ViewBag.AvailableStatuses = statuses.Select(s => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = s,
+                Text = s
             }).ToList();
 
             // Store filter values for view
@@ -98,11 +108,12 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
-            var data = await _ideaService.GetIdeasByStatusChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+            var data = await _ideaService.GetIdeasByStatusChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             return Json(new { success = true, data });
         }
         catch (Exception ex)
@@ -122,11 +133,12 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
-            var data = await _ideaService.GetIdeasByDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+            var data = await _ideaService.GetIdeasByDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             return Json(new { success = true, data });
         }
         catch (Exception ex)
@@ -147,11 +159,12 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
-            var data = await _ideaService.GetIdeasByDepartmentChartAsync(divisionId, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+            var data = await _ideaService.GetIdeasByDepartmentChartAsync(divisionId, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             return Json(new { success = true, data });
         }
         catch (Exception ex)
@@ -171,11 +184,12 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
-            var data = await _ideaService.GetIdeasByAllDepartmentsChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+            var data = await _ideaService.GetIdeasByAllDepartmentsChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             return Json(new { success = true, data });
         }
         catch (Exception ex)
@@ -195,11 +209,12 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
-            var data = await _ideaService.GetInitiativeByStageAndDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+            var data = await _ideaService.GetInitiativeByStageAndDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             return Json(new { success = true, data });
         }
         catch (Exception ex)
@@ -219,11 +234,12 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
-            var data = await _ideaService.GetWLChartDataAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+            var data = await _ideaService.GetWLChartDataAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             return Json(new { success = true, data });
         }
         catch (Exception ex)
@@ -245,7 +261,8 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
@@ -254,7 +271,7 @@ public class HomeController : Controller
             page = Math.Max(1, page);
 
             var pagedResult = await _ideaService.GetIdeasListPagedAsync(
-                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
 
             return Json(new {
                 success = true,
@@ -290,7 +307,8 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
@@ -298,7 +316,7 @@ public class HomeController : Controller
             page = Math.Max(1, page);
 
             var pagedResult = await _ideaService.GetTeamRoleListPagedAsync(
-                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
 
             return Json(new
             {
@@ -332,7 +350,8 @@ public class HomeController : Controller
         string? savingCostRange = null, string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
@@ -340,7 +359,7 @@ public class HomeController : Controller
             page = Math.Max(1, page);
 
             var pagedResult = await _ideaService.GetApprovalHistoryListPagedAsync(
-                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
 
             return Json(new
             {
@@ -378,7 +397,8 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
@@ -386,7 +406,7 @@ public class HomeController : Controller
             page = Math.Max(1, page);
 
             var pagedResult = await _ideaService.GetIdeaCostSavingListPagedAsync(
-                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
 
             return Json(new
             {
@@ -422,12 +442,13 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         try
         {
             var username = User.Identity?.Name ?? "";
-            var dashboardData = await _ideaService.GetDashboardDataAsync(username, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+            var dashboardData = await _ideaService.GetDashboardDataAsync(username, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             return Json(new {
                 success = true,
                 totalIdeas = dashboardData.TotalIdeas,
@@ -453,7 +474,8 @@ public class HomeController : Controller
         string? initiatorName = null,
         string? initiatorBadgeNumber = null,
         string? ideaId = null,
-        string? initiatorDivision = null)
+        string? initiatorDivision = null,
+        string? selectedStatus = null)
     {
         var username = User.Identity?.Name ?? "";
         _logger.LogInformation("ExportDashboard started - User: {Username}, DateRange: {StartDate} to {EndDate}, Filters: Division={Division}, Stage={Stage}, SavingCost={SavingCost}",
@@ -462,16 +484,16 @@ public class HomeController : Controller
         try
         {
             // Fetch all required data with filters
-            var dashboardData = await _ideaService.GetDashboardDataAsync(username, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var statusData = await _ideaService.GetIdeasByStatusChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var divisionData = await _ideaService.GetIdeasByDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var departmentData = await _ideaService.GetIdeasByAllDepartmentsChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var stageData = await _ideaService.GetInitiativeByStageAndDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var wlData = await _ideaService.GetWLChartDataAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var ideasListData = await _ideaService.GetIdeasListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var teamRoleData = await _ideaService.GetTeamRoleListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var ideaCostSavingData = await _ideaService.GetIdeaCostSavingListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
-            var approvalHistoryData = await _ideaService.GetApprovalHistoryListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision);
+            var dashboardData = await _ideaService.GetDashboardDataAsync(username, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var statusData = await _ideaService.GetIdeasByStatusChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var divisionData = await _ideaService.GetIdeasByDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var departmentData = await _ideaService.GetIdeasByAllDepartmentsChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var stageData = await _ideaService.GetInitiativeByStageAndDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var wlData = await _ideaService.GetWLChartDataAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var ideasListData = await _ideaService.GetIdeasListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var teamRoleData = await _ideaService.GetTeamRoleListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var ideaCostSavingData = await _ideaService.GetIdeaCostSavingListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var approvalHistoryData = await _ideaService.GetApprovalHistoryListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
 
             // EPPlus 7: Set license context for non-commercial use
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
