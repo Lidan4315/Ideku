@@ -502,6 +502,41 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* Idea Cost Saving Table - Compact Styling */
+.idea-cost-saving-table {
+    font-size: 0.875rem;
+}
+
+.idea-cost-saving-table thead th {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.5rem;
+    white-space: nowrap;
+    background: #f8fafc;
+    border: none;
+    color: #374151;
+}
+
+.idea-cost-saving-table tbody td {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.idea-cost-saving-table tbody tr {
+    transition: all 0.2s ease-in-out;
+}
+
+.idea-cost-saving-table tbody tr:hover {
+    background-color: #f8fafc !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.idea-cost-saving-table tbody tr:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 /* Team Role Table Styling - Compact like Ideas List */
 .team-role-table {
     font-size: 0.875rem;
@@ -530,6 +565,16 @@
     background-color: #f8fafc !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transform: translateY(-1px);
+}
+
+/* Hide pagination info text for Team Role (compact space) */
+#teamRolePaginationContainer .pagination-info {
+    display: none;
+}
+
+/* Hide pagination info text for Idea Cost Saving (compact space) */
+#ideaCostSavingPaginationContainer .pagination-info {
+    display: none;
 }
 
 .team-role-table tbody tr:active {

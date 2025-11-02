@@ -3,6 +3,7 @@ const DashboardCharts = {
     charts: {},
     currentDivisionData: null,
     currentDivisionColor: null,
+    statusChartHoveredIndex: null,
     colors: {
         primary: '#3b82f6',
         success: '#10b981',
@@ -66,13 +67,16 @@ const DashboardCharts = {
             this.charts.status.destroy();
         }
 
+        // Colors array for stages (will cycle if more than 8 stages)
         const chartColors = [
-            this.colors.primary,
-            this.colors.warning,
-            this.colors.success,
-            this.colors.danger,
-            this.colors.info,
-            this.colors.purple
+            '#3b82f6',  // S0 - blue
+            '#f59e0b',  // S1 - orange
+            '#10b981',  // S2 - green
+            '#ef4444',  // S3 - red
+            '#06b6d4',  // S4 - cyan
+            '#8b5cf6',  // S5 - purple
+            '#ec4899',  // S6 - pink
+            '#14b8a6'   // S7 - teal
         ];
 
         const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
@@ -86,10 +90,11 @@ const DashboardCharts = {
                 const ctx = chart.ctx;
                 const meta = chart.getDatasetMeta(0);
 
-                // Dim non-hovered segments
-                if (hoveredIndex !== null) {
+                // Dim non-hovered segments (check both local hoveredIndex and global statusChartHoveredIndex)
+                const currentHoveredIndex = hoveredIndex !== null ? hoveredIndex : self.statusChartHoveredIndex;
+                if (currentHoveredIndex !== null) {
                     meta.data.forEach((segment, index) => {
-                        if (index !== hoveredIndex && !segment.hidden) {
+                        if (index !== currentHoveredIndex && !segment.hidden) {
                             const {x, y, startAngle, endAngle, innerRadius, outerRadius} = segment;
                             ctx.save();
                             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -164,7 +169,7 @@ const DashboardCharts = {
                 labels: data.labels,
                 datasets: [{
                     data: data.datasets[0].data,
-                    backgroundColor: chartColors.slice(0, data.labels.length),
+                    backgroundColor: data.labels.map((label, index) => chartColors[index % chartColors.length]),
                     borderWidth: 2,
                     borderColor: '#fff'
                 }]
@@ -243,7 +248,7 @@ const DashboardCharts = {
 
             const colorBox = document.createElement('div');
             colorBox.className = 'pie-chart-legend-color';
-            colorBox.style.backgroundColor = chartColors[index];
+            colorBox.style.backgroundColor = chartColors[index % chartColors.length];
 
             const textSpan = document.createElement('span');
             textSpan.className = 'pie-chart-legend-text';
@@ -268,12 +273,12 @@ const DashboardCharts = {
 
             // Add hover event to highlight segment
             legendItem.addEventListener('mouseenter', function() {
-                hoveredIndex = parseInt(this.dataset.index);
+                self.statusChartHoveredIndex = parseInt(this.dataset.index);
                 self.charts.status.draw();
             });
 
             legendItem.addEventListener('mouseleave', function() {
-                hoveredIndex = null;
+                self.statusChartHoveredIndex = null;
                 self.charts.status.draw();
             });
         });
@@ -571,7 +576,7 @@ const DashboardCharts = {
                             font: {
                                 size: 11
                             },
-                            color: '#3b82f6'
+                            color: '#000000'
                         }
                     }
                 }
@@ -798,18 +803,17 @@ const DashboardCharts = {
         return params;
     },
 
-    getVisiblePages(currentPage, totalPages) {
+    getVisiblePages(currentPage, totalPages, maxVisible = 5) {
         const pages = [];
-        const maxVisible = 5;
 
         if (totalPages <= maxVisible) {
-            // If total pages 5 or less, show all
+            // If total pages less than or equal to maxVisible, show all
             for (let i = 1; i <= totalPages; i++) {
                 pages.push(i);
             }
         } else {
-            // Always show max 5 pages around current page
-            let startPage = Math.max(1, currentPage - 2);
+            // Show max pages around current page
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
             let endPage = Math.min(totalPages, startPage + maxVisible - 1);
 
             // Adjust start if we're near the end
@@ -1300,7 +1304,7 @@ const DashboardCharts = {
             </li>
         `;
 
-        const visiblePages = this.getVisiblePages(paginationData.currentPage, paginationData.totalPages);
+        const visiblePages = this.getVisiblePages(paginationData.currentPage, paginationData.totalPages, 3);
         visiblePages.forEach(pageNum => {
             if (pageNum === '...') {
                 html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;

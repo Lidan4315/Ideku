@@ -1193,7 +1193,7 @@ namespace Ideku.Services.Idea
                 .Select(i => i.MaxStage)
                 .ToListAsync();
 
-            // If no ideas exist yet, return empty list (dropdown will be empty)
+            // If no ideas exist yet, return empty list (dropdown will be empty)gse
             if (!maxStageQuery.Any())
             {
                 return new List<int>();
