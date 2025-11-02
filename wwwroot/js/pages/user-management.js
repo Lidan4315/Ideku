@@ -994,7 +994,7 @@ function populateActingDepartmentDropdown(departments) {
 
     // Add departments
     departments.forEach(function(department) {
-        $departmentSelect.append(`<option value="${department.value}">${department.text}</option>`);
+        $departmentSelect.append(`<option value="${department.id}">${department.name}</option>`);
     });
 }
 
