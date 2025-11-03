@@ -4,6 +4,59 @@
    Date Filter Layout
    ======================================== */
 
+/* Date Shortcuts - Compact styling with RED theme */
+.date-shortcuts {
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Date inputs alignment - sejajar dengan top shortcut buttons */
+.date-inputs-calendar-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.date-inputs-row {
+    margin-bottom: 0.5rem !important;
+}
+
+#startDateDisplay,
+#endDateDisplay {
+    height: 38px;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: #f9fafb;
+}
+
+.date-shortcuts .list-group-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+    border-color: #dee2e6;
+}
+
+/* Hover state - RED */
+.date-shortcuts .list-group-item:hover {
+    border-left-color: #9c1c31;
+    background-color: #fef2f2;
+    color: #9c1c31;
+}
+
+/* Active/Selected state - RED background */
+.date-shortcuts .list-group-item:active,
+.date-shortcuts .list-group-item.active,
+.date-shortcuts .list-group-item.selected {
+    border-left-color: #9c1c31 !important;
+    background-color: #fee2e2 !important;
+    color: #7f1d1d !important;
+    font-weight: 600;
+}
+
 /* Compact list group for shortcuts */
 .list-group-sm .list-group-item {
     padding: 0.5rem 0.75rem;
@@ -14,10 +67,86 @@
    Date Filter Calendar Styling
    ======================================== */
 
-/* Calendar container - let Flatpickr use default sizing */
+/* Calendar container - Compact and inline with horizontal scroll when needed */
+.calendar-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* Custom scrollbar untuk calendar container */
+.calendar-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.calendar-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.calendar-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.calendar-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
 .calendar-container .flatpickr-calendar {
-    box-shadow: 0 0 0 1px #dee2e6 !important;
-    border-radius: 0.375rem !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 0.5rem !important;
+    border: 1px solid #e5e7eb !important;
+    width: 100% !important;
+    min-width: 280px !important;
+}
+
+.calendar-container .flatpickr-calendar.inline {
+    max-width: 100%;
+}
+
+/* Flatpickr month/year controls */
+.flatpickr-months {
+    padding: 0.5rem;
+}
+
+.flatpickr-current-month {
+    font-size: 1rem;
+    padding: 0.25rem 0;
+}
+
+/* Flatpickr days grid - Override default 307.875px */
+.calendar-container .flatpickr-days {
+    width: 100% !important;
+}
+
+/* Flatpickr weekday headers */
+.calendar-container .flatpickr-weekdays {
+    height: 3rem;
+}
+
+.calendar-container .flatpickr-weekday {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 3rem;
+}
+
+/* dayContainer adalah container sebenarnya yang hold semua hari - HARUS di-override! */
+.calendar-container .dayContainer {
+    width: 100% !important;
+    min-width: 280px !important;
+    max-width: 100% !important;
+}
+
+/* Setiap hari menggunakan 1/7 dari total width dengan minimum size */
+.calendar-container .flatpickr-day {
+    width: calc(100% / 7) !important;
+    min-width: 38px !important;
+    max-width: none !important;
+    height: 3.5rem;
+    line-height: 3.5rem;
+    flex-basis: calc(100% / 7) !important;
+    font-size: 1rem;
 }
 
 /* ========================================
@@ -31,16 +160,16 @@
     border-color: transparent !important;
 }
 
-/* Confirmed Range Selection - Solid Fill */
+/* Confirmed Range Selection - Solid Fill dengan tema MERAH */
 .flatpickr-day.startRange,
 .flatpickr-day.endRange {
-    background-color: #0d6efd !important;
-    border-color: #0d6efd !important;
+    background-color: #9c1c31 !important;
+    border-color: #9c1c31 !important;
     color: white !important;
 }
 
 .flatpickr-day.inRange {
-    background-color: #9ec5fe !important;
+    background-color: #fee2e2 !important;
     border-color: transparent !important;
     box-shadow: none !important;
     border-radius: 0 !important;
@@ -49,19 +178,19 @@
 /* Override .today styling when in range */
 .flatpickr-day.today.startRange,
 .flatpickr-day.today.endRange {
-    background-color: #0d6efd !important;
-    border-color: #0d6efd !important;
+    background-color: #9c1c31 !important;
+    border-color: #9c1c31 !important;
     color: white !important;
 }
 
 .flatpickr-day.today.inRange {
-    background-color: #9ec5fe !important;
+    background-color: #fee2e2 !important;
     border-color: transparent !important;
 }
 
 /* Single date selected (start and end same) */
 .flatpickr-day.startRange.endRange {
-    background-color: #0d6efd !important;
+    background-color: #9c1c31 !important;
     border-radius: 50% !important;
     color: white !important;
 }
@@ -69,26 +198,26 @@
 /* Range edges - rounded corners */
 .flatpickr-day.startRange:not(.endRange) {
     border-radius: 50% 0 0 50% !important;
-    background-color: #0d6efd !important;
+    background-color: #9c1c31 !important;
     color: white !important;
 }
 
 .flatpickr-day.endRange:not(.startRange) {
     border-radius: 0 50% 50% 0 !important;
-    background-color: #0d6efd !important;
+    background-color: #9c1c31 !important;
     color: white !important;
 }
 
-/* Preview Range Selection - Semi-transparent Background (Seamless) */
+/* Preview Range Selection - Semi-transparent Background dengan tema MERAH */
 .flatpickr-day.inRangePreview {
-    background-color: rgba(13, 110, 253, 0.15) !important;
+    background-color: rgba(156, 28, 49, 0.15) !important;
     border: none !important;
     color: inherit !important;
     border-radius: 0 !important;
 }
 
 .flatpickr-day.endRangePreview {
-    background-color: rgba(13, 110, 253, 0.15) !important;
+    background-color: rgba(156, 28, 49, 0.15) !important;
     border: none !important;
     border-radius: 0 50% 50% 0 !important;
     color: inherit !important;
@@ -97,90 +226,601 @@
 /* Override .today styling when in preview range */
 .flatpickr-day.today.inRangePreview,
 .flatpickr-day.today.endRangePreview {
-    background-color: rgba(13, 110, 253, 0.15) !important;
+    background-color: rgba(156, 28, 49, 0.15) !important;
     border: none !important;
 }
 
-/* Stat Cards */
+/* ========================================
+   Modern Stat Cards
+   ======================================== */
+
 .stat-card {
+    border: none;
+    border-radius: 12px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-card-modern {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.stat-card-modern .card-body {
+    padding: 1.25rem;
+}
+
+.stat-card-wide {
+    background: linear-gradient(90deg, #ffffff 0%, #f8f9fa 100%);
 }
 
 .stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.75rem;
+    font-size: 1.25rem;
     flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
-.stat-card h6 {
-    font-size: 0.8125rem;
+.stat-card:hover .stat-icon {
+    transform: scale(1.1);
+}
+
+.stat-label {
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
 }
 
-.stat-card h2 {
-    font-size: 2rem;
+.stat-value {
+    font-size: 1.75rem;
     font-weight: 700;
-    color: #1f2937;
+    color: #1e293b;
+    line-height: 1.2;
 }
 
-.stat-card small {
+.stat-trend {
+    font-size: 1.25rem;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover .stat-trend {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.stat-badge .badge {
     font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
 }
 
-/* Dashboard Filter Styling */
+/* ========================================
+   Dashboard Filter Styling
+   ======================================== */
+
+/* Filter Dropdowns */
 .form-select-sm {
     font-size: 0.875rem;
-    padding: 0.375rem 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
 }
 
+.form-select-sm:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Filter Text Inputs - Match dropdown size */
+.form-control-sm {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.form-control-sm:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Filter Card Header */
 .card-header h6 {
     font-weight: 600;
     color: #374151;
     margin: 0;
 }
 
+/* Filter Labels */
 .form-label.small {
     font-weight: 500;
     color: #6b7280;
     margin-bottom: 0.25rem;
 }
 
-/* Filter card styling */
+/* Section Headers within Filter Card */
+.fw-semibold.text-muted.small {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280 !important;
+}
+
+/* ========================================
+   Global Card Styling (All Dashboard Cards)
+   ======================================== */
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
 .card .card-header {
-    background-color: #f8fafc;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     border-bottom: 1px solid #e5e7eb;
     padding: 0.75rem 1rem;
 }
 
 .card .card-body {
-    padding: 1.25rem;
+    padding: 1rem;
 }
 
-/* Responsive */
+/* Pie Chart Wrapper - Container for chart only */
+.pie-chart-wrapper {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Pie Chart Legend - Horizontal Layout (Bottom) */
+.pie-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 0.5rem 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.pie-chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.pie-chart-legend-item:hover {
+    background-color: #f3f4f6;
+}
+
+.pie-chart-legend-item.hidden {
+    opacity: 0.5;
+}
+
+.pie-chart-legend-color {
+    width: 15px;
+    height: 15px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.pie-chart-legend-text {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+}
+
+/* Ideas Table Styling */
+.table-responsive-custom {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive-custom > .table > thead > tr > th,
+.table-responsive-custom > .table > tbody > tr > td {
+    white-space: nowrap;
+}
+
+.ideas-table {
+    font-size: 0.875rem;
+}
+
+.ideas-table thead th {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.5rem;
+    white-space: nowrap;
+    background: #f8fafc;
+    border: none;
+    color: #374151;
+}
+
+.ideas-table tbody td {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.ideas-table .status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Truncate long text only for specific columns */
+.ideas-table .truncate-text {
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Table Row Hover Effects */
+.ideas-table tbody tr {
+    transition: all 0.2s ease-in-out;
+}
+
+.ideas-table tbody tr:hover {
+    background-color: #f8fafc !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.ideas-table tbody tr:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Idea Cost Saving Table - Compact Styling */
+.idea-cost-saving-table {
+    font-size: 0.875rem;
+}
+
+.idea-cost-saving-table thead th {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.5rem;
+    white-space: nowrap;
+    background: #f8fafc;
+    border: none;
+    color: #374151;
+}
+
+.idea-cost-saving-table tbody td {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.idea-cost-saving-table tbody tr {
+    transition: all 0.2s ease-in-out;
+}
+
+.idea-cost-saving-table tbody tr:hover {
+    background-color: #f8fafc !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.idea-cost-saving-table tbody tr:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Team Role Table Styling - Compact like Ideas List */
+.team-role-table {
+    font-size: 0.875rem;
+}
+
+.team-role-table thead th {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.5rem;
+    white-space: nowrap;
+    background: #f8fafc;
+    border: none;
+    color: #374151;
+}
+
+.team-role-table tbody td {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.team-role-table tbody tr {
+    transition: all 0.2s ease-in-out;
+}
+
+.team-role-table tbody tr:hover {
+    background-color: #f8fafc !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+/* Hide pagination info text for Team Role (compact space) */
+#teamRolePaginationContainer .pagination-info {
+    display: none;
+}
+
+/* Hide pagination info text for Idea Cost Saving (compact space) */
+#ideaCostSavingPaginationContainer .pagination-info {
+    display: none;
+}
+
+.team-role-table tbody tr:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Approval History Table Styling - Compact like Ideas List and Team Role */
+.approval-history-table {
+    font-size: 0.875rem;
+}
+
+.approval-history-table thead th {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.5rem;
+    white-space: nowrap;
+    background: #f8fafc;
+    border: none;
+    color: #374151;
+}
+
+.approval-history-table tbody td {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.approval-history-table tbody tr {
+    transition: all 0.2s ease-in-out;
+}
+
+.approval-history-table tbody tr:hover {
+    background-color: #f8fafc !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.approval-history-table tbody tr:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   Pagination Styling
+   ======================================== */
+
+.pagination-container-single-row {
+    padding: 1rem 0;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-info {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-shrink: 0;
+}
+
+.page-size-selector {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+.page-size-selector .form-select {
+    min-width: 70px;
+}
+
+.pagination-navigation {
+    display: flex;
+    align-items: center;
+}
+
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 3px;
+    padding: 0.5rem 0.75rem;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    transition: all 0.15s ease-in-out;
+    background-color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.pagination .page-link:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+    color: #0d6efd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
+}
+
+.pagination .page-item.active .page-link,
+.pagination .page-link.current-page {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+    box-shadow: 0 3px 8px rgba(13, 110, 253, 0.4);
+    font-weight: 600;
+    transform: translateY(-1px);
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #adb5bd;
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.6;
+}
+
+.pagination .page-item.disabled .page-link:hover {
+    transform: none;
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    color: #adb5bd;
+    box-shadow: none;
+}
+
+/* Hide mobile page number on desktop */
+.mobile-page {
+    display: none;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 949.98px) {
+    /* Mobile Layout for Pagination */
+    .pagination-container-single-row {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+        padding: 0.75rem 0;
+    }
+
+    .pagination-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .pagination-info, .page-size-selector {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .pagination-info {
+        font-size: 0.85rem;
+    }
+
+    /* Mobile Pagination Buttons */
+    .pagination .page-link {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 2px;
+        font-weight: 500;
+    }
+
+    /* Hide desktop elements */
+    .first-last-btn {
+        display: none !important;
+    }
+
+    .desktop-page {
+        display: none !important;
+    }
+
+    /* Show mobile elements */
+    .mobile-page {
+        display: flex !important;
+    }
+
+    .page-size-selector select {
+        padding: 0.6rem 2.5rem 0.6rem 1rem;
+        font-size: 0.95rem;
+    }
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 991px) {
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.15rem;
+    }
+}
+
 @media (max-width: 768px) {
     .stat-card:hover {
         transform: none;
     }
 
     .stat-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 1.5rem;
+        width: 42px;
+        height: 42px;
+        font-size: 1.1rem;
     }
 
-    .stat-card h2 {
-        font-size: 1.5rem;
+    .stat-value {
+        font-size: 1.4rem;
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+    }
+
+    .stat-card-modern .card-body {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .stat-value {
+        font-size: 1.25rem;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
     }
 }

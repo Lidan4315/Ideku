@@ -3,6 +3,7 @@ const DashboardCharts = {
     charts: {},
     currentDivisionData: null,
     currentDivisionColor: null,
+    statusChartHoveredIndex: null,
     colors: {
         primary: '#3b82f6',
         success: '#10b981',
@@ -15,10 +16,23 @@ const DashboardCharts = {
     },
 
     init() {
+        // Register datalabels plugin globally but disable by default
+        if (typeof ChartDataLabels !== 'undefined') {
+            Chart.register(ChartDataLabels);
+            Chart.defaults.set('plugins.datalabels', {
+                display: false
+            });
+        }
+
         this.loadStatusChart();
         this.loadDivisionChart();
         this.loadAllDepartmentsChart();
         this.loadStageByDivisionChart();
+        this.loadWLChart();
+        this.loadIdeasList();
+        this.loadTeamRoleList();
+        this.loadIdeaCostSavingList();
+        this.loadApprovalHistoryList();
         this.initBackButton();
     },
 
@@ -53,13 +67,16 @@ const DashboardCharts = {
             this.charts.status.destroy();
         }
 
+        // Colors array for stages (will cycle if more than 8 stages)
         const chartColors = [
-            this.colors.primary,
-            this.colors.warning,
-            this.colors.success,
-            this.colors.danger,
-            this.colors.info,
-            this.colors.purple
+            '#3b82f6',  // S0 - blue
+            '#f59e0b',  // S1 - orange
+            '#10b981',  // S2 - green
+            '#ef4444',  // S3 - red
+            '#06b6d4',  // S4 - cyan
+            '#8b5cf6',  // S5 - purple
+            '#ec4899',  // S6 - pink
+            '#14b8a6'   // S7 - teal
         ];
 
         const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
@@ -73,10 +90,11 @@ const DashboardCharts = {
                 const ctx = chart.ctx;
                 const meta = chart.getDatasetMeta(0);
 
-                // Dim non-hovered segments
-                if (hoveredIndex !== null) {
+                // Dim non-hovered segments (check both local hoveredIndex and global statusChartHoveredIndex)
+                const currentHoveredIndex = hoveredIndex !== null ? hoveredIndex : self.statusChartHoveredIndex;
+                if (currentHoveredIndex !== null) {
                     meta.data.forEach((segment, index) => {
-                        if (index !== hoveredIndex && !segment.hidden) {
+                        if (index !== currentHoveredIndex && !segment.hidden) {
                             const {x, y, startAngle, endAngle, innerRadius, outerRadius} = segment;
                             ctx.save();
                             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -151,7 +169,7 @@ const DashboardCharts = {
                 labels: data.labels,
                 datasets: [{
                     data: data.datasets[0].data,
-                    backgroundColor: chartColors.slice(0, data.labels.length),
+                    backgroundColor: data.labels.map((label, index) => chartColors[index % chartColors.length]),
                     borderWidth: 2,
                     borderColor: '#fff'
                 }]
@@ -161,10 +179,10 @@ const DashboardCharts = {
                 maintainAspectRatio: false,
                 layout: {
                     padding: {
-                        top: 30,
-                        right: 80,
-                        bottom: 20,
-                        left: 80
+                        top: 40,
+                        right: 120,
+                        bottom: 30,
+                        left: 120
                     }
                 },
                 onHover: function(event, activeElements, chart) {
@@ -183,51 +201,7 @@ const DashboardCharts = {
                 plugins: {
                     pieHoverHighlight: {},
                     legend: {
-                        position: 'bottom',
-                        align: 'center',
-                        labels: {
-                            padding: 15,
-                            font: { size: 11 },
-                            usePointStyle: false,
-                            boxWidth: 15,
-                            boxHeight: 15,
-                            generateLabels: function(chart) {
-                                const data = chart.data;
-                                const meta = chart.getDatasetMeta(0);
-                                return data.labels.map((label, i) => {
-                                    const segment = meta.data[i];
-                                    const isHidden = segment && segment.hidden;
-                                    return {
-                                        text: label,
-                                        fillStyle: isHidden ? 'rgba(128, 128, 128, 0.5)' : chartColors[i],
-                                        strokeStyle: isHidden ? 'rgba(128, 128, 128, 0.5)' : chartColors[i],
-                                        lineWidth: 0,
-                                        hidden: false,
-                                        index: i,
-                                        fontColor: isHidden ? 'rgba(128, 128, 128, 0.5)' : '#666'
-                                    };
-                                });
-                            }
-                        },
-                        onClick: function(e, legendItem, legend) {
-                            const index = legendItem.index;
-                            const chart = legend.chart;
-                            const meta = chart.getDatasetMeta(0);
-
-                            // Toggle visibility (default Chart.js behavior)
-                            meta.data[index].hidden = !meta.data[index].hidden;
-                            chart.update();
-                        },
-                        onHover: function(event, legendItem, legend) {
-                            event.native.target.style.cursor = 'pointer';
-                            hoveredIndex = legendItem.index;
-                            legend.chart.draw();
-                        },
-                        onLeave: function(event, legendItem, legend) {
-                            event.native.target.style.cursor = 'default';
-                            hoveredIndex = null;
-                            legend.chart.draw();
-                        }
+                        display: false
                     },
                     tooltip: {
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -254,6 +228,59 @@ const DashboardCharts = {
             if (self.charts.status) {
                 self.charts.status.draw();
             }
+        });
+
+        // Generate custom HTML legend
+        this.generateStatusChartLegend(data, chartColors);
+    },
+
+    generateStatusChartLegend(data, chartColors) {
+        const legendContainer = document.getElementById('statusChartLegend');
+        if (!legendContainer) return;
+
+        const self = this;
+        legendContainer.innerHTML = '';
+
+        data.labels.forEach((label, index) => {
+            const legendItem = document.createElement('div');
+            legendItem.className = 'pie-chart-legend-item';
+            legendItem.dataset.index = index;
+
+            const colorBox = document.createElement('div');
+            colorBox.className = 'pie-chart-legend-color';
+            colorBox.style.backgroundColor = chartColors[index % chartColors.length];
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'pie-chart-legend-text';
+            textSpan.textContent = label;
+
+            legendItem.appendChild(colorBox);
+            legendItem.appendChild(textSpan);
+            legendContainer.appendChild(legendItem);
+
+            // Add click event to toggle segment visibility
+            legendItem.addEventListener('click', function() {
+                const chart = self.charts.status;
+                const meta = chart.getDatasetMeta(0);
+                const segmentIndex = parseInt(this.dataset.index);
+
+                meta.data[segmentIndex].hidden = !meta.data[segmentIndex].hidden;
+                chart.update();
+
+                // Toggle hidden class on legend item
+                this.classList.toggle('hidden');
+            });
+
+            // Add hover event to highlight segment
+            legendItem.addEventListener('mouseenter', function() {
+                self.statusChartHoveredIndex = parseInt(this.dataset.index);
+                self.charts.status.draw();
+            });
+
+            legendItem.addEventListener('mouseleave', function() {
+                self.statusChartHoveredIndex = null;
+                self.charts.status.draw();
+            });
         });
     },
 
@@ -329,13 +356,14 @@ const DashboardCharts = {
                     data: data.datasets[0].data,
                     backgroundColor: chartColors,
                     borderRadius: 6,
-                    barThickness: 40,
+                    categoryPercentage: 0.8,
+                    barPercentage: 0.7,
                     originalLabels: originalLabels
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 onHover: function(evt, activeElements, chart) {
                     if (isDivisionLevel) {
                         evt.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
@@ -507,7 +535,7 @@ const DashboardCharts = {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -548,7 +576,7 @@ const DashboardCharts = {
                             font: {
                                 size: 11
                             },
-                            color: '#3b82f6'
+                            color: '#000000'
                         }
                     }
                 }
@@ -613,7 +641,7 @@ const DashboardCharts = {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 onHover: function(event, activeElements, chart) {
                     event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
 
@@ -723,6 +751,985 @@ const DashboardCharts = {
         });
     },
 
+    getFilterParams() {
+        const params = new URLSearchParams();
+
+        // Helper function to format date as yyyy-MM-dd
+        const formatDateForAPI = (date) => {
+            if (!date) return null;
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        // Get date filters from DateFilter object
+        if (DateFilter.currentStartDate) {
+            const formattedStart = formatDateForAPI(DateFilter.currentStartDate);
+            if (formattedStart) {
+                params.set('startDate', formattedStart);
+            }
+        }
+        if (DateFilter.currentEndDate) {
+            const formattedEnd = formatDateForAPI(DateFilter.currentEndDate);
+            if (formattedEnd) {
+                params.set('endDate', formattedEnd);
+            }
+        }
+
+        // Get other filters from DashboardFilter object
+        if (DashboardFilter.currentDivision) {
+            params.set('selectedDivision', DashboardFilter.currentDivision);
+        }
+        if (DashboardFilter.currentStage) {
+            params.set('selectedStage', DashboardFilter.currentStage);
+        }
+        if (DashboardFilter.currentSavingCost) {
+            params.set('savingCostRange', DashboardFilter.currentSavingCost);
+        }
+        if (DashboardFilter.currentInitiatorName) {
+            params.set('initiatorName', DashboardFilter.currentInitiatorName);
+        }
+        if (DashboardFilter.currentInitiatorBadgeNumber) {
+            params.set('initiatorBadgeNumber', DashboardFilter.currentInitiatorBadgeNumber);
+        }
+        if (DashboardFilter.currentIdeaId) {
+            params.set('ideaId', DashboardFilter.currentIdeaId);
+        }
+        if (DashboardFilter.currentInitiatorDivision) {
+            params.set('initiatorDivision', DashboardFilter.currentInitiatorDivision);
+        }
+        if (DashboardFilter.currentStatus) {
+            params.set('selectedStatus', DashboardFilter.currentStatus);
+        }
+
+        return params;
+    },
+
+    getVisiblePages(currentPage, totalPages, maxVisible = 5) {
+        const pages = [];
+
+        if (totalPages <= maxVisible) {
+            // If total pages less than or equal to maxVisible, show all
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Show max pages around current page
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+            // Adjust start if we're near the end
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                pages.push(i);
+            }
+        }
+
+        return pages;
+    },
+
+    // WL Chart Functions
+    loadWLChart(queryString = '') {
+        const url = `/Home/GetWLChart${queryString ? '?' + queryString : ''}`;
+        fetch(url)
+            .then(res => res.json())
+            .then(response => {
+                if (response.success) {
+                    this.renderWLChart(response.data);
+                }
+            })
+            .catch(err => console.error('Error loading WL chart:', err));
+    },
+
+    renderWLChart(data) {
+        const ctx = document.getElementById('wlChart');
+        if (!ctx) return;
+
+        if (this.charts.wl) {
+            this.charts.wl.destroy();
+        }
+
+        // Prepare labels (WL names)
+        const labels = data.map(wl => wl.userName || wl.employeeId);
+
+        // Colors array for stages (will cycle if more than 8 stages)
+        const stageColors = [
+            '#3b82f6',  // S0 - blue
+            '#f59e0b',  // S1 - orange
+            '#10b981',  // S2 - green
+            '#ef4444',  // S3 - red
+            '#06b6d4',  // S4 - cyan
+            '#8b5cf6',  // S5 - purple
+            '#ec4899',  // S6 - pink
+            '#14b8a6'   // S7 - teal (bukan gray)
+        ];
+
+        // Dynamically extract all unique stages from data
+        const allStages = new Set();
+        data.forEach(wl => {
+            Object.keys(wl.ideasByStage).forEach(stageKey => {
+                allStages.add(stageKey);
+            });
+        });
+
+        // Sort stages numerically (S0, S1, S2, ... S8, S9, ...)
+        const sortedStages = Array.from(allStages).sort((a, b) => {
+            const numA = parseInt(a.replace('S', ''));
+            const numB = parseInt(b.replace('S', ''));
+            return numA - numB;
+        });
+
+        // Create datasets for each stage found in data
+        const datasets = sortedStages.map((stageKey) => {
+            const stageNum = parseInt(stageKey.replace('S', ''));
+            return {
+                label: stageKey,
+                data: data.map(wl => wl.ideasByStage[stageKey] || 0),
+                backgroundColor: stageColors[stageNum % stageColors.length],
+                borderWidth: 0
+            };
+        });
+
+        const self = this;
+        let hoveredDatasetIndex = null;
+
+        // Custom plugin to dim non-hovered datasets
+        const hoverPlugin = {
+            id: 'wlHoverHighlight',
+            afterDatasetsDraw(chart, args, options) {
+                if (hoveredDatasetIndex !== null) {
+                    const ctx = chart.ctx;
+                    chart.data.datasets.forEach((dataset, index) => {
+                        if (index !== hoveredDatasetIndex) {
+                            const meta = chart.getDatasetMeta(index);
+                            if (!meta.hidden) {
+                                meta.data.forEach(bar => {
+                                    // For horizontal bar: x is end point, base is start point
+                                    const {x, y, base, height} = bar;
+                                    ctx.save();
+                                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                                    // Draw from base (left) to x (right), vertically centered
+                                    ctx.fillRect(base, y - height / 2, x - base, height);
+                                    ctx.restore();
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+        };
+
+        this.charts.wl = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            plugins: [hoverPlugin],
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                onHover: function(event, activeElements, chart) {
+                    event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+
+                    let newHoveredIndex = null;
+                    if (activeElements.length > 0) {
+                        newHoveredIndex = activeElements[0].datasetIndex;
+                    }
+
+                    if (newHoveredIndex !== hoveredDatasetIndex) {
+                        hoveredDatasetIndex = newHoveredIndex;
+                        chart.draw();
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Ideas'
+                        }
+                    },
+                    y: {
+                        stacked: true
+                    }
+                },
+                plugins: {
+                    wlHoverHighlight: {},
+                    datalabels: {
+                        display: true,
+                        color: function(context) {
+                            // Auto calculate text color based on background brightness
+                            const bgColor = context.dataset.backgroundColor;
+                            const rgb = parseInt(bgColor.substring(1), 16);
+                            const r = (rgb >> 16) & 0xff;
+                            const g = (rgb >> 8) & 0xff;
+                            const b = (rgb >> 0) & 0xff;
+                            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                            return brightness > 155 ? '#000' : '#fff';
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 11
+                        },
+                        formatter: function(value, context) {
+                            return value > 0 ? value : '';
+                        },
+                        anchor: 'center',
+                        align: 'center'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 8,
+                            font: { size: 11 },
+                            generateLabels: function(chart) {
+                                const datasets = chart.data.datasets;
+                                return datasets.map((dataset, i) => {
+                                    const meta = chart.getDatasetMeta(i);
+                                    const isHidden = meta.hidden;
+                                    return {
+                                        text: dataset.label,
+                                        fillStyle: isHidden ? 'rgba(128, 128, 128, 0.5)' : dataset.backgroundColor,
+                                        strokeStyle: isHidden ? 'rgba(128, 128, 128, 0.5)' : dataset.backgroundColor,
+                                        lineWidth: 0,
+                                        hidden: false,
+                                        index: i,
+                                        datasetIndex: i,
+                                        fontColor: isHidden ? 'rgba(128, 128, 128, 0.5)' : '#666'
+                                    };
+                                });
+                            }
+                        },
+                        onClick: function(e, legendItem, legend) {
+                            const index = legendItem.datasetIndex;
+                            const chart = legend.chart;
+                            const meta = chart.getDatasetMeta(index);
+                            meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                            chart.update();
+                        },
+                        onHover: function(event, legendItem, legend) {
+                            event.native.target.style.cursor = 'pointer';
+                            hoveredDatasetIndex = legendItem.datasetIndex;
+                            legend.chart.draw();
+                        },
+                        onLeave: function(event, legendItem, legend) {
+                            event.native.target.style.cursor = 'default';
+                            hoveredDatasetIndex = null;
+                            legend.chart.draw();
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        cornerRadius: 6,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.x;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    // Ideas List Functions
+    loadIdeasList(page = 1, pageSize = 10) {
+        const params = this.getFilterParams();
+        params.set('page', page);
+        params.set('pageSize', pageSize);
+
+        const queryString = params.toString();
+        const url = `/Home/GetIdeasList${queryString ? '?' + queryString : ''}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.renderIdeasList(data.data);
+                    if (data.pagination) {
+                        this.renderIdeasPagination(data.pagination);
+                    }
+                } else {
+                    console.error('Failed to load ideas list:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading ideas list:', error);
+            });
+    },
+
+    renderIdeasList(data) {
+        const tbody = document.getElementById('ideasTableBody');
+        if (!tbody) return;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center text-muted">
+                        <i class="bi bi-inbox me-2"></i>No ideas found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td>${item.ideaNumber}</td>
+                <td><span class="badge ${this.getStatusBadgeClass(item.ideaStatus)}">${item.ideaStatus}</span></td>
+                <td>${item.initiatorBN}</td>
+                <td>${item.initiatorName}</td>
+                <td>${item.initiatorDivision}</td>
+                <td>${item.implementOnDivision}</td>
+                <td>${item.implementOnDepartment}</td>
+                <td>${item.ideaTitle}</td>
+                <td><span class="badge bg-info">${item.currentStage}</span></td>
+                <td>${this.formatDateTime(item.submissionDate)}</td>
+                <td>${item.lastUpdatedDays}</td>
+                <td>
+                    <span class="badge ${this.getIdeaFlowBadgeClass(item.ideaFlowValidated)}">
+                        ${this.getIdeaFlowDisplayText(item.ideaFlowValidated)}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    renderIdeasPagination(paginationData) {
+        const container = document.getElementById('ideasPaginationContainer');
+        if (!container) return;
+
+        if (!paginationData || paginationData.totalPages <= 1) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+
+        const infoSpan = container.querySelector('.pagination-info span');
+        if (infoSpan) {
+            infoSpan.textContent = `Showing ${paginationData.firstItemIndex}-${paginationData.lastItemIndex} of ${paginationData.totalCount} ideas`;
+        }
+
+        const paginationHTML = this.generateIdeasPaginationHTML(paginationData);
+        const paginationUl = container.querySelector('.pagination');
+        if (paginationUl) {
+            paginationUl.innerHTML = paginationHTML;
+        }
+
+        this.attachIdeasPaginationHandlers(paginationData);
+
+        const pageSizeSelect = document.getElementById('ideasPageSize');
+        if (pageSizeSelect) {
+            pageSizeSelect.value = paginationData.pageSize;
+            pageSizeSelect.onchange = (e) => {
+                this.loadIdeasList(1, parseInt(e.target.value));
+            };
+        }
+    },
+
+    generateIdeasPaginationHTML(paginationData) {
+        let html = '';
+
+        html += `
+            <li class="page-item ${!paginationData.hasPrevious ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="1">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+            <li class="page-item ${!paginationData.hasPrevious ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.currentPage - 1}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        `;
+
+        const visiblePages = this.getVisiblePages(paginationData.currentPage, paginationData.totalPages);
+        visiblePages.forEach(pageNum => {
+            if (pageNum === '...') {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            } else {
+                const isActive = pageNum === paginationData.currentPage;
+                html += `
+                    <li class="page-item ${isActive ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${pageNum}">${pageNum}</a>
+                    </li>
+                `;
+            }
+        });
+
+        html += `
+            <li class="page-item ${!paginationData.hasNext ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.currentPage + 1}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+            <li class="page-item ${!paginationData.hasNext ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.totalPages}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        `;
+
+        return html;
+    },
+
+    attachIdeasPaginationHandlers(paginationData) {
+        const paginationLinks = document.querySelectorAll('#ideasPaginationContainer .page-link');
+        const pageSize = document.getElementById('ideasPageSize')?.value || 10;
+
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = parseInt(e.currentTarget.getAttribute('data-page'));
+                if (page && page >= 1 && page <= paginationData.totalPages) {
+                    this.loadIdeasList(page, parseInt(pageSize));
+                }
+            });
+        });
+    },
+
+    // Team Role List Functions
+    loadTeamRoleList(page = 1, pageSize = 10) {
+        const params = this.getFilterParams();
+        params.set('page', page);
+        params.set('pageSize', pageSize);
+
+        const queryString = params.toString();
+        const url = `/Home/GetTeamRoleList${queryString ? '?' + queryString : ''}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.renderTeamRoleList(data.data);
+                    if (data.pagination) {
+                        this.renderTeamRolePagination(data.pagination);
+                    }
+                } else {
+                    console.error('Failed to load team role list:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading team role list:', error);
+            });
+    },
+
+    renderTeamRoleList(data) {
+        const tbody = document.getElementById('teamRoleTableBody');
+        if (!tbody) return;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center text-muted">
+                        <i class="bi bi-inbox me-2"></i>No team role data found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td>${item.employeeBN}</td>
+                <td><span class="badge bg-primary">${item.teamRole}</span></td>
+                <td>${item.ideaCode}</td>
+            </tr>
+        `).join('');
+    },
+
+    renderTeamRolePagination(paginationData) {
+        const container = document.getElementById('teamRolePaginationContainer');
+        if (!container) return;
+
+        if (!paginationData || paginationData.totalPages <= 1) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+
+        const infoSpan = container.querySelector('.pagination-info span');
+        if (infoSpan) {
+            infoSpan.textContent = `Showing ${paginationData.firstItemIndex}-${paginationData.lastItemIndex} of ${paginationData.totalCount} roles`;
+        }
+
+        const paginationHTML = this.generateTeamRolePaginationHTML(paginationData);
+        const paginationUl = container.querySelector('.pagination');
+        if (paginationUl) {
+            paginationUl.innerHTML = paginationHTML;
+        }
+
+        this.attachTeamRolePaginationHandlers(paginationData);
+
+        const pageSizeSelect = document.getElementById('teamRolePageSize');
+        if (pageSizeSelect) {
+            pageSizeSelect.value = paginationData.pageSize;
+            pageSizeSelect.onchange = (e) => {
+                this.loadTeamRoleList(1, parseInt(e.target.value));
+            };
+        }
+    },
+
+    generateTeamRolePaginationHTML(paginationData) {
+        let html = '';
+
+        html += `
+            <li class="page-item ${!paginationData.hasPrevious ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="1">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+            <li class="page-item ${!paginationData.hasPrevious ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.currentPage - 1}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        `;
+
+        const visiblePages = this.getVisiblePages(paginationData.currentPage, paginationData.totalPages, 3);
+        visiblePages.forEach(pageNum => {
+            if (pageNum === '...') {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            } else {
+                const isActive = pageNum === paginationData.currentPage;
+                html += `
+                    <li class="page-item ${isActive ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${pageNum}">${pageNum}</a>
+                    </li>
+                `;
+            }
+        });
+
+        html += `
+            <li class="page-item ${!paginationData.hasNext ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.currentPage + 1}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+            <li class="page-item ${!paginationData.hasNext ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.totalPages}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        `;
+
+        return html;
+    },
+
+    attachTeamRolePaginationHandlers(paginationData) {
+        const paginationLinks = document.querySelectorAll('#teamRolePaginationContainer .page-link');
+        const pageSize = document.getElementById('teamRolePageSize')?.value || 10;
+
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = parseInt(e.currentTarget.getAttribute('data-page'));
+                if (page && page >= 1 && page <= paginationData.totalPages) {
+                    this.loadTeamRoleList(page, parseInt(pageSize));
+                }
+            });
+        });
+    },
+
+    // Approval History List Functions
+    loadApprovalHistoryList(page = 1, pageSize = 10) {
+        const params = this.getFilterParams();
+        params.set('page', page);
+        params.set('pageSize', pageSize);
+
+        const queryString = params.toString();
+        const url = `/Home/GetApprovalHistoryList${queryString ? '?' + queryString : ''}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.renderApprovalHistoryList(data.data);
+                    if (data.pagination) {
+                        this.renderApprovalHistoryPagination(data.pagination);
+                    }
+                } else {
+                    console.error('Failed to load approval history:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading approval history:', error);
+            });
+    },
+
+    renderApprovalHistoryList(data) {
+        const tbody = document.getElementById('approvalHistoryTableBody');
+        if (!tbody) return;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" class="text-center text-muted">
+                        <i class="bi bi-inbox me-2"></i>No approval history found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td>${item.ideaNumber}</td>
+                <td>${item.approvalId}</td>
+                <td><span class="badge ${this.getStatusBadgeClass(item.ideaStatus)}">${item.ideaStatus}</span></td>
+                <td>${item.currentStage}</td>
+                <td>${item.stageSequence}</td>
+                <td>${this.formatDateTime(item.approvalDate)}</td>
+                <td>${item.approver}</td>
+                <td>${item.latestUpdateDate ? this.formatDateTime(item.latestUpdateDate) : 'N/A'}</td>
+                <td>${item.lastUpdatedDays}</td>
+                <td>${item.implementedDivision}</td>
+                <td>${item.implementedDepartment}</td>
+            </tr>
+        `).join('');
+    },
+
+    renderApprovalHistoryPagination(paginationData) {
+        const container = document.getElementById('approvalHistoryPaginationContainer');
+        if (!container) return;
+
+        if (!paginationData || paginationData.totalPages <= 1) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+
+        const infoSpan = container.querySelector('.pagination-info span');
+        if (infoSpan) {
+            infoSpan.textContent = `Showing ${paginationData.firstItemIndex}-${paginationData.lastItemIndex} of ${paginationData.totalCount} records`;
+        }
+
+        const paginationHTML = this.generateApprovalHistoryPaginationHTML(paginationData);
+        const paginationUl = container.querySelector('.pagination');
+        if (paginationUl) {
+            paginationUl.innerHTML = paginationHTML;
+        }
+
+        this.attachApprovalHistoryPaginationHandlers(paginationData);
+
+        const pageSizeSelect = document.getElementById('approvalHistoryPageSize');
+        if (pageSizeSelect) {
+            pageSizeSelect.value = paginationData.pageSize;
+            pageSizeSelect.onchange = (e) => {
+                this.loadApprovalHistoryList(1, parseInt(e.target.value));
+            };
+        }
+    },
+
+    generateApprovalHistoryPaginationHTML(paginationData) {
+        let html = '';
+
+        html += `
+            <li class="page-item ${!paginationData.hasPrevious ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="1">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+            <li class="page-item ${!paginationData.hasPrevious ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.currentPage - 1}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        `;
+
+        const visiblePages = this.getVisiblePages(paginationData.currentPage, paginationData.totalPages);
+        visiblePages.forEach(pageNum => {
+            if (pageNum === '...') {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            } else {
+                const isActive = pageNum === paginationData.currentPage;
+                html += `
+                    <li class="page-item ${isActive ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${pageNum}">${pageNum}</a>
+                    </li>
+                `;
+            }
+        });
+
+        html += `
+            <li class="page-item ${!paginationData.hasNext ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.currentPage + 1}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+            <li class="page-item ${!paginationData.hasNext ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.totalPages}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        `;
+
+        return html;
+    },
+
+    attachApprovalHistoryPaginationHandlers(paginationData) {
+        const paginationLinks = document.querySelectorAll('#approvalHistoryPaginationContainer .page-link');
+        const pageSize = document.getElementById('approvalHistoryPageSize')?.value || 10;
+
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = parseInt(e.currentTarget.getAttribute('data-page'));
+                if (page && page >= 1 && page <= paginationData.totalPages) {
+                    this.loadApprovalHistoryList(page, parseInt(pageSize));
+                }
+            });
+        });
+    },
+
+    formatDateTime(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    },
+
+    getStatusBadgeClass(status) {
+        const statusLower = status.toLowerCase();
+
+        if (statusLower.includes('approved')) {
+            return 'bg-success';
+        } else if (statusLower.includes('rejected')) {
+            return 'bg-danger';
+        } else if (statusLower.includes('waiting')) {
+            return 'bg-warning text-dark';
+        } else if (statusLower.includes('unvalidated')) {
+            return 'bg-secondary';
+        } else if (statusLower.includes('on going')) {
+            return 'bg-info';
+        } else if (statusLower.includes('completed')) {
+            return 'bg-primary';
+        } else {
+            return 'bg-secondary';
+        }
+    },
+
+    // Idea Cost Saving List Functions
+    loadIdeaCostSavingList(page = 1, pageSize = 10) {
+        const params = this.getFilterParams();
+        params.set('page', page);
+        params.set('pageSize', pageSize);
+
+        const queryString = params.toString();
+        const url = `/Home/GetIdeaCostSavingList${queryString ? '?' + queryString : ''}`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(response => {
+                if (response.success) {
+                    this.renderIdeaCostSavingList(response.data);
+                    if (response.pagination) {
+                        this.renderIdeaCostSavingPagination(response.pagination);
+                    }
+                } else {
+                    console.error('Failed to load idea cost saving list:', response.message);
+                }
+            })
+            .catch(err => console.error('Error loading idea cost saving list:', err));
+    },
+
+    renderIdeaCostSavingList(data) {
+        const tbody = document.getElementById('ideaCostSavingTableBody');
+        if (!tbody) return;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        <i class="bi bi-inbox me-2"></i>No idea cost saving data found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td>${item.ideaId}</td>
+                <td>$${item.savingCostValidated.toLocaleString()}</td>
+                <td>${item.ideaCategory}</td>
+                <td>
+                    <span class="badge bg-info">
+                        ${item.currentStage}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge ${this.getIdeaFlowBadgeClass(item.ideaFlowValidated)}">
+                        ${this.getIdeaFlowDisplayText(item.ideaFlowValidated)}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    getIdeaFlowBadgeClass(flowStatus) {
+        switch (flowStatus) {
+            case 'more_than_20':
+                return 'bg-success';
+            case 'less_than_20':
+                return 'bg-warning';
+            case 'not_validated':
+                return 'bg-secondary';
+            default:
+                return 'bg-secondary';
+        }
+    },
+
+    getIdeaFlowDisplayText(flowStatus) {
+        switch (flowStatus) {
+            case 'more_than_20':
+                return 'More than $20k';
+            case 'less_than_20':
+                return 'Less than $20k';
+            case 'not_validated':
+                return 'Not Validated';
+            default:
+                return flowStatus;
+        }
+    },
+
+    renderIdeaCostSavingPagination(paginationData) {
+        const container = document.getElementById('ideaCostSavingPaginationContainer');
+        if (!container) return;
+
+        if (!paginationData || paginationData.totalPages <= 1) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+
+        const infoSpan = container.querySelector('.pagination-info span');
+        if (infoSpan) {
+            infoSpan.textContent = `Showing ${paginationData.firstItemIndex}-${paginationData.lastItemIndex} of ${paginationData.totalCount} ideas`;
+        }
+
+        const paginationHTML = this.generateIdeaCostSavingPaginationHTML(paginationData);
+        const paginationUl = container.querySelector('.pagination');
+        if (paginationUl) {
+            paginationUl.innerHTML = paginationHTML;
+        }
+
+        this.attachIdeaCostSavingPaginationHandlers(paginationData);
+
+        const pageSizeSelect = document.getElementById('ideaCostSavingPageSize');
+        if (pageSizeSelect) {
+            pageSizeSelect.value = paginationData.pageSize;
+            pageSizeSelect.onchange = (e) => {
+                this.loadIdeaCostSavingList(1, parseInt(e.target.value));
+            };
+        }
+    },
+
+    generateIdeaCostSavingPaginationHTML(paginationData) {
+        let html = '';
+
+        html += `
+            <li class="page-item ${!paginationData.hasPrevious ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="1">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+            <li class="page-item ${!paginationData.hasPrevious ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.currentPage - 1}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        `;
+
+        const visiblePages = this.getVisiblePages(paginationData.currentPage, paginationData.totalPages);
+        visiblePages.forEach(pageNum => {
+            if (pageNum === '...') {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            } else {
+                const isActive = pageNum === paginationData.currentPage;
+                html += `
+                    <li class="page-item ${isActive ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${pageNum}">${pageNum}</a>
+                    </li>
+                `;
+            }
+        });
+
+        html += `
+            <li class="page-item ${!paginationData.hasNext ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.currentPage + 1}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+            <li class="page-item ${!paginationData.hasNext ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${paginationData.totalPages}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        `;
+
+        return html;
+    },
+
+    attachIdeaCostSavingPaginationHandlers(paginationData) {
+        const paginationLinks = document.querySelectorAll('#ideaCostSavingPaginationContainer .page-link');
+        const pageSize = document.getElementById('ideaCostSavingPageSize')?.value || 10;
+
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = parseInt(e.currentTarget.getAttribute('data-page'));
+                if (page && page >= 1 && page <= paginationData.totalPages) {
+                    this.loadIdeaCostSavingList(page, parseInt(pageSize));
+                }
+            });
+        });
+    },
+
     destroy() {
         Object.values(this.charts).forEach(chart => chart.destroy());
         this.charts = {};
@@ -739,6 +1746,7 @@ const DateFilter = {
         this.initializeDatePickers();
         this.initializeShortcutButtons();
         this.initializeCustomDaysInputs();
+        this.initializeYearFilter();
         this.initializeApplyButton();
         this.initializeClearButton();
 
@@ -935,6 +1943,40 @@ const DateFilter = {
         }
     },
 
+    initializeYearFilter() {
+        const yearSelect = document.getElementById('filterYear');
+        if (!yearSelect) return;
+
+        // Populate year dropdown with last 6 years (current year + 5 previous years)
+        const currentYear = new Date().getFullYear();
+        const yearsToShow = 6;
+
+        // Add individual years from current year down
+        for (let i = 0; i < yearsToShow; i++) {
+            const year = currentYear - i;
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+
+        // Add change event listener
+        yearSelect.addEventListener('change', (e) => {
+            const value = e.target.value;
+            if (!value) return;
+
+            // Specific year selected - filter full year (Jan 1 - Dec 31)
+            const year = parseInt(value);
+            const startDate = new Date(year, 0, 1); // Jan 1
+            const endDate = new Date(year, 11, 31); // Dec 31
+            this.setDateRange(startDate, endDate);
+            this.applyFilter();
+
+            // Reset dropdown to default after applying
+            yearSelect.value = '';
+        });
+    },
+
     initializeApplyButton() {
         const applyBtn = document.getElementById('applyDateFilter');
         if (applyBtn) {
@@ -976,6 +2018,11 @@ const DateFilter = {
         const divisionInput = document.getElementById('exportDivision');
         const stageInput = document.getElementById('exportStage');
         const savingCostInput = document.getElementById('exportSavingCost');
+        const initiatorDivisionInput = document.getElementById('exportInitiatorDivision');
+        const statusInput = document.getElementById('exportStatus');
+        const initiatorNameInput = document.getElementById('exportInitiatorName');
+        const initiatorBadgeNumberInput = document.getElementById('exportInitiatorBadgeNumber');
+        const ideaIdInput = document.getElementById('exportIdeaId');
 
         // Set date values if filters are active
         if (this.currentStartDate && this.currentEndDate) {
@@ -1015,6 +2062,37 @@ const DateFilter = {
             savingCostInput.value = DashboardFilter.currentSavingCost;
         } else {
             savingCostInput.value = '';
+        }
+
+        // Set 5 advanced filter values (added Status)
+        if (DashboardFilter.currentInitiatorDivision) {
+            initiatorDivisionInput.value = DashboardFilter.currentInitiatorDivision;
+        } else {
+            initiatorDivisionInput.value = '';
+        }
+
+        if (DashboardFilter.currentStatus) {
+            statusInput.value = DashboardFilter.currentStatus;
+        } else {
+            statusInput.value = '';
+        }
+
+        if (DashboardFilter.currentInitiatorName) {
+            initiatorNameInput.value = DashboardFilter.currentInitiatorName;
+        } else {
+            initiatorNameInput.value = '';
+        }
+
+        if (DashboardFilter.currentInitiatorBadgeNumber) {
+            initiatorBadgeNumberInput.value = DashboardFilter.currentInitiatorBadgeNumber;
+        } else {
+            initiatorBadgeNumberInput.value = '';
+        }
+
+        if (DashboardFilter.currentIdeaId) {
+            ideaIdInput.value = DashboardFilter.currentIdeaId;
+        } else {
+            ideaIdInput.value = '';
         }
 
         console.log('Submitting export form with all filters');
@@ -1163,6 +2241,13 @@ const DateFilter = {
             DashboardCharts.loadDivisionChart(queryString);
             DashboardCharts.loadAllDepartmentsChart(queryString);
             DashboardCharts.loadStageByDivisionChart(queryString);
+            DashboardCharts.loadWLChart(queryString);
+
+            // Reload all tables
+            DashboardCharts.loadIdeasList();
+            DashboardCharts.loadTeamRoleList();
+            DashboardCharts.loadIdeaCostSavingList();
+            DashboardCharts.loadApprovalHistoryList();
         } catch (error) {
             console.error('Error reloading dashboard:', error);
             alert('Error applying filter. Please try again.');
@@ -1205,6 +2290,10 @@ const DashboardFilter = {
     currentDivision: null,
     currentStage: null,
     currentSavingCost: null,
+    currentInitiatorDivision: null,
+    currentInitiatorName: null,
+    currentInitiatorBadgeNumber: null,
+    currentIdeaId: null,
 
     init() {
         this.loadFiltersFromURL();
@@ -1215,6 +2304,11 @@ const DashboardFilter = {
         const divisionSelect = document.getElementById('filterDivision');
         const stageSelect = document.getElementById('filterStage');
         const savingCostSelect = document.getElementById('filterSavingCost');
+        const initiatorDivisionSelect = document.getElementById('filterInitiatorDivision');
+        const statusSelect = document.getElementById('filterStatus');
+        const initiatorNameInput = document.getElementById('filterInitiatorName');
+        const initiatorBadgeNumberInput = document.getElementById('filterInitiatorBadgeNumber');
+        const ideaIdInput = document.getElementById('filterIdeaId');
         const clearBtn = document.getElementById('clearAllFilters');
 
         if (divisionSelect) {
@@ -1229,6 +2323,39 @@ const DashboardFilter = {
             savingCostSelect.addEventListener('change', () => this.applyFilters());
         }
 
+        if (initiatorDivisionSelect) {
+            initiatorDivisionSelect.addEventListener('change', () => this.applyFilters());
+        }
+
+        if (statusSelect) {
+            statusSelect.addEventListener('change', () => this.applyFilters());
+        }
+
+        // Auto-apply for text inputs with debounce (500ms)
+        if (initiatorNameInput) {
+            let timeout;
+            initiatorNameInput.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => this.applyFilters(), 500);
+            });
+        }
+
+        if (initiatorBadgeNumberInput) {
+            let timeout;
+            initiatorBadgeNumberInput.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => this.applyFilters(), 500);
+            });
+        }
+
+        if (ideaIdInput) {
+            let timeout;
+            ideaIdInput.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => this.applyFilters(), 500);
+            });
+        }
+
         if (clearBtn) {
             clearBtn.addEventListener('click', () => this.clearFilters());
         }
@@ -1241,6 +2368,11 @@ const DashboardFilter = {
         const divisionSelect = document.getElementById('filterDivision');
         const stageSelect = document.getElementById('filterStage');
         const savingCostSelect = document.getElementById('filterSavingCost');
+        const initiatorDivisionSelect = document.getElementById('filterInitiatorDivision');
+        const statusSelect = document.getElementById('filterStatus');
+        const initiatorNameInput = document.getElementById('filterInitiatorName');
+        const initiatorBadgeNumberInput = document.getElementById('filterInitiatorBadgeNumber');
+        const ideaIdInput = document.getElementById('filterIdeaId');
 
         // Load Division filter from URL
         const urlDivision = urlParams.get('selectedDivision');
@@ -1269,6 +2401,51 @@ const DashboardFilter = {
             this.currentSavingCost = savingCostSelect?.value || null;
         }
 
+        // Load Initiator Division filter from URL
+        const urlInitiatorDivision = urlParams.get('initiatorDivision');
+        if (urlInitiatorDivision && initiatorDivisionSelect) {
+            initiatorDivisionSelect.value = urlInitiatorDivision;
+            this.currentInitiatorDivision = urlInitiatorDivision;
+        } else {
+            this.currentInitiatorDivision = initiatorDivisionSelect?.value || null;
+        }
+
+        // Load Status filter from URL
+        const urlStatus = urlParams.get('selectedStatus');
+        if (urlStatus && statusSelect) {
+            statusSelect.value = urlStatus;
+            this.currentStatus = urlStatus;
+        } else {
+            this.currentStatus = statusSelect?.value || null;
+        }
+
+        // Load Initiator Name filter from URL
+        const urlInitiatorName = urlParams.get('initiatorName');
+        if (urlInitiatorName && initiatorNameInput) {
+            initiatorNameInput.value = urlInitiatorName;
+            this.currentInitiatorName = urlInitiatorName;
+        } else {
+            this.currentInitiatorName = initiatorNameInput?.value || null;
+        }
+
+        // Load Initiator Badge Number filter from URL
+        const urlInitiatorBadgeNumber = urlParams.get('initiatorBadgeNumber');
+        if (urlInitiatorBadgeNumber && initiatorBadgeNumberInput) {
+            initiatorBadgeNumberInput.value = urlInitiatorBadgeNumber;
+            this.currentInitiatorBadgeNumber = urlInitiatorBadgeNumber;
+        } else {
+            this.currentInitiatorBadgeNumber = initiatorBadgeNumberInput?.value || null;
+        }
+
+        // Load Idea Id filter from URL
+        const urlIdeaId = urlParams.get('ideaId');
+        if (urlIdeaId && ideaIdInput) {
+            ideaIdInput.value = urlIdeaId;
+            this.currentIdeaId = urlIdeaId;
+        } else {
+            this.currentIdeaId = ideaIdInput?.value || null;
+        }
+
         // Load Date filters from URL
         const urlStartDate = urlParams.get('startDate');
         const urlEndDate = urlParams.get('endDate');
@@ -1289,6 +2466,19 @@ const DashboardFilter = {
         this.currentDivision = divisionSelect?.value || null;
         this.currentStage = stageSelect?.value || null;
         this.currentSavingCost = savingCostSelect?.value || null;
+
+        // Get 5 advanced filter values (added Status)
+        const initiatorDivisionSelect = document.getElementById('filterInitiatorDivision');
+        const statusSelect = document.getElementById('filterStatus');
+        const initiatorNameInput = document.getElementById('filterInitiatorName');
+        const initiatorBadgeNumberInput = document.getElementById('filterInitiatorBadgeNumber');
+        const ideaIdInput = document.getElementById('filterIdeaId');
+
+        this.currentInitiatorDivision = initiatorDivisionSelect?.value || null;
+        this.currentStatus = statusSelect?.value || null;
+        this.currentInitiatorName = initiatorNameInput?.value || null;
+        this.currentInitiatorBadgeNumber = initiatorBadgeNumberInput?.value || null;
+        this.currentIdeaId = ideaIdInput?.value || null;
 
         // Get current date filter from DateFilter module
         const startDate = DateFilter.currentStartDate;
@@ -1335,6 +2525,23 @@ const DashboardFilter = {
             params.append('savingCostRange', this.currentSavingCost);
         }
 
+        // 5 Advanced filters (added Status)
+        if (this.currentInitiatorDivision) {
+            params.append('initiatorDivision', this.currentInitiatorDivision);
+        }
+        if (this.currentStatus) {
+            params.append('selectedStatus', this.currentStatus);
+        }
+        if (this.currentInitiatorName) {
+            params.append('initiatorName', this.currentInitiatorName);
+        }
+        if (this.currentInitiatorBadgeNumber) {
+            params.append('initiatorBadgeNumber', this.currentInitiatorBadgeNumber);
+        }
+        if (this.currentIdeaId) {
+            params.append('ideaId', this.currentIdeaId);
+        }
+
         return params.toString();
     },
 
@@ -1348,6 +2555,13 @@ const DashboardFilter = {
             DashboardCharts.loadDivisionChart(queryString);
             DashboardCharts.loadAllDepartmentsChart(queryString);
             DashboardCharts.loadStageByDivisionChart(queryString);
+            DashboardCharts.loadWLChart(queryString);
+
+            // Reload all tables
+            DashboardCharts.loadIdeasList();
+            DashboardCharts.loadTeamRoleList();
+            DashboardCharts.loadIdeaCostSavingList();
+            DashboardCharts.loadApprovalHistoryList();
         } catch (error) {
             console.error('Error applying dashboard filters:', error);
         }
@@ -1387,14 +2601,29 @@ const DashboardFilter = {
         const divisionSelect = document.getElementById('filterDivision');
         const stageSelect = document.getElementById('filterStage');
         const savingCostSelect = document.getElementById('filterSavingCost');
+        const initiatorDivisionSelect = document.getElementById('filterInitiatorDivision');
+        const statusSelect = document.getElementById('filterStatus');
+        const initiatorNameInput = document.getElementById('filterInitiatorName');
+        const initiatorBadgeNumberInput = document.getElementById('filterInitiatorBadgeNumber');
+        const ideaIdInput = document.getElementById('filterIdeaId');
 
         if (divisionSelect) divisionSelect.value = '';
         if (stageSelect) stageSelect.value = '';
         if (savingCostSelect) savingCostSelect.value = '';
+        if (initiatorDivisionSelect) initiatorDivisionSelect.value = '';
+        if (statusSelect) statusSelect.value = '';
+        if (initiatorNameInput) initiatorNameInput.value = '';
+        if (initiatorBadgeNumberInput) initiatorBadgeNumberInput.value = '';
+        if (ideaIdInput) ideaIdInput.value = '';
 
         this.currentDivision = null;
         this.currentStage = null;
         this.currentSavingCost = null;
+        this.currentInitiatorDivision = null;
+        this.currentStatus = null;
+        this.currentInitiatorName = null;
+        this.currentInitiatorBadgeNumber = null;
+        this.currentIdeaId = null;
 
         // Clear URL parameters (keep only date filters if they exist)
         const startDate = DateFilter.currentStartDate;

@@ -1,11 +1,13 @@
 using Ideku.Data.Repositories;
 using Ideku.ViewModels;
+using Ideku.ViewModels.Common;
 using Ideku.Models.Entities;
 using Ideku.Models.Statistics;
 using Ideku.Services.WorkflowManagement;
 using Ideku.Services.Lookup;
 using Ideku.Services.UserManagement;
 using Ideku.Services.Workflow;
+using Ideku.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ideku.Services.Idea
@@ -383,7 +385,7 @@ namespace Ideku.Services.Idea
 
         #region Dashboard
 
-        public async Task<DashboardData> GetDashboardDataAsync(string username, DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null)
+        public async Task<DashboardData> GetDashboardDataAsync(string username, DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -423,6 +425,36 @@ namespace Ideku.Services.Idea
                 };
             }
 
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
             var activeIdeas = await query.ToListAsync();
 
             var actingStats = await _userManagementService.GetActingStatisticsAsync();
@@ -440,7 +472,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetIdeasByStatusChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null)
+        public async Task<object> GetIdeasByStatusChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -477,6 +509,36 @@ namespace Ideku.Services.Idea
                     "gte20k" => query.Where(i => i.SavingCost >= 20000),
                     _ => query
                 };
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var activeIdeas = await query.ToListAsync();
@@ -494,7 +556,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetIdeasByDivisionChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null)
+        public async Task<object> GetIdeasByDivisionChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -531,6 +593,36 @@ namespace Ideku.Services.Idea
                     "gte20k" => query.Where(i => i.SavingCost >= 20000),
                     _ => query
                 };
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var activeIdeas = await query.ToListAsync();
@@ -550,7 +642,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetIdeasByDepartmentChartAsync(string divisionId, DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null)
+        public async Task<object> GetIdeasByDepartmentChartAsync(string divisionId, DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -587,6 +679,36 @@ namespace Ideku.Services.Idea
                     "gte20k" => query.Where(i => i.SavingCost >= 20000),
                     _ => query
                 };
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var activeIdeas = await query.ToListAsync();
@@ -610,7 +732,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetIdeasByAllDepartmentsChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null)
+        public async Task<object> GetIdeasByAllDepartmentsChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -647,6 +769,36 @@ namespace Ideku.Services.Idea
                     "gte20k" => query.Where(i => i.SavingCost >= 20000),
                     _ => query
                 };
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var activeIdeas = await query.ToListAsync();
@@ -665,7 +817,7 @@ namespace Ideku.Services.Idea
             };
         }
 
-        public async Task<object> GetInitiativeByStageAndDivisionChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null)
+        public async Task<object> GetInitiativeByStageAndDivisionChartAsync(DateTime? startDate = null, DateTime? endDate = null, string? selectedDivision = null, int? selectedStage = null, string? savingCostRange = null, string? initiatorName = null, string? initiatorBadgeNumber = null, string? ideaId = null, string? initiatorDivision = null, string? selectedStatus = null)
         {
             var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
             var query = allIdeasQuery.Where(i => !i.IsDeleted);
@@ -702,6 +854,36 @@ namespace Ideku.Services.Idea
                     "gte20k" => query.Where(i => i.SavingCost >= 20000),
                     _ => query
                 };
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
             var allIdeas = await query.ToListAsync();
@@ -752,11 +934,314 @@ namespace Ideku.Services.Idea
             };
         }
 
-        /// <summary>
-        /// Get all available stages from workflow configuration (0 to MaxStage)
-        /// This ensures dropdown shows all possible stages regardless of current idea data
-        /// Returns empty list if no ideas exist yet
-        /// </summary>
+        public async Task<List<WLChartData>> GetWLChartDataAsync(
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? selectedDivision = null,
+            int? selectedStage = null,
+            string? savingCostRange = null,
+            string? initiatorName = null,
+            string? initiatorBadgeNumber = null,
+            string? ideaId = null,
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
+        {
+            var workstreamLeaders = await _userRepository.GetAllUsersWithDetailsAsync();
+            workstreamLeaders = workstreamLeaders
+                .Where(u => u.Role.RoleName == "Workstream Leader")
+                .Where(u => u.Employee.EMP_STATUS == "Active")
+                .ToList();
+
+            var chartData = new List<WLChartData>();
+            var allIdeasQuery = _ideaRepository.GetQueryableWithIncludes();
+
+            foreach (var wl in workstreamLeaders)
+            {
+                var query = allIdeasQuery
+                    .Where(i => !i.IsDeleted)
+                    .Where(i => i.ToDivisionId == wl.Employee.DIVISION)
+                    .Where(i => i.ToDepartmentId == wl.Employee.DEPARTEMENT);
+
+                if (startDate.HasValue)
+                    query = query.Where(i => i.SubmittedDate >= startDate.Value);
+
+                if (endDate.HasValue)
+                {
+                    var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                    query = query.Where(i => i.SubmittedDate <= endOfDay);
+                }
+
+                if (!string.IsNullOrEmpty(selectedDivision))
+                    query = query.Where(i => i.ToDivisionId == selectedDivision);
+
+                if (selectedStage.HasValue)
+                    query = query.Where(i => i.CurrentStage == selectedStage.Value);
+
+                if (!string.IsNullOrEmpty(savingCostRange))
+                {
+                    query = savingCostRange switch
+                    {
+                        "lt20k" => query.Where(i => i.SavingCost < 20000),
+                        "gte20k" => query.Where(i => i.SavingCost >= 20000),
+                        _ => query
+                    };
+                }
+
+                // Apply Initiator Name filter
+                if (!string.IsNullOrWhiteSpace(initiatorName))
+                {
+                    query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+                }
+
+                // Apply Initiator Badge Number filter
+                if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+                {
+                    query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+                }
+
+                // Apply Idea Id filter
+                if (!string.IsNullOrWhiteSpace(ideaId))
+                {
+                    query = query.Where(i => i.IdeaCode.Contains(ideaId));
+                }
+
+                // Apply Initiator Division filter
+                if (!string.IsNullOrWhiteSpace(initiatorDivision))
+                {
+                    query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+                }
+
+                // Apply Status filter
+                if (!string.IsNullOrWhiteSpace(selectedStatus))
+                {
+                    query = query.Where(i => i.CurrentStatus == selectedStatus);
+                }
+
+                var ideasByStage = await query
+                    .GroupBy(i => i.CurrentStage)
+                    .Select(g => new { Stage = g.Key, Count = g.Count() })
+                    .OrderBy(x => x.Stage)
+                    .ToListAsync();
+
+                chartData.Add(new WLChartData
+                {
+                    UserId = wl.Id,
+                    UserName = wl.Employee.NAME,
+                    EmployeeId = wl.EmployeeId,
+                    Division = wl.Employee.DivisionNavigation?.NameDivision ?? wl.Employee.DIVISION,
+                    DepartmentId = wl.Employee.DEPARTEMENT,
+                    Department = wl.Employee.DepartmentNavigation?.NameDepartment ?? wl.Employee.DEPARTEMENT,
+                    IdeasByStage = ideasByStage.ToDictionary(x => $"S{x.Stage}", x => x.Count),
+                    TotalIdeas = ideasByStage.Sum(x => x.Count)
+                });
+            }
+
+            return chartData
+                .OrderBy(x => x.DepartmentId)
+                .ThenBy(x => x.EmployeeId)
+                .ToList();
+        }
+
+        public async Task<List<IdeaListItemDto>> GetIdeasListAsync(
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? selectedDivision = null,
+            int? selectedStage = null,
+            string? savingCostRange = null,
+            string? initiatorName = null,
+            string? initiatorBadgeNumber = null,
+            string? ideaId = null,
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
+        {
+            var query = _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted);
+
+            if (startDate.HasValue)
+            {
+                var startOfDay = startDate.Value.Date;
+                query = query.Where(i => i.SubmittedDate >= startOfDay);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.SubmittedDate <= endOfDay);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(savingCostRange))
+            {
+                if (savingCostRange == "lt20k")
+                    query = query.Where(i => i.SavingCost < 20000);
+                else if (savingCostRange == "gte20k")
+                    query = query.Where(i => i.SavingCost >= 20000);
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            var ideas = await query
+                .OrderByDescending(i => i.SubmittedDate)
+                .Select(i => new IdeaListItemDto
+                {
+                    IdeaNumber = i.IdeaCode,
+                    IdeaStatus = i.CurrentStatus,
+                    CurrentStage = "S" + i.CurrentStage,
+                    SubmissionDate = i.SubmittedDate,
+                    LastUpdatedDays = (int)(DateTime.Now - (i.UpdatedDate ?? i.SubmittedDate)).TotalDays,
+                    IdeaFlowValidated = i.SavingCostValidated == null
+                        ? "not_validated"
+                        : (i.SavingCostValidated.Value >= 20000 ? "more_than_20" : "less_than_20"),
+                    InitiatorBN = i.InitiatorUser.Employee.EMP_ID,
+                    InitiatorName = i.InitiatorUser.Employee.NAME,
+                    InitiatorDivision = i.InitiatorUser.Employee.DivisionNavigation.NameDivision,
+                    ImplementOnDivision = i.TargetDivision.NameDivision,
+                    ImplementOnDepartment = i.TargetDepartment.NameDepartment,
+                    IdeaTitle = i.IdeaName
+                })
+                .ToListAsync();
+
+            return ideas;
+        }
+
+        public async Task<ViewModels.Common.PagedResult<IdeaListItemDto>> GetIdeasListPagedAsync(
+            int page,
+            int pageSize,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? selectedDivision = null,
+            int? selectedStage = null,
+            string? savingCostRange = null,
+            string? initiatorName = null,
+            string? initiatorBadgeNumber = null,
+            string? ideaId = null,
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
+        {
+            var query = _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted);
+
+            if (startDate.HasValue)
+            {
+                var startOfDay = startDate.Value.Date;
+                query = query.Where(i => i.SubmittedDate >= startOfDay);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.SubmittedDate <= endOfDay);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(savingCostRange))
+            {
+                if (savingCostRange == "lt20k")
+                    query = query.Where(i => i.SavingCost < 20000);
+                else if (savingCostRange == "gte20k")
+                    query = query.Where(i => i.SavingCost >= 20000);
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            var orderedQuery = query
+                .OrderByDescending(i => i.SubmittedDate)
+                .Select(i => new IdeaListItemDto
+                {
+                    IdeaNumber = i.IdeaCode,
+                    IdeaStatus = i.CurrentStatus,
+                    CurrentStage = "S" + i.CurrentStage,
+                    SubmissionDate = i.SubmittedDate,
+                    LastUpdatedDays = (int)(DateTime.Now - (i.UpdatedDate ?? i.SubmittedDate)).TotalDays,
+                    IdeaFlowValidated = i.SavingCostValidated == null
+                        ? "not_validated"
+                        : (i.SavingCostValidated.Value >= 20000 ? "more_than_20" : "less_than_20"),
+                    InitiatorBN = i.InitiatorUser.Employee.EMP_ID,
+                    InitiatorName = i.InitiatorUser.Employee.NAME,
+                    InitiatorDivision = i.InitiatorUser.Employee.DivisionNavigation.NameDivision,
+                    ImplementOnDivision = i.TargetDivision.NameDivision,
+                    ImplementOnDepartment = i.TargetDepartment.NameDepartment,
+                    IdeaTitle = i.IdeaName
+                });
+
+            var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
+            return pagedResult;
+        }
+
         public async Task<List<int>> GetAvailableStagesAsync()
         {
             // Get the highest MaxStage from all workflows in the system
@@ -765,7 +1250,7 @@ namespace Ideku.Services.Idea
                 .Select(i => i.MaxStage)
                 .ToListAsync();
 
-            // If no ideas exist yet, return empty list (dropdown will be empty)
+            // If no ideas exist yet, return empty list (dropdown will be empty)gsese
             if (!maxStageQuery.Any())
             {
                 return new List<int>();
@@ -778,6 +1263,627 @@ namespace Ideku.Services.Idea
             var stages = Enumerable.Range(0, maxStageFromWorkflows + 1).ToList();
 
             return stages;
+        }
+
+        public async Task<List<string>> GetAvailableStatusesAsync()
+        {
+            // Get all distinct CurrentStatus values from ideas that are not deleted
+            var statuses = await _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted && !string.IsNullOrWhiteSpace(i.CurrentStatus))
+                .Select(i => i.CurrentStatus)
+                .Distinct()
+                .OrderBy(s => s)
+                .ToListAsync();
+
+            return statuses;
+        }
+
+        public async Task<List<TeamRoleItemDto>> GetTeamRoleListAsync(
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? selectedDivision = null,
+            int? selectedStage = null,
+            string? savingCostRange = null,
+            string? initiatorName = null,
+            string? initiatorBadgeNumber = null,
+            string? ideaId = null,
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
+        {
+            var query = _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted);
+
+            // Apply date filters
+            if (startDate.HasValue)
+            {
+                var startOfDay = startDate.Value.Date;
+                query = query.Where(i => i.SubmittedDate >= startOfDay);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.SubmittedDate <= endOfDay);
+            }
+
+            // Apply division filter
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            // Apply stage filter
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            // Apply saving cost filter
+            if (!string.IsNullOrWhiteSpace(savingCostRange))
+            {
+                if (savingCostRange == "lt20k")
+                    query = query.Where(i => i.SavingCost < 20000);
+                else if (savingCostRange == "gte20k")
+                    query = query.Where(i => i.SavingCost >= 20000);
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            // Join with IdeaImplementators and get team role data
+            var teamRoleData = await query
+                .SelectMany(i => i.IdeaImplementators, (idea, implementator) => new
+                {
+                    Idea = idea,
+                    Implementator = implementator
+                })
+                .OrderBy(x => x.Idea.IdeaCode)
+                .ThenBy(x => x.Implementator.Role == "Leader" ? 0 : 1)
+                .ThenBy(x => x.Implementator.User.EmployeeId)
+                .Select(x => new TeamRoleItemDto
+                {
+                    EmployeeBN = x.Implementator.User.EmployeeId,
+                    TeamRole = x.Implementator.Role,
+                    IdeaCode = x.Idea.IdeaCode
+                })
+                .ToListAsync();
+
+            return teamRoleData;
+        }
+
+        public async Task<PagedResult<TeamRoleItemDto>> GetTeamRoleListPagedAsync(
+            int page,
+            int pageSize,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? selectedDivision = null,
+            int? selectedStage = null,
+            string? savingCostRange = null,
+            string? initiatorName = null,
+            string? initiatorBadgeNumber = null,
+            string? ideaId = null,
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
+        {
+            var query = _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted);
+
+            // Apply date filters
+            if (startDate.HasValue)
+            {
+                var startOfDay = startDate.Value.Date;
+                query = query.Where(i => i.SubmittedDate >= startOfDay);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.SubmittedDate <= endOfDay);
+            }
+
+            // Apply division filter
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            // Apply stage filter
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            // Apply saving cost filter
+            if (!string.IsNullOrWhiteSpace(savingCostRange))
+            {
+                if (savingCostRange == "lt20k")
+                    query = query.Where(i => i.SavingCost < 20000);
+                else if (savingCostRange == "gte20k")
+                    query = query.Where(i => i.SavingCost >= 20000);
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            // Join with IdeaImplementators and get team role data with pagination
+            var orderedQuery = query
+                .SelectMany(i => i.IdeaImplementators, (idea, implementator) => new
+                {
+                    Idea = idea,
+                    Implementator = implementator
+                })
+                .OrderBy(x => x.Idea.IdeaCode)
+                .ThenBy(x => x.Implementator.Role == "Leader" ? 0 : 1)
+                .ThenBy(x => x.Implementator.User.EmployeeId)
+                .Select(x => new TeamRoleItemDto
+                {
+                    EmployeeBN = x.Implementator.User.EmployeeId,
+                    TeamRole = x.Implementator.Role,
+                    IdeaCode = x.Idea.IdeaCode
+                });
+
+            var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
+            return pagedResult;
+        }
+
+        public async Task<List<ApprovalHistoryItemDto>> GetApprovalHistoryListAsync(
+            DateTime? startDate = null, DateTime? endDate = null,
+            string? selectedDivision = null, int? selectedStage = null,
+            string? savingCostRange = null, string? initiatorName = null,
+            string? initiatorBadgeNumber = null, string? ideaId = null,
+            string? initiatorDivision = null, string? selectedStatus = null)
+        {
+            var query = _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted);
+
+            // Apply date filters
+            if (startDate.HasValue)
+            {
+                var startOfDay = startDate.Value.Date;
+                query = query.Where(i => i.SubmittedDate >= startOfDay);
+            }
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.SubmittedDate <= endOfDay);
+            }
+
+            // Apply division filter
+            if (!string.IsNullOrEmpty(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            // Apply stage filter
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            // Apply saving cost filter
+            if (!string.IsNullOrEmpty(savingCostRange))
+            {
+                if (savingCostRange == "lt20k")
+                {
+                    query = query.Where(i => i.SavingCost < 20000);
+                }
+                else if (savingCostRange == "gte20k")
+                {
+                    query = query.Where(i => i.SavingCost >= 20000);
+                }
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            // Join with WorkflowHistory to get approval history
+            var approvalHistoryQuery = query
+                .SelectMany(i => i.WorkflowHistories, (idea, workflowHistory) => new
+                {
+                    Idea = idea,
+                    WorkflowHistory = workflowHistory
+                })
+                .OrderBy(x => x.Idea.IdeaCode)
+                .ThenBy(x => x.WorkflowHistory.Timestamp)
+                .Select(x => new ApprovalHistoryItemDto
+                {
+                    IdeaNumber = x.Idea.IdeaCode,
+                    ApprovalId = x.WorkflowHistory.Id,
+                    IdeaStatus = x.Idea.CurrentStatus,
+                    CurrentStage = "S" + x.Idea.CurrentStage,
+                    StageSequence = x.WorkflowHistory.ToStage ?? 0,
+                    ApprovalDate = x.WorkflowHistory.Timestamp,
+                    Approver = x.WorkflowHistory.ActorUser.Employee != null
+                        ? x.WorkflowHistory.ActorUser.Employee.NAME
+                        : "N/A",
+                    LatestUpdateDate = x.Idea.UpdatedDate ?? x.Idea.SubmittedDate,
+                    LastUpdatedDays = (int)(DateTime.Now - (x.Idea.UpdatedDate ?? x.Idea.SubmittedDate)).TotalDays,
+                    ImplementedDivision = x.Idea.TargetDivision.NameDivision,
+                    ImplementedDepartment = x.Idea.TargetDepartment.NameDepartment
+                });
+
+            return await approvalHistoryQuery.ToListAsync();
+        }
+
+        public async Task<PagedResult<ApprovalHistoryItemDto>> GetApprovalHistoryListPagedAsync(
+            int page, int pageSize,
+            DateTime? startDate = null, DateTime? endDate = null,
+            string? selectedDivision = null, int? selectedStage = null,
+            string? savingCostRange = null, string? initiatorName = null,
+            string? initiatorBadgeNumber = null, string? ideaId = null,
+            string? initiatorDivision = null, string? selectedStatus = null)
+        {
+            var query = _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted);
+
+            // Apply date filters
+            if (startDate.HasValue)
+            {
+                var startOfDay = startDate.Value.Date;
+                query = query.Where(i => i.SubmittedDate >= startOfDay);
+            }
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.SubmittedDate <= endOfDay);
+            }
+
+            // Apply division filter
+            if (!string.IsNullOrEmpty(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            // Apply stage filter
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            // Apply saving cost filter
+            if (!string.IsNullOrEmpty(savingCostRange))
+            {
+                if (savingCostRange == "lt20k")
+                {
+                    query = query.Where(i => i.SavingCost < 20000);
+                }
+                else if (savingCostRange == "gte20k")
+                {
+                    query = query.Where(i => i.SavingCost >= 20000);
+                }
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            // Join with WorkflowHistory to get approval history with pagination
+            var orderedQuery = query
+                .SelectMany(i => i.WorkflowHistories, (idea, workflowHistory) => new
+                {
+                    Idea = idea,
+                    WorkflowHistory = workflowHistory
+                })
+                .OrderBy(x => x.Idea.IdeaCode)
+                .ThenBy(x => x.WorkflowHistory.Timestamp)
+                .Select(x => new ApprovalHistoryItemDto
+                {
+                    IdeaNumber = x.Idea.IdeaCode,
+                    ApprovalId = x.WorkflowHistory.Id,
+                    IdeaStatus = x.Idea.CurrentStatus,
+                    CurrentStage = "S" + x.Idea.CurrentStage,
+                    StageSequence = x.WorkflowHistory.ToStage ?? 0,
+                    ApprovalDate = x.WorkflowHistory.Timestamp,
+                    Approver = x.WorkflowHistory.ActorUser.Employee != null
+                        ? x.WorkflowHistory.ActorUser.Employee.NAME
+                        : "N/A",
+                    LatestUpdateDate = x.Idea.UpdatedDate ?? x.Idea.SubmittedDate,
+                    LastUpdatedDays = (int)(DateTime.Now - (x.Idea.UpdatedDate ?? x.Idea.SubmittedDate)).TotalDays,
+                    ImplementedDivision = x.Idea.TargetDivision.NameDivision,
+                    ImplementedDepartment = x.Idea.TargetDepartment.NameDepartment
+                });
+
+            var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
+            return pagedResult;
+        }
+
+        public async Task<List<IdeaCostSavingDto>> GetIdeaCostSavingListAsync(
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? selectedDivision = null,
+            int? selectedStage = null,
+            string? savingCostRange = null,
+            string? initiatorName = null,
+            string? initiatorBadgeNumber = null,
+            string? ideaId = null,
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
+        {
+            var query = _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted);
+
+            // Apply date filters
+            if (startDate.HasValue)
+            {
+                var startOfDay = startDate.Value.Date;
+                query = query.Where(i => i.SubmittedDate >= startOfDay);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.SubmittedDate <= endOfDay);
+            }
+
+            // Apply division filter
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            // Apply stage filter
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            // Apply saving cost filter
+            if (!string.IsNullOrWhiteSpace(savingCostRange))
+            {
+                if (savingCostRange == "lt20k")
+                    query = query.Where(i => i.SavingCost < 20000);
+                else if (savingCostRange == "gte20k")
+                    query = query.Where(i => i.SavingCost >= 20000);
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            var costSavingData = await query
+                .OrderByDescending(i => i.SubmittedDate)
+                .Select(i => new IdeaCostSavingDto
+                {
+                    IdeaId = i.IdeaCode,
+                    SavingCostValidated = i.SavingCostValidated ?? i.SavingCost,
+                    IdeaCategory = i.Category.CategoryName ?? "N/A",
+                    CurrentStage = "S" + i.CurrentStage,
+                    IdeaFlowValidated = i.SavingCostValidated == null ? "not_validated" :
+                                       (i.SavingCostValidated.Value >= 20000 ? "more_than_20" : "less_than_20")
+                })
+                .ToListAsync();
+
+            return costSavingData;
+        }
+
+        public async Task<PagedResult<IdeaCostSavingDto>> GetIdeaCostSavingListPagedAsync(
+            int page,
+            int pageSize,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? selectedDivision = null,
+            int? selectedStage = null,
+            string? savingCostRange = null,
+            string? initiatorName = null,
+            string? initiatorBadgeNumber = null,
+            string? ideaId = null,
+            string? initiatorDivision = null,
+            string? selectedStatus = null)
+        {
+            var query = _ideaRepository.GetQueryableWithIncludes()
+                .Where(i => !i.IsDeleted);
+
+            // Apply date filters
+            if (startDate.HasValue)
+            {
+                var startOfDay = startDate.Value.Date;
+                query = query.Where(i => i.SubmittedDate >= startOfDay);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.SubmittedDate <= endOfDay);
+            }
+
+            // Apply division filter
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            // Apply stage filter
+            if (selectedStage.HasValue)
+            {
+                query = query.Where(i => i.CurrentStage == selectedStage.Value);
+            }
+
+            // Apply saving cost filter
+            if (!string.IsNullOrWhiteSpace(savingCostRange))
+            {
+                if (savingCostRange == "lt20k")
+                    query = query.Where(i => i.SavingCost < 20000);
+                else if (savingCostRange == "gte20k")
+                    query = query.Where(i => i.SavingCost >= 20000);
+            }
+
+            // Apply Initiator Name filter
+            if (!string.IsNullOrWhiteSpace(initiatorName))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.NAME.Contains(initiatorName));
+            }
+
+            // Apply Initiator Badge Number filter
+            if (!string.IsNullOrWhiteSpace(initiatorBadgeNumber))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.EMP_ID.Contains(initiatorBadgeNumber));
+            }
+
+            // Apply Idea Id filter
+            if (!string.IsNullOrWhiteSpace(ideaId))
+            {
+                query = query.Where(i => i.IdeaCode.Contains(ideaId));
+            }
+
+            // Apply Initiator Division filter
+            if (!string.IsNullOrWhiteSpace(initiatorDivision))
+            {
+                query = query.Where(i => i.InitiatorUser.Employee.DIVISION == initiatorDivision);
+            }
+
+            // Apply Status filter
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            var orderedQuery = query
+                .OrderByDescending(i => i.SubmittedDate)
+                .Select(i => new IdeaCostSavingDto
+                {
+                    IdeaId = i.IdeaCode,
+                    SavingCostValidated = i.SavingCostValidated ?? i.SavingCost,
+                    IdeaCategory = i.Category.CategoryName ?? "N/A",
+                    CurrentStage = "S" + i.CurrentStage,
+                    IdeaFlowValidated = i.SavingCostValidated == null ? "not_validated" :
+                                       (i.SavingCostValidated.Value >= 20000 ? "more_than_20" : "less_than_20")
+                });
+
+            var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
+            return pagedResult;
         }
 
         #endregion
