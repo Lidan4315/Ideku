@@ -415,12 +415,16 @@ namespace Ideku.Controllers
                 // Get milestones for the idea
                 var milestones = await _milestoneService.GetMilestonesByIdeaIdAsync(id);
 
+                // Get workflow history for the idea
+                var workflowHistory = await _workflowService.GetWorkflowHistoryByIdeaIdAsync(id);
+
                 // Create view model with idea and implementators
                 var viewModel = new IdeaDetailViewModel
                 {
                     Idea = idea,
                     Implementators = implementators.ToList(),
-                    Milestones = milestones.ToList()
+                    Milestones = milestones.ToList(),
+                    WorkflowHistory = workflowHistory
                 };
 
                 return View(viewModel);

@@ -1,0 +1,50 @@
+/* Timeline Styles for Approval History */
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 0;
+}
+
+.timeline-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50px;
+    transform: translateX(-50%);
+    width: 2px;
+    height: calc(100% - 50px);
+    background: linear-gradient(to bottom, #dee2e6, transparent);
+    z-index: -1;
+}
+
+@media (max-width: 768px) {
+    .timeline-item::after {
+        display: none;
+    }
+
+    .timeline-content {
+        margin-top: 1rem;
+    }
+}

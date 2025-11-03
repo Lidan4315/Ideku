@@ -75,5 +75,12 @@ namespace Ideku.Services.Workflow
         /// <param name="username">Username of the user submitting</param>
         /// <returns>Workflow result indicating success or failure</returns>
         Task<WorkflowResult> SubmitForNextStageApprovalAsync(long ideaId, string username);
+
+        /// <summary>
+        /// Get workflow history for an idea
+        /// </summary>
+        /// <param name="ideaId">ID of the idea</param>
+        /// <returns>List of workflow history entries</returns>
+        Task<IEnumerable<Models.Entities.WorkflowHistory>> GetWorkflowHistoryByIdeaIdAsync(long ideaId);
     }
 }
