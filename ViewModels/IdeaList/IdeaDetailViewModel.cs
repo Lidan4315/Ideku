@@ -9,5 +9,6 @@ namespace Ideku.ViewModels.IdeaList
         public List<IdeaImplementator> Implementators { get; set; } = new List<IdeaImplementator>();
         public List<SelectListItem> AvailableUsers { get; set; } = new List<SelectListItem>();
         public IEnumerable<Models.Entities.Milestone> Milestones { get; set; } = new List<Models.Entities.Milestone>();
+        public IEnumerable<WorkflowHistory> WorkflowHistory { get; set; } = new List<WorkflowHistory>();
     }
 }

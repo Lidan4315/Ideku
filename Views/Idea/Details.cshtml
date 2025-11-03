@@ -6,6 +6,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/shared/tab-navigation.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/approval-history-timeline.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/idealist-detail.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/milestone-detail.css" asp-append-version="true" />
 }
@@ -161,17 +162,14 @@
 
         <!-- Approval History View -->
         <div id="approvalHistoryViewContent" class="view-content d-none">
-            <div class="card">
+            <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h5 class="m-0 font-weight-bold text-primary">
+                    <h6 class="m-0 font-weight-bold text-primary">
                         <i class="bi bi-clock-history me-2"></i>Approval History
-                    </h5>
+                    </h6>
                 </div>
-                <div class="card-body text-center py-5">
-                    <i class="bi bi-clock-history display-1 text-muted mb-3"></i>
-                    <h5 class="text-muted">Approval History</h5>
-                    <p class="text-muted">This feature will be implemented soon.</p>
-                    <p class="text-muted"><small>Track the complete approval workflow and history for this idea.</small></p>
+                <div class="card-body">
+                    @await Html.PartialAsync("_ApprovalHistoryTimeline", Model.WorkflowHistory)
                 </div>
             </div>
         </div>

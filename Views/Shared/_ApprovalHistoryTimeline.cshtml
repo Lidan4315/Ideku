@@ -1,0 +1,72 @@
+@model IEnumerable<Ideku.Models.Entities.WorkflowHistory>
+
+@{
+    // This partial accepts a collection of WorkflowHistory and displays it as a timeline
+}
+
+@if (Model != null && Model.Any())
+{
+    @foreach (var history in Model)
+    {
+        <div class="timeline-item mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <div class="d-flex flex-column align-items-center justify-content-center">
+                        @if (history.Action == "Approved")
+                        {
+                            <div class="timeline-icon bg-success">
+                                <i class="bi bi-check-circle text-white"></i>
+                            </div>
+                        }
+                        else if (history.Action == "Rejected")
+                        {
+                            <div class="timeline-icon bg-danger">
+                                <i class="bi bi-x-circle text-white"></i>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="timeline-icon bg-info">
+                                <i class="bi bi-info-circle text-white"></i>
+                            </div>
+                        }
+                        <small class="text-muted text-center mt-2">
+                            @history.Timestamp.ToString("MMM dd, yyyy")<br>
+                            @history.Timestamp.ToString("HH:mm")
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="timeline-content">
+                        <h6 class="mb-2">
+                            <span class="badge bg-secondary me-2">Stage @history.FromStage → @(history.ToStage?.ToString() ?? "End")</span>
+                            <strong>@history.Action</strong>
+                        </h6>
+                        <p class="mb-2">
+                            <i class="bi bi-person-circle me-1"></i>
+                            <strong>By:</strong> @(history.ActorUser?.Name ?? "System")
+                        </p>
+                        @if (!string.IsNullOrEmpty(history.Comments))
+                        {
+                            <div class="bg-light p-3 rounded mb-2">
+                                <small class="text-muted">Comments:</small>
+                                <p class="mb-0">@history.Comments</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-clock-history display-1 text-muted mb-3"></i>
+        <h5 class="text-muted">No Approval History Yet</h5>
+        <p class="text-muted">
+            <i class="bi bi-info-circle me-2"></i>
+            This idea hasn't gone through any approval stages yet.
+        </p>
+    </div>
+}

@@ -780,5 +780,10 @@ namespace Ideku.Services.Workflow
                 return WorkflowResult.Failure($"Error submitting idea: {ex.Message}");
             }
         }
+
+        public async Task<IEnumerable<Models.Entities.WorkflowHistory>> GetWorkflowHistoryByIdeaIdAsync(long ideaId)
+        {
+            return await _workflowRepository.GetWorkflowHistoryForIdeaAsync(ideaId);
+        }
     }
 }

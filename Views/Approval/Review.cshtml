@@ -4,6 +4,10 @@
     ViewData["Title"] = "Idea Review";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/shared/approval-history-timeline.css" asp-append-version="true" />
+}
+
 <div class="container-fluid">
     <div class="page-header mb-4 d-flex justify-content-between align-items-center">
         <div>
@@ -327,56 +331,9 @@
                     var workflowHistory = ViewBag.WorkflowHistory as IEnumerable<Ideku.Models.Entities.WorkflowHistory>;
                     if (workflowHistory != null && workflowHistory.Any())
                     {
-                        var latestHistory = workflowHistory.First(); // Get only the most recent entry
-                        <div class="timeline-item mb-4">
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <div class="text-center">
-                                        @if (latestHistory.Action == "Approved")
-                                        {
-                                            <div class="timeline-icon bg-success">
-                                                <i class="bi bi-check-circle text-white"></i>
-                                            </div>
-                                        }
-                                        else if (latestHistory.Action == "Rejected")
-                                        {
-                                            <div class="timeline-icon bg-danger">
-                                                <i class="bi bi-x-circle text-white"></i>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="timeline-icon bg-info">
-                                                <i class="bi bi-info-circle text-white"></i>
-                                            </div>
-                                        }
-                                        <small class="text-muted d-block mt-2">
-                                            @latestHistory.Timestamp.ToString("MMM dd, yyyy")<br>
-                                            @latestHistory.Timestamp.ToString("HH:mm")
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="col-md-9">
-                                    <div class="timeline-content">
-                                        <h6 class="mb-2">
-                                            <span class="badge bg-secondary me-2">Stage @latestHistory.FromStage → @(latestHistory.ToStage?.ToString() ?? "End")</span>
-                                            <strong>@latestHistory.Action</strong>
-                                        </h6>
-                                        <p class="mb-2">
-                                            <i class="bi bi-person-circle me-1"></i>
-                                            <strong>By:</strong> @(latestHistory.ActorUser?.Name ?? "System")
-                                        </p>
-                                        @if (!string.IsNullOrEmpty(latestHistory.Comments))
-                                        {
-                                            <div class="bg-light p-3 rounded mb-2">
-                                                <small class="text-muted">Comments:</small>
-                                                <p class="mb-0">@latestHistory.Comments</p>
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        // Show only the latest history entry
+                        var latestHistory = workflowHistory.Take(1);
+                        @await Html.PartialAsync("_ApprovalHistoryTimeline", latestHistory)
                     }
                     else
                     {
@@ -474,57 +431,6 @@
     .form-control-plaintext {
         white-space: pre-wrap;
         min-height: 100px;
-    }
-
-    /* Timeline Styles */
-    .timeline {
-        position: relative;
-    }
-
-    .timeline-item {
-        position: relative;
-        padding-left: 0;
-    }
-
-    .timeline-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .timeline-content {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 1rem;
-        border-left: 4px solid #007bff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .timeline-item:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        left: 50%;
-        top: 50px;
-        transform: translateX(-50%);
-        width: 2px;
-        height: calc(100% - 50px);
-        background: linear-gradient(to bottom, #dee2e6, transparent);
-        z-index: -1;
-    }
-
-    @@media (max-width: 768px) {
-        .timeline-item::after {
-            display: none;
-        }
-        
-        .timeline-content {
-            margin-top: 1rem;
-        }
     }
 
     /* Attachment Styles */
