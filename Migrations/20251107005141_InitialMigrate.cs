@@ -74,6 +74,25 @@ namespace Ideku.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Modules",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ModuleName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ModuleKey = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ControllerName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ActionName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    SortOrder = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Modules", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
                 {
@@ -369,6 +388,41 @@ namespace Ideku.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "RoleAccessModules",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RoleId = table.Column<int>(type: "int", nullable: false),
+                    ModuleId = table.Column<int>(type: "int", nullable: false),
+                    CanAccess = table.Column<bool>(type: "bit", nullable: false),
+                    ModifiedBy = table.Column<long>(type: "bigint", nullable: true),
+                    ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RoleAccessModules", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RoleAccessModules_Modules_ModuleId",
+                        column: x => x.ModuleId,
+                        principalTable: "Modules",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RoleAccessModules_Roles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "Roles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RoleAccessModules_Users_ModifiedBy",
+                        column: x => x.ModifiedBy,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "IdeaImplementators",
                 columns: table => new
                 {
@@ -648,6 +702,43 @@ namespace Ideku.Migrations
                 column: "IdeaId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Modules_ControllerName",
+                table: "Modules",
+                column: "ControllerName");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Modules_IsActive_SortOrder",
+                table: "Modules",
+                columns: new[] { "IsActive", "SortOrder" });
+
+            migrationBuilder.CreateIndex(
+                name: "UQ_Modules_ModuleKey",
+                table: "Modules",
+                column: "ModuleKey",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RoleAccessModules_ModifiedBy",
+                table: "RoleAccessModules",
+                column: "ModifiedBy");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RoleAccessModules_ModuleId",
+                table: "RoleAccessModules",
+                column: "ModuleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RoleAccessModules_RoleId_CanAccess",
+                table: "RoleAccessModules",
+                columns: new[] { "RoleId", "CanAccess" });
+
+            migrationBuilder.CreateIndex(
+                name: "UQ_RoleAccessModules_RoleModule",
+                table: "RoleAccessModules",
+                columns: new[] { "RoleId", "ModuleId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_ActingDepartmentId",
                 table: "Users",
                 column: "ActingDepartmentId");
@@ -742,6 +833,9 @@ namespace Ideku.Migrations
                 name: "MilestonePICs");
 
             migrationBuilder.DropTable(
+                name: "RoleAccessModules");
+
+            migrationBuilder.DropTable(
                 name: "WorkflowConditions");
 
             migrationBuilder.DropTable(
@@ -752,6 +846,9 @@ namespace Ideku.Migrations
 
             migrationBuilder.DropTable(
                 name: "Milestones");
+
+            migrationBuilder.DropTable(
+                name: "Modules");
 
             migrationBuilder.DropTable(
                 name: "Approvers");

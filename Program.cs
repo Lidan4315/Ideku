@@ -286,4 +286,8 @@ static void SeedDatabase(IServiceProvider services)
     };
     context.Users.AddRange(users);
     context.SaveChanges();
+
+    // Seed Access Control (Modules and RoleAccessModules)
+    Console.WriteLine("Seeding Access Control data...");
+    Ideku.Data.Seeders.AccessControlSeeder.SeedAsync(context).Wait();
 }
