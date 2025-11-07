@@ -25,6 +25,11 @@ function navigateToChangeWorkflow() {
     window.location.href = '/Settings/ChangeWorkflow';
 }
 
+function navigateToBypassStage() {
+    // Navigate to bypass stage page
+    window.location.href = '/BypassStage/Index';
+}
+
 function showComingSoon(featureName) {
     Swal.fire({
         icon: 'info',

@@ -1,0 +1,959 @@
+@model Ideku.ViewModels.BypassStage.BypassStageViewModel
+@{
+    ViewData["Title"] = "Bypass Stage";
+}
+
+<link rel="stylesheet" href="~/css/shared/ideas-list.css" asp-append-version="true" />
+
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title text-gradient">
+            <i class="bi bi-fast-forward me-2"></i>Bypass Stage
+        </h2>
+        <p class="text-muted">Skip approval stages for ideas in special cases.</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card filter-card">
+        <div class="card-body p-4">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <div class="input-group flex-grow-1">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text"
+                                       id="searchTerm"
+                                       name="searchTerm"
+                                       value="@Model.SearchTerm"
+                                       class="form-control"
+                                       placeholder="Search by Idea ID, Title, or Initiator...">
+                            </div>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary text-nowrap clear-all-btn">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Clear All
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Division</label>
+                        <select id="selectedDivision" name="selectedDivision" class="form-select">
+                            <option value="">All Divisions</option>
+                            @if (ViewBag.Divisions != null)
+                            {
+                                @foreach (var division in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Divisions)
+                                {
+                                    if (!string.IsNullOrEmpty(division.Value))
+                                    {
+                                        <option value="@division.Value" selected="@(Model.SelectedDivision == division.Value)">@division.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Department</label>
+                        <select id="selectedDepartment" name="selectedDepartment" class="form-select">
+                            <option value="">Please select Division first</option>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Category</label>
+                        <select id="selectedCategory" name="selectedCategory" class="form-select">
+                            <option value="">All Categories</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                @foreach (var category in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories)
+                                {
+                                    if (!string.IsNullOrEmpty(category.Value))
+                                    {
+                                        <option value="@category.Value" selected="@(Model.SelectedCategory.ToString() == category.Value)">@category.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Workflow</label>
+                        <select id="selectedWorkflow" name="selectedWorkflow" class="form-select">
+                            <option value="">All Workflows</option>
+                            @if (ViewBag.Workflows != null)
+                            {
+                                @foreach (var workflow in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Workflows)
+                                {
+                                    if (!string.IsNullOrEmpty(workflow.Value))
+                                    {
+                                        <option value="@workflow.Value" selected="@(Model.SelectedWorkflow.ToString() == workflow.Value)">@workflow.Text</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label">Status</label>
+                        <select id="selectedStatus" name="selectedStatus" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="Draft" selected="@(Model.SelectedStatus == "Draft")">Draft</option>
+                            <option value="Submitted" selected="@(Model.SelectedStatus == "Submitted")">Submitted</option>
+                            <option value="In Progress" selected="@(Model.SelectedStatus == "In Progress")">In Progress</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-body border-top">
+            @if (Model.Ideas.Any())
+            {
+                <div class="table-responsive-custom">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Idea ID</th>
+                                <th style="min-width: 250px;">Idea Title</th>
+                                <th style="min-width: 150px;">Initiator</th>
+                                <th style="min-width: 200px;">Division</th>
+                                <th style="min-width: 200px;">Department</th>
+                                <th>Category</th>
+                                <th>Event</th>
+                                <th>Workflow</th>
+                                <th>Stage</th>
+                                <th>Saving Cost</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ideas-table-body">
+                            @foreach (var idea in Model.Ideas)
+                            {
+                                <tr style="cursor: pointer;" onclick="openBypassStageModal(@idea.Id, '@idea.IdeaCode', @idea.CurrentStage, @idea.MaxStage)">
+                                    <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
+                                    <td>
+                                        <div class="truncate-title" title="@idea.IdeaName">
+                                            @idea.IdeaName
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.InitiatorUser?.Name</strong>
+                                    </td>
+                                    <td>
+                                        <strong>@idea.TargetDivision?.NameDivision</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">@idea.TargetDepartment?.NameDepartment</small>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var categoryClass = idea.Category?.CategoryName switch
+                                            {
+                                                "Cost Reduction (CR)" => "bg-success",
+                                                "Digitalization" => "bg-primary",
+                                                "General Transformation" => "bg-info text-dark",
+                                                "Increase Revenue" => "bg-warning text-dark",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @categoryClass">@idea.Category?.CategoryName</span>
+                                    </td>
+                                    <td>
+                                        @if (idea.Event != null)
+                                        {
+                                            var eventClass = idea.Event.EventName switch
+                                            {
+                                                "CI Academy" => "bg-purple text-white",
+                                                "Hackathon" => "bg-orange text-white",
+                                                _ => "bg-light text-dark"
+                                            };
+                                            <span class="badge @eventClass">@idea.Event.EventName</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">@(idea.Workflow?.WorkflowName ?? "N/A")</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">S@(idea.CurrentStage)</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">@idea.SavingCost.ToString("C")</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var statusClass = idea.CurrentStatus switch
+                                            {
+                                                var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
+                                                "Approved" => "bg-success",
+                                                "Rejected" => "bg-danger",
+                                                "Completed" => "bg-primary",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @statusClass">@idea.CurrentStatus</span>
+                                    </td>
+                                    <td>
+                                        <div>@idea.SubmittedDate.ToString("MMM dd")</div>
+                                        <small class="text-muted">@idea.SubmittedDate.ToString("HH:mm")</small>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-5">
+                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                    <h4 class="mt-3">No Ideas Found</h4>
+                    <p class="text-muted">There are no ideas matching your filters.</p>
+                </div>
+            }
+
+            @if (Model.ShowPagination)
+            {
+                @await Html.PartialAsync("_PaginationPartial", Model.PagedIdeas)
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="bypassStageModal" tabindex="-1" aria-labelledby="bypassStageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-fast-forward"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="bypassStageModalLabel">Bypass Approval Stage</h5>
+                        <small class="text-white-50" id="modalIdeaCodeSubtitle">Bypass stage for idea</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="bypassStageForm">
+                <div class="modal-body app-modal-body">
+                    <input type="hidden" id="modalIdeaId" name="ideaId">
+
+                    <div class="mb-3">
+                        <label class="form-label">Current Stage</label>
+                        <input type="text" class="form-control" id="modalCurrentStage" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalTargetStage" class="form-label">
+                            Target Stage <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="modalTargetStage" name="targetStage" required>
+                            <option value="">Select target stage...</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a target stage.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalBypassReason" class="form-label">
+                            Bypass Reason <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="modalBypassReason" name="reason" rows="3"
+                                  placeholder="Enter reason for bypassing stages (minimum 10 characters)"
+                                  required minlength="10"></textarea>
+                        <div class="invalid-feedback">
+                            Please provide a reason (minimum 10 characters).
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <small><strong>Warning:</strong> Bypassing stages will skip intermediate approvals. This action is logged for audit purposes.</small>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save" id="bypassStageBtn">
+                        <i class="bi bi-fast-forward me-2"></i>Bypass Stage
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+    let bypassStageModal;
+    let searchInput, divisionSelect, departmentSelect, categorySelect, workflowSelect, statusSelect, tableBody;
+    let debounceTimeout;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalElement = document.getElementById('bypassStageModal');
+        if (modalElement) {
+            bypassStageModal = new bootstrap.Modal(modalElement);
+        }
+
+        searchInput = document.getElementById('searchTerm');
+        divisionSelect = document.getElementById('selectedDivision');
+        departmentSelect = document.getElementById('selectedDepartment');
+        categorySelect = document.getElementById('selectedCategory');
+        workflowSelect = document.getElementById('selectedWorkflow');
+        statusSelect = document.getElementById('selectedStatus');
+        tableBody = document.getElementById('ideas-table-body');
+
+        const initialDivision = '@Model.SelectedDivision';
+        const initialDepartment = '@Model.SelectedDepartment';
+
+        if (initialDivision && initialDivision !== '') {
+            loadDepartmentsByDivision(initialDivision, initialDepartment);
+        }
+
+        const filterForm = document.querySelector('form[method="get"]');
+        if (filterForm) {
+            filterForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                applyFilters();
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyFilters();
+                }
+            });
+
+            searchInput.addEventListener('input', function () {
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(() => applyFilters(), 300);
+            });
+        }
+
+        [departmentSelect, categorySelect, workflowSelect, statusSelect].forEach(select => {
+            if (select) {
+                select.addEventListener('change', applyFilters);
+            }
+        });
+
+        if (divisionSelect) {
+            divisionSelect.addEventListener('change', function () {
+                const divisionId = this.value;
+
+                if (departmentSelect) {
+                    departmentSelect.innerHTML = '<option value="">Please select Division first</option>';
+                    departmentSelect.value = '';
+                }
+
+                if (!divisionId) {
+                    applyFilters();
+                    return;
+                }
+
+                loadDepartmentsByDivision(divisionId);
+                setTimeout(() => applyFilters(), 500);
+            });
+        }
+
+        const bypassStageForm = document.getElementById('bypassStageForm');
+        if (bypassStageForm) {
+            bypassStageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveBypassStage();
+            });
+        }
+
+        setupPaginationHandlers();
+    });
+
+    function loadDepartmentsByDivision(divisionId, selectedDepartmentId = '') {
+        if (!departmentSelect) return;
+
+        if (!divisionId) {
+            departmentSelect.innerHTML = '<option value="">Please select Division first</option>';
+            departmentSelect.value = '';
+            return;
+        }
+
+        departmentSelect.innerHTML = '<option value="">Loading departments...</option>';
+        departmentSelect.disabled = true;
+
+        fetch(`/BypassStage/GetDepartmentsByDivision?divisionId=${divisionId}`)
+            .then(response => response.json())
+            .then(data => {
+                departmentSelect.innerHTML = '<option value="">All Departments</option>';
+
+                if (data.success && data.departments) {
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        if (selectedDepartmentId && dept.id === selectedDepartmentId) {
+                            option.selected = true;
+                        }
+                        departmentSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching departments:', error);
+                departmentSelect.innerHTML = '<option value="">Error loading departments</option>';
+            })
+            .finally(() => {
+                departmentSelect.disabled = false;
+            });
+    }
+
+    function applyFilters() {
+        const filters = {
+            searchTerm: searchInput?.value?.trim() || '',
+            selectedDivision: divisionSelect?.value || '',
+            selectedDepartment: departmentSelect?.value || '',
+            selectedCategory: categorySelect?.value || '',
+            selectedWorkflow: workflowSelect?.value || '',
+            selectedStatus: statusSelect?.value || ''
+        };
+
+        const isAllEmpty = !filters.searchTerm &&
+            !filters.selectedDivision &&
+            !filters.selectedDepartment &&
+            !filters.selectedCategory &&
+            !filters.selectedWorkflow &&
+            !filters.selectedStatus;
+
+        if (isAllEmpty) {
+            window.location.href = window.location.pathname;
+            return;
+        }
+
+        loadFilteredResults(1, getCurrentPageSize());
+    }
+
+    function getCurrentFilters() {
+        return {
+            searchTerm: searchInput?.value?.trim() || '',
+            selectedDivision: divisionSelect?.value || '',
+            selectedDepartment: departmentSelect?.value || '',
+            selectedCategory: categorySelect?.value || '',
+            selectedWorkflow: workflowSelect?.value || '',
+            selectedStatus: statusSelect?.value || ''
+        };
+    }
+
+    function getCurrentPageSize() {
+        return parseInt(document.querySelector('.pagination select')?.value) || 10;
+    }
+
+    function loadFilteredResults(page = 1, pageSize = 10) {
+        const filters = getCurrentFilters();
+
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('pageSize', pageSize.toString());
+
+        if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
+        if (filters.selectedDivision) params.append('selectedDivision', filters.selectedDivision);
+        if (filters.selectedDepartment) params.append('selectedDepartment', filters.selectedDepartment);
+        if (filters.selectedCategory) params.append('selectedCategory', filters.selectedCategory);
+        if (filters.selectedWorkflow) params.append('selectedWorkflow', filters.selectedWorkflow);
+        if (filters.selectedStatus) params.append('selectedStatus', filters.selectedStatus);
+
+        showLoadingState();
+
+        const newUrl = `/BypassStage?${params.toString()}`;
+        if (page !== 1 || hasActiveFilters()) {
+            history.pushState({ page, filters }, null, newUrl);
+        }
+
+        const requestUrl = `/BypassStage/FilterIdeas?${params.toString()}`;
+
+        fetch(requestUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    updateTable(data.ideas);
+                    updateAjaxPagination(data.pagination, filters);
+                    hideLoadingState();
+                } else {
+                    showErrorState(data.message || 'Error loading data');
+                }
+            })
+            .catch(error => {
+                console.error('AJAX Filter Error:', error);
+                showErrorState(`Error: ${error.message}`);
+            });
+    }
+
+    function hasActiveFilters() {
+        const filters = getCurrentFilters();
+        return Object.values(filters).some(value => value && value.toString().trim() !== '');
+    }
+
+    function updateTable(ideas) {
+        if (!tableBody) {
+            console.error('Table body element not found');
+            return;
+        }
+
+        if (ideas.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-5">No ideas found matching your filters</td></tr>';
+            return;
+        }
+
+        const rows = ideas.map(createTableRow).join('');
+        tableBody.innerHTML = rows;
+    }
+
+    function createTableRow(idea) {
+        const { dateStr, timeStr } = formatDateTime(idea.submittedDate);
+        const categoryClass = getCategoryClass(idea.categoryName);
+        const eventClass = getEventClass(idea.eventName);
+        const statusClass = getStatusClass(idea.currentStatus);
+
+        return `
+            <tr style="cursor: pointer;" onclick="openBypassStageModal(${idea.id}, '${idea.ideaCode}', ${idea.currentStage}, ${idea.maxStage})">
+                <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
+                <td>
+                    <div class="truncate-title" title="${escapeHtml(idea.ideaName)}">
+                        ${escapeHtml(idea.ideaName)}
+                    </div>
+                </td>
+                <td><strong>${idea.initiatorName || ''}</strong></td>
+                <td><strong>${idea.divisionName || ''}</strong></td>
+                <td><small class="text-muted">${idea.departmentName || ''}</small></td>
+                <td>
+                    ${idea.categoryName ? `<span class="badge ${categoryClass}">${idea.categoryName}</span>` : ''}
+                </td>
+                <td>
+                    ${idea.eventName ? `<span class="badge ${eventClass}">${idea.eventName}</span>` : ''}
+                </td>
+                <td><span class="badge bg-primary">${idea.workflowName || 'N/A'}</span></td>
+                <td><span class="badge bg-secondary">S${idea.currentStage}</span></td>
+                <td>
+                    ${idea.savingCost ? `<span class="fw-bold text-success">${formatCurrency(idea.savingCost)}</span>` : ''}
+                </td>
+                <td><span class="badge ${statusClass}">${idea.currentStatus}</span></td>
+                <td>
+                    <div>${dateStr}</div>
+                    <small class="text-muted">${timeStr}</small>
+                </td>
+            </tr>
+        `;
+    }
+
+    function updateAjaxPagination(paginationData, filters = {}) {
+        const paginationContainer = document.querySelector('.pagination-container-single-row');
+
+        if (!paginationData || paginationData.totalPages <= 1) {
+            if (paginationContainer) {
+                paginationContainer.style.display = 'none';
+            }
+            return;
+        }
+
+        if (paginationContainer) {
+            paginationContainer.style.display = 'flex';
+
+            const paginationInfo = paginationContainer.querySelector('.pagination-info span');
+            if (paginationInfo) {
+                paginationInfo.innerHTML = `
+                    Showing <strong>${paginationData.firstItemIndex}-${paginationData.lastItemIndex}</strong>
+                    of <strong>${paginationData.totalCount}</strong> items
+                `;
+            }
+
+            regeneratePaginationHTML(paginationData, filters);
+            setupPaginationHandlers();
+        }
+    }
+
+    function regeneratePaginationHTML(paginationData, filters = {}) {
+        const paginationNav = document.querySelector('.pagination-navigation ul.pagination');
+        if (!paginationNav) return;
+
+        const currentPage = paginationData.page;
+        const totalPages = paginationData.totalPages;
+        const maxVisible = 5;
+
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+        if (endPage - startPage + 1 < maxVisible) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        const filterParams = new URLSearchParams();
+        if (filters.searchTerm) filterParams.append('searchTerm', filters.searchTerm);
+        if (filters.selectedDivision) filterParams.append('selectedDivision', filters.selectedDivision);
+        if (filters.selectedDepartment) filterParams.append('selectedDepartment', filters.selectedDepartment);
+        if (filters.selectedCategory) filterParams.append('selectedCategory', filters.selectedCategory);
+        if (filters.selectedWorkflow) filterParams.append('selectedWorkflow', filters.selectedWorkflow);
+        if (filters.selectedStatus) filterParams.append('selectedStatus', filters.selectedStatus);
+        filterParams.append('pageSize', paginationData.pageSize);
+
+        let paginationHTML = '';
+
+        paginationHTML += `
+            <li class="page-item first-last-btn ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="/BypassStage?${filterParams}&page=1" data-page="1">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+        `;
+
+        paginationHTML += `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="/BypassStage?${filterParams}&page=${currentPage - 1}" data-page="${currentPage - 1}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        `;
+
+        for (let page = startPage; page <= endPage; page++) {
+            paginationHTML += `
+                <li class="page-item page-number desktop-page ${page === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="/BypassStage?${filterParams}&page=${page}" data-page="${page}">${page}</a>
+                </li>
+            `;
+        }
+
+        paginationHTML += `
+            <li class="page-item page-number mobile-page">
+                <span class="page-link" style="background-color: white;">${currentPage}</span>
+            </li>
+        `;
+
+        paginationHTML += `
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="/BypassStage?${filterParams}&page=${currentPage + 1}" data-page="${currentPage + 1}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        `;
+
+        paginationHTML += `
+            <li class="page-item first-last-btn ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="/BypassStage?${filterParams}&page=${totalPages}" data-page="${totalPages}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        `;
+
+        paginationNav.innerHTML = paginationHTML;
+    }
+
+    function setupPaginationHandlers() {
+        const paginationLinks = document.querySelectorAll('.pagination a');
+
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                const page = parseInt(this.dataset.page) || 1;
+                const pageSize = getCurrentPageSize();
+
+                loadFilteredResults(page, pageSize);
+            });
+        });
+
+        const pageSizeSelect = document.querySelector('.pagination select');
+        if (pageSizeSelect) {
+            pageSizeSelect.addEventListener('change', function () {
+                const newPageSize = parseInt(this.value);
+                loadFilteredResults(1, newPageSize);
+            });
+        }
+    }
+
+    function showLoadingState() {
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="mt-2 text-muted">Loading filtered results...</div>
+                    </td>
+                </tr>`;
+        }
+    }
+
+    function showErrorState(message) {
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center py-4">
+                        <div class="text-danger mb-2">
+                            <i class="bi bi-exclamation-triangle"></i> ${message}
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadFilteredResults()">
+                            <i class="bi bi-arrow-clockwise"></i> Retry
+                        </button>
+                    </td>
+                </tr>`;
+        }
+
+        const paginationContainer = document.querySelector('.pagination-container-single-row');
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
+    }
+
+    function hideLoadingState() {
+    }
+
+    function openBypassStageModal(ideaId, ideaCode, currentStage, maxStage) {
+        console.log('Opening modal for:', ideaId, ideaCode, currentStage, maxStage);
+
+        document.getElementById('modalIdeaId').value = ideaId;
+        document.getElementById('modalIdeaCodeSubtitle').textContent = `Bypass stage for ${ideaCode}`;
+        document.getElementById('modalCurrentStage').value = `Stage ${currentStage}`;
+        document.getElementById('modalBypassReason').value = '';
+
+        const form = document.getElementById('bypassStageForm');
+        form.classList.remove('was-validated');
+
+        fetch(`/BypassStage/GetAvailableStages?ideaId=${ideaId}`)
+            .then(response => response.json())
+            .then(data => {
+                const targetStageSelect = document.getElementById('modalTargetStage');
+                targetStageSelect.innerHTML = '<option value="">Select target stage...</option>';
+
+                if (data.success && data.stages) {
+                    data.stages.forEach(stage => {
+                        const option = document.createElement('option');
+                        option.value = stage.value;
+                        option.textContent = stage.text;
+                        targetStageSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading stages:', error);
+            });
+
+        if (bypassStageModal) {
+            bypassStageModal.show();
+        } else {
+            console.error('Modal not initialized');
+        }
+    }
+
+    function saveBypassStage() {
+        const form = document.getElementById('bypassStageForm');
+
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please fill all required fields',
+                confirmButtonColor: '#3b82f6'
+            });
+            return;
+        }
+
+        const ideaId = document.getElementById('modalIdeaId').value;
+        const targetStage = document.getElementById('modalTargetStage').value;
+        const targetStageText = document.getElementById('modalTargetStage').options[document.getElementById('modalTargetStage').selectedIndex].text;
+        const reason = document.getElementById('modalBypassReason').value;
+
+        if (!ideaId || !targetStage || !reason) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please fill all fields',
+                confirmButtonColor: '#3b82f6'
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Confirm Stage Bypass',
+            html: `Are you sure you want to bypass to <strong>${targetStageText}</strong>?<br><br><span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>This will skip intermediate approval stages.</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: '<i class="bi bi-fast-forward me-2"></i>Yes, Bypass It',
+            cancelButtonText: '<i class="bi bi-x-circle me-2"></i>Cancel',
+            customClass: {
+                confirmButton: 'btn btn-primary px-4 me-2',
+                cancelButton: 'btn btn-secondary px-4'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'Please wait while we bypass the stages.',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch('/BypassStage/BypassStage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `ideaId=${ideaId}&targetStage=${targetStage}&reason=${encodeURIComponent(reason)}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (bypassStageModal) {
+                                bypassStageModal.hide();
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: data.message || 'Stage has been successfully bypassed!',
+                                confirmButtonColor: '#3b82f6',
+                                timer: 2000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                if (hasActiveFilters()) {
+                                    applyFilters();
+                                } else {
+                                    window.location.reload();
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: data.message || 'Failed to bypass stage',
+                                confirmButtonColor: '#dc2626'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'An error occurred while bypassing stage',
+                            confirmButtonColor: '#dc2626'
+                        });
+                    });
+            }
+        });
+    }
+
+    function getCategoryClass(categoryName) {
+        switch (categoryName) {
+            case 'Cost Reduction (CR)': return 'bg-success';
+            case 'Digitalization': return 'bg-primary';
+            case 'General Transformation': return 'bg-info text-dark';
+            case 'Increase Revenue': return 'bg-warning text-dark';
+            default: return 'bg-secondary';
+        }
+    }
+
+    function getEventClass(eventName) {
+        switch (eventName) {
+            case 'CI Academy': return 'bg-purple text-white';
+            case 'Hackathon': return 'bg-orange text-white';
+            default: return 'bg-light text-dark';
+        }
+    }
+
+    function getStatusClass(status) {
+        if (status.startsWith('Waiting Approval')) return 'bg-warning text-dark';
+        if (status.startsWith('Rejected S')) return 'bg-danger';
+        if (status === 'Approved') return 'bg-success';
+        if (status === 'Rejected') return 'bg-danger';
+        if (status === 'Completed') return 'bg-primary';
+        return 'bg-secondary';
+    }
+
+    function formatCurrency(amount) {
+        if (!amount || amount === 0) return '';
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
+
+    function formatDateTime(dateString) {
+        const date = new Date(dateString);
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        return { dateStr, timeStr };
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    window.addEventListener('popstate', function (event) {
+        if (event.state && event.state.filters) {
+            const filters = event.state.filters;
+
+            if (searchInput) searchInput.value = filters.searchTerm || '';
+            if (divisionSelect) divisionSelect.value = filters.selectedDivision || '';
+            if (departmentSelect) departmentSelect.value = filters.selectedDepartment || '';
+            if (categorySelect) categorySelect.value = filters.selectedCategory || '';
+            if (workflowSelect) workflowSelect.value = filters.selectedWorkflow || '';
+            if (statusSelect) statusSelect.value = filters.selectedStatus || '';
+
+            if (filters.selectedDivision) {
+                loadDepartmentsByDivision(filters.selectedDivision, filters.selectedDepartment);
+            }
+
+            loadFilteredResults(event.state.page || 1, getCurrentPageSize());
+        } else {
+            window.location.reload();
+        }
+    });
+
+    window.openBypassStageModal = openBypassStageModal;
+    </script>
+}

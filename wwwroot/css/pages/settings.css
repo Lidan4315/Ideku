@@ -78,6 +78,11 @@
     color: #4f46e5;
 }
 
+.bypass-stage-icon {
+    background: linear-gradient(135deg, #fff7ed, #fed7aa);
+    color: #ea580c;
+}
+
 .card-title {
     font-size: 1.1rem;
     font-weight: 600;
