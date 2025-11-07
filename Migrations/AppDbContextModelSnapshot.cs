@@ -644,6 +644,66 @@ namespace Ideku.Migrations
                     b.ToTable("MilestonePICs");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.Module", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActionName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ActionName");
+
+                    b.Property<string>("ControllerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ControllerName");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsActive");
+
+                    b.Property<string>("ModuleKey")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ModuleKey");
+
+                    b.Property<string>("ModuleName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ModuleName");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("SortOrder");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ControllerName")
+                        .HasDatabaseName("IX_Modules_ControllerName");
+
+                    b.HasIndex("ModuleKey")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_Modules_ModuleKey");
+
+                    b.HasIndex("IsActive", "SortOrder")
+                        .HasDatabaseName("IX_Modules_IsActive_SortOrder");
+
+                    b.ToTable("Modules");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -675,6 +735,52 @@ namespace Ideku.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.RoleAccessModule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CanAccess")
+                        .HasColumnType("bit")
+                        .HasColumnName("CanAccess");
+
+                    b.Property<DateTime>("ModifiedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("ModifiedAt");
+
+                    b.Property<long?>("ModifiedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ModifiedBy");
+
+                    b.Property<int>("ModuleId")
+                        .HasColumnType("int")
+                        .HasColumnName("ModuleId");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int")
+                        .HasColumnName("RoleId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModifiedBy");
+
+                    b.HasIndex("ModuleId")
+                        .HasDatabaseName("IX_RoleAccessModules_ModuleId");
+
+                    b.HasIndex("RoleId", "CanAccess")
+                        .HasDatabaseName("IX_RoleAccessModules_RoleId_CanAccess");
+
+                    b.HasIndex("RoleId", "ModuleId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_RoleAccessModules_RoleModule");
+
+                    b.ToTable("RoleAccessModules");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.User", b =>
@@ -1122,6 +1228,32 @@ namespace Ideku.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Ideku.Models.Entities.RoleAccessModule", b =>
+                {
+                    b.HasOne("Ideku.Models.Entities.User", "ModifiedByUser")
+                        .WithMany()
+                        .HasForeignKey("ModifiedBy")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Ideku.Models.Entities.Module", "Module")
+                        .WithMany("RoleAccessModules")
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ideku.Models.Entities.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ModifiedByUser");
+
+                    b.Navigation("Module");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("Ideku.Models.Entities.User", b =>
                 {
                     b.HasOne("Ideku.Models.Entities.Department", "ActingDepartment")
@@ -1263,6 +1395,11 @@ namespace Ideku.Migrations
             modelBuilder.Entity("Ideku.Models.Entities.Milestone", b =>
                 {
                     b.Navigation("MilestonePICs");
+                });
+
+            modelBuilder.Entity("Ideku.Models.Entities.Module", b =>
+                {
+                    b.Navigation("RoleAccessModules");
                 });
 
             modelBuilder.Entity("Ideku.Models.Entities.Role", b =>

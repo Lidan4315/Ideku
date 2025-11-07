@@ -32,6 +32,10 @@ namespace Ideku.Data.Context
         public DbSet<WorkflowStage> WorkflowStages { get; set; }
         public DbSet<WorkflowCondition> WorkflowConditions { get; set; }
 
+        // Access Control System DbSets
+        public DbSet<Module> Modules { get; set; }
+        public DbSet<RoleAccessModule> RoleAccessModules { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -390,6 +394,57 @@ namespace Ideku.Data.Context
             modelBuilder.Entity<IdeaMonitoring>()
                 .HasIndex(im => new { im.IdeaId, im.MonthFrom, im.MonthTo })
                 .HasDatabaseName("IX_IdeaMonitorings_IdeaId_Period");
+
+            // =================== ACCESS CONTROL CONFIGURATIONS ===================
+
+            // Module unique constraint
+            modelBuilder.Entity<Module>()
+                .HasIndex(m => m.ModuleKey)
+                .IsUnique()
+                .HasDatabaseName("UQ_Modules_ModuleKey");
+
+            // Module performance indexes
+            modelBuilder.Entity<Module>()
+                .HasIndex(m => m.ControllerName)
+                .HasDatabaseName("IX_Modules_ControllerName");
+
+            modelBuilder.Entity<Module>()
+                .HasIndex(m => new { m.IsActive, m.SortOrder })
+                .HasDatabaseName("IX_Modules_IsActive_SortOrder");
+
+            // RoleAccessModule unique constraint
+            modelBuilder.Entity<RoleAccessModule>()
+                .HasIndex(ram => new { ram.RoleId, ram.ModuleId })
+                .IsUnique()
+                .HasDatabaseName("UQ_RoleAccessModules_RoleModule");
+
+            // RoleAccessModule performance index (most critical for authorization check)
+            modelBuilder.Entity<RoleAccessModule>()
+                .HasIndex(ram => new { ram.RoleId, ram.CanAccess })
+                .HasDatabaseName("IX_RoleAccessModules_RoleId_CanAccess");
+
+            modelBuilder.Entity<RoleAccessModule>()
+                .HasIndex(ram => ram.ModuleId)
+                .HasDatabaseName("IX_RoleAccessModules_ModuleId");
+
+            // RoleAccessModule relationships
+            modelBuilder.Entity<RoleAccessModule>()
+                .HasOne(ram => ram.Role)
+                .WithMany()
+                .HasForeignKey(ram => ram.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RoleAccessModule>()
+                .HasOne(ram => ram.Module)
+                .WithMany(m => m.RoleAccessModules)
+                .HasForeignKey(ram => ram.ModuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RoleAccessModule>()
+                .HasOne(ram => ram.ModifiedByUser)
+                .WithMany()
+                .HasForeignKey(ram => ram.ModifiedBy)
+                .OnDelete(DeleteBehavior.SetNull);
 
         }
     }
