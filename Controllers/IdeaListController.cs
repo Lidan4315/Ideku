@@ -353,13 +353,6 @@ namespace Ideku.Controllers
         {
             try
             {
-                // Check if user has permission to manage implementators
-                var canManage = await _implementatorService.CanUserManageImplementatorsAsync(User.Identity!.Name!, ideaId);
-                if (!canManage)
-                {
-                    return Json(new { success = false, message = "You don't have permission to assign implementators for this idea." });
-                }
-
                 // Check if trying to add member and limit is reached
                 if (role == "Member")
                 {
@@ -394,13 +387,6 @@ namespace Ideku.Controllers
         {
             try
             {
-                // Check if user has permission to manage implementators
-                var canManage = await _implementatorService.CanUserManageImplementatorsAsync(User.Identity!.Name!, ideaId);
-                if (!canManage)
-                {
-                    return Json(new { success = false, message = "You don't have permission to remove implementators for this idea." });
-                }
-
                 var result = await _implementatorService.RemoveImplementatorAsync(implementatorId);
 
                 if (result.Success)

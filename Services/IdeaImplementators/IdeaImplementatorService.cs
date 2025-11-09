@@ -232,43 +232,6 @@ namespace Ideku.Services.IdeaImplementators
             }
         }
 
-        public async Task<bool> CanUserManageImplementatorsAsync(string username, long ideaId)
-        {
-            try
-            {
-                var user = await _userRepository.GetByUsernameAsync(username);
-                if (user == null) return false;
-
-                // Superuser can manage any idea's implementators
-                if (user.Role.RoleName == "Superuser")
-                {
-                    return true;
-                }
-
-                // Workstream Leader can manage if department matches idea's target department
-                if (user.Role.RoleName == "Workstream Leader")
-                {
-                    var idea = await _context.Ideas
-                        .FirstOrDefaultAsync(i => i.Id == ideaId);
-
-                    if (idea == null) return false;
-
-                    // Get workstream leaders for this department
-                    var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
-
-                    // Check if current user is one of the workstream leaders for this department
-                    return workstreamLeaders.Any(wl => wl.Id == user.Id);
-                }
-
-                return false;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking if user can manage implementators: Username={Username}, IdeaId={IdeaId}",
-                    username, ideaId);
-                return false;
-            }
-        }
 
         public async Task<bool> CanAddMoreMembersAsync(string username, long ideaId)
         {
