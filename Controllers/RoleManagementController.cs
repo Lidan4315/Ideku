@@ -2,14 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Ideku.Services.Roles;
 using Ideku.ViewModels.RoleManagement;
+using Ideku.Helpers;
 
 namespace Ideku.Controllers
 {
-    /// <summary>
-    /// Controller for Role Management operations
-    /// Handles CRUD operations for roles with proper authorization
-    /// </summary>
-    [Authorize(Roles = "Superuser,Admin")]
+    [Authorize]
+    [ModuleAuthorize("role_management")]
     public class RoleManagementController : Controller
     {
         private readonly IRolesService _rolesService;
@@ -21,10 +19,7 @@ namespace Ideku.Controllers
             _logger = logger;
         }
 
-        /// <summary>
         /// GET: Role Management Index page
-        /// Displays all roles with create form and statistics
-        /// </summary>
         public async Task<IActionResult> Index()
         {
             try
@@ -49,10 +44,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Create new role via AJAX
-        /// Returns JSON response for modal form handling
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateRoleViewModel model)
@@ -86,10 +78,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// GET: Get role data for editing via AJAX
-        /// Returns role information for edit modal
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetRole(int id)
         {
@@ -123,9 +112,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Update existing role via AJAX
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, EditRoleViewModel model)
@@ -164,10 +151,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Delete role via AJAX
-        /// Includes dependency checking
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
@@ -192,8 +176,5 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = "An error occurred while deleting the role." });
             }
         }
-
-        // Details method removed - Role Management doesn't need separate details page
-        // All role information is available in the main index table with inline editing
     }
 }

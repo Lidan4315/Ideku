@@ -10,12 +10,8 @@ using Ideku.Helpers;
 
 namespace Ideku.Controllers
 {
-    /// <summary>
-    /// Controller for User Management operations
-    /// Handles CRUD operations for users with proper authorization and validation
-    /// Follows the same pattern as RoleManagementController for consistency
-    /// </summary>
     [Authorize]
+    [ModuleAuthorize("user_management")]
     public class UserManagementController : Controller
     {
         private readonly IUserManagementService _userManagementService;
@@ -32,10 +28,7 @@ namespace Ideku.Controllers
             _logger = logger;
         }
 
-        /// <summary>
         /// GET: User Management Index page with pagination
-        /// Same pattern as IdeaListController for consistency
-        /// </summary>
         public async Task<IActionResult> Index(
             int page = 1,
             int pageSize = 10,
@@ -103,10 +96,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Create new user via AJAX
-        /// Returns JSON response for modal form handling
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateUserViewModel model)
@@ -146,10 +136,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// GET: Get user data for editing via AJAX
-        /// Returns user information for edit modal
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetUser(long id)
         {
@@ -197,9 +184,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Update existing user via AJAX
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(long id, EditUserViewModel model)
@@ -227,11 +212,11 @@ namespace Ideku.Controllers
                 }
 
                 var result = await _userManagementService.UpdateUserAsync(
-                    id, 
-                    model.Username, 
-                    model.RoleId, 
+                    id,
+                    model.Username,
+                    model.RoleId,
                     model.IsActing);
-                
+
                 if (result.Success)
                 {
                     _logger.LogInformation("User ID {UserId} updated successfully", id);
@@ -249,10 +234,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
-        /// GET: Filter users via AJAX (same pattern as IdeaListController.FilterAllIdeas)
-        /// Returns JSON with filtered users and pagination data
-        /// </summary>
+        /// GET: Filter users via AJAX
         [HttpGet]
         public async Task<IActionResult> FilterUsers(
             int page = 1,
@@ -321,10 +303,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Delete user via AJAX
-        /// Includes comprehensive dependency checking
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Delete(long id)
         {
@@ -350,11 +329,7 @@ namespace Ideku.Controllers
             }
         }
 
-
-        /// <summary>
         /// GET: Validate and get employee information by Employee ID
-        /// Returns employee details if valid and available for user creation
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> ValidateEmployee(string employeeId)
         {
@@ -394,13 +369,9 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = "Error validating employee." });
             }
         }
+        // ACTING DURATION ENDPOINTS
 
-        // =================== ACTING DURATION ENDPOINTS ===================
-
-        /// <summary>
         /// POST: Set user acting role with duration
-        /// Uses SetActingViewModel for comprehensive validation
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> SetActing([FromBody] SetActingViewModel model)
         {
@@ -450,9 +421,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Stop user acting immediately and revert to original role
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> StopActing([FromBody] StopActingViewModel model)
         {
@@ -485,10 +454,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Extend user acting period to new end date
-        /// Uses ExtendActingViewModel for validation
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> ExtendActing([FromBody] ExtendActingViewModel model)
         {
@@ -505,7 +471,8 @@ namespace Ideku.Controllers
                 // Business validation - new date must be after current end date
                 if (model.NewActingEndDate <= model.CurrentActingEndDate)
                 {
-                    return Json(new {
+                    return Json(new
+                    {
                         success = false,
                         message = "New end date must be after current end date."
                     });
@@ -531,9 +498,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// GET: Get users whose acting period is about to expire (for notifications)
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetExpiringActingUsers(int withinDays = 7)
         {
@@ -565,11 +530,7 @@ namespace Ideku.Controllers
             }
         }
 
-
-        /// <summary>
         /// GET: Get acting statistics for dashboard
-        /// Returns comprehensive statistics about acting users
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetActingStatistics()
         {
@@ -602,12 +563,9 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = "Error loading acting statistics." });
             }
         }
+        // ACTING LOCATION ENDPOINTS
 
-        // =================== ACTING LOCATION ENDPOINTS ===================
-
-        /// <summary>
         /// GET: Get divisions for acting location dropdown
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetActingDivisions()
         {
@@ -623,9 +581,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// GET: Get departments by division for acting location dropdown
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetActingDepartmentsByDivision(string divisionId)
         {

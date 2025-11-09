@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 namespace Ideku.Controllers
 {
     [Authorize]
+    [ModuleAuthorize("approval")]
     public class ApprovalController : Controller
     {
         private readonly IWorkflowService _workflowService;
@@ -462,9 +463,7 @@ namespace Ideku.Controllers
             return View("Review", viewModel);
         }
 
-        /// <summary>
         /// Helper method to clean up ModelState for rejection validation
-        /// </summary>
         private void CleanupModelStateForReject()
         {
             ModelState.Remove("Idea");
@@ -472,9 +471,7 @@ namespace Ideku.Controllers
             ModelState.Remove("ApprovalComments");
         }
 
-        /// <summary>
         /// Download attachment file
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> DownloadAttachment(string filename, int ideaId)
         {
@@ -520,9 +517,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// View attachment file inline (for popup preview)
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> ViewAttachment(string filename, int ideaId)
         {
@@ -568,9 +563,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// Get MIME content type based on file extension
-        /// </summary>
         private string GetContentType(string filename)
         {
             var extension = Path.GetExtension(filename).ToLowerInvariant();
@@ -591,9 +584,7 @@ namespace Ideku.Controllers
             };
         }
 
-        /// <summary>
         /// Helper method to clean up ModelState for approval validation  
-        /// </summary>
         private void CleanupModelStateForApprove()
         {
             ModelState.Remove("Idea");

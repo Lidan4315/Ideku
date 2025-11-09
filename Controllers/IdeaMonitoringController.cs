@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Ideku.Controllers
 {
     [Authorize]
+    [ModuleAuthorize("monitoring")]
     public class IdeaMonitoringController : Controller
     {
         private readonly IIdeaMonitoringService _monitoringService;
@@ -249,7 +250,7 @@ namespace Ideku.Controllers
             }
         }
 
-        // GET: IdeaMonitoring/Details/{ideaId} - Monitoring detail for specific idea
+        // GET: IdeaMonitoring/Details/{ideaId}
         public async Task<IActionResult> Details(long ideaId)
         {
             try

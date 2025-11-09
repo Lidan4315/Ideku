@@ -1,0 +1,359 @@
+@model Ideku.ViewModels.AccessControlViewModel
+@{
+    ViewData["Title"] = "Access Control";
+}
+
+@section Styles {
+    <link href="~/css/pages/access-control.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header with Back Button and Title -->
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <!-- Back to Settings Button -->
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-secondary me-3" title="Back to Settings">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <!-- Page Title -->
+                            <h2 class="page-title text-gradient mb-0">
+                                <i class="bi bi-shield-lock me-2"></i>Access Control
+                            </h2>
+                        </div>
+                        <p class="text-muted">Manage role-based module access permissions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Card -->
+            <div class="card">
+                <div class="card-body">
+                    @if (Model.Roles.Any())
+                    {
+                        <!-- Roles Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Role Name</th>
+                                        <th>Description</th>
+                                        <th>Modules Access</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var role in Model.Roles)
+                                    {
+                                        var accessCount = Model.PermissionMatrix.ContainsKey(role.Id)
+                                            ? Model.PermissionMatrix[role.Id].Count(m => m.Value)
+                                            : 0;
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-light text-dark fw-bold">@role.Id</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@role.RoleName</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted">@(role.Desc ?? "No description")</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@accessCount / @Model.Modules.Count modules</span>
+                                            </td>
+                                            <td>
+                                                <!-- Action Button -->
+                                                <div class="d-flex gap-2">
+                                                    <button type="button"
+                                                            class="btn role-action-btn manage-access-btn"
+                                                            data-role-id="@role.Id"
+                                                            data-role-name="@role.RoleName"
+                                                            title="Manage Module Access">
+                                                        <i class="bi bi-key"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Empty State -->
+                        <div class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-shield-lock display-1 text-muted mb-3"></i>
+                                <h4 class="text-muted">No Roles Found</h4>
+                                <p class="text-muted mb-4">Please create roles first in Role Management.</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Module Access Modal -->
+<div class="modal fade" id="manageAccessModal" tabindex="-1" aria-labelledby="manageAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-key"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="manageAccessModalLabel">Manage Module Access</h5>
+                        <small class="text-muted" id="modalRoleName"></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="manageAccessForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="modalRoleId" name="roleId">
+                <div class="modal-body app-modal-body">
+                    <!-- Selected Count -->
+                    <div class="mb-3">
+                        <strong>Select Modules:</strong>
+                        <span class="text-muted" id="selectedCount">0 / 0 selected</span>
+                    </div>
+
+                    <!-- Modules List -->
+                    <div class="modules-list">
+                        @foreach (var module in Model.Modules)
+                        {
+                            <div class="module-item">
+                                <div class="module-info-box">
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-semibold">@module.ModuleName</span>
+                                        <small class="text-muted">@module.ModuleKey</small>
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch module-toggle">
+                                    <input class="form-check-input module-checkbox"
+                                           type="checkbox"
+                                           value="@module.Id"
+                                           id="module_@module.Id">
+                                    <label class="form-check-label" for="module_@module.Id"></label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Permission matrix data from server
+            const permissionMatrix = @Html.Raw(Json.Serialize(Model.PermissionMatrix));
+            const totalModules = @Model.Modules.Count;
+
+            // URLs for AJAX calls
+            const urls = {
+                updateRoleAccess: '@Url.Action("UpdateRoleAccess", "AccessControl")'
+            };
+
+            // Get anti-forgery token
+            function getAntiForgeryToken() {
+                return $('input[name="__RequestVerificationToken"]').val();
+            }
+
+            // Show toast notification
+            function showToast(message, type = 'success') {
+                const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+                const icon = type === 'success' ? 'check-circle' : 'x-circle';
+
+                const toast = $(`
+                    <div class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <i class="bi bi-${icon} me-2"></i>${message}
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    </div>
+                `);
+
+                // Create toast container if not exists
+                if ($('.toast-container').length === 0) {
+                    $('body').append('<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>');
+                }
+
+                $('.toast-container').append(toast);
+                const bsToast = new bootstrap.Toast(toast[0]);
+                bsToast.show();
+
+                // Remove toast after hidden
+                toast.on('hidden.bs.toast', function () {
+                    $(this).remove();
+                });
+            }
+
+            // Update selected count
+            function updateSelectedCount() {
+                const total = $('.module-checkbox').length;
+                const selected = $('.module-checkbox:checked').length;
+                $('#selectedCount').text(`${selected} / ${total} selected`);
+            }
+
+            // Handle manage access button click
+            $('.manage-access-btn').on('click', function () {
+                const roleId = $(this).data('role-id');
+                const roleName = $(this).data('role-name');
+
+                // Set modal title
+                $('#modalRoleName').text(`Role: ${roleName}`);
+                $('#modalRoleId').val(roleId);
+
+                // Uncheck all first
+                $('.module-checkbox').prop('checked', false);
+
+                // Check modules that this role has access to
+                if (permissionMatrix[roleId]) {
+                    Object.keys(permissionMatrix[roleId]).forEach(function (moduleId) {
+                        if (permissionMatrix[roleId][moduleId]) {
+                            $(`#module_${moduleId}`).prop('checked', true);
+                        }
+                    });
+                }
+
+                updateSelectedCount();
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('manageAccessModal'));
+                modal.show();
+            });
+
+            // Update count when checkbox changes
+            $('.module-checkbox').on('change', function () {
+                updateSelectedCount();
+            });
+
+            // Handle form submission
+            $('#manageAccessForm').on('submit', function (e) {
+                e.preventDefault();
+
+                const roleId = parseInt($('#modalRoleId').val());
+                const roleName = $('#modalRoleName').text().replace('Role: ', '');
+                const moduleIds = [];
+
+                // Collect selected module IDs
+                $('.module-checkbox:checked').each(function () {
+                    moduleIds.push(parseInt($(this).val()));
+                });
+
+                const $submitBtn = $(this).find('button[type="submit"]');
+                const originalText = $submitBtn.html();
+
+                // Show confirmation dialog
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: `Do you want to update module access permissions for ${roleName}?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Yes, update it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Disable button and show loading
+                        $submitBtn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-2"></i>Saving...');
+
+                        // Send AJAX request
+                        $.ajax({
+                            url: urls.updateRoleAccess,
+                            type: 'POST',
+                            contentType: 'application/json',
+                            headers: {
+                                'RequestVerificationToken': getAntiForgeryToken()
+                            },
+                            data: JSON.stringify({
+                                roleId: roleId,
+                                moduleIds: moduleIds
+                            }),
+                            success: function (response) {
+                                if (response.success) {
+                                    // Update permission matrix in memory
+                                    permissionMatrix[roleId] = {};
+                                    moduleIds.forEach(function (moduleId) {
+                                        permissionMatrix[roleId][moduleId] = true;
+                                    });
+
+                                    // Update table display
+                                    const $row = $(`.manage-access-btn[data-role-id="${roleId}"]`).closest('tr');
+                                    $row.find('.badge.bg-info').text(`${moduleIds.length} / ${totalModules} modules`);
+
+                                    // Close modal
+                                    bootstrap.Modal.getInstance(document.getElementById('manageAccessModal')).hide();
+
+                                    // Show success message
+                                    Swal.fire({
+                                        title: 'Success!',
+                                        text: `Module access permissions for ${roleName} have been updated successfully.`,
+                                        icon: 'success',
+                                        confirmButtonColor: '#3b82f6',
+                                        confirmButtonText: 'OK'
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: response.message || 'Failed to update access permissions.',
+                                        icon: 'error',
+                                        confirmButtonColor: '#dc2626',
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'An error occurred while updating permissions. Please try again.',
+                                    icon: 'error',
+                                    confirmButtonColor: '#dc2626',
+                                    confirmButtonText: 'OK'
+                                });
+                                console.error('Error:', error);
+                            },
+                            complete: function () {
+                                $submitBtn.prop('disabled', false).html(originalText);
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Add CSRF token to all AJAX requests
+            $.ajaxSetup({
+                beforeSend: function (xhr, settings) {
+                    if (settings.type === 'POST' && !settings.crossDomain) {
+                        const token = getAntiForgeryToken();
+                        if (token && !xhr.getResponseHeader('RequestVerificationToken')) {
+                            xhr.setRequestHeader('RequestVerificationToken', token);
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

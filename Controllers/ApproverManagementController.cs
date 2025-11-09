@@ -4,10 +4,12 @@ using Ideku.Services.Approver;
 using System.Text.Json;
 using Ideku.ViewModels.ApproverManagement;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Ideku.Helpers;
 
 namespace Ideku.Controllers
 {
     [Authorize]
+    [ModuleAuthorize("approver_management")]
     public class ApproverManagementController : Controller
     {
         private readonly IApproverService _approverService;

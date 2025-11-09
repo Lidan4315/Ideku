@@ -8,6 +8,7 @@ using Ideku.Services.Workflow;
 using Ideku.Services.IdeaImplementators;
 using Ideku.Models;
 using Ideku.Extensions;
+using Ideku.Helpers;
 using Ideku.Services.Lookup;
 using Ideku.Services.Milestone;
 
@@ -44,6 +45,7 @@ namespace Ideku.Controllers
         }
 
         // GET: Idea/Create
+        [ModuleAuthorize("idea_create")]
         public async Task<IActionResult> Create()
         {
             try
@@ -71,6 +73,7 @@ namespace Ideku.Controllers
         // POST: Idea/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [ModuleAuthorize("idea_create")]
         public async Task<IActionResult> Create(CreateIdeaViewModel model)
         {
             if (ModelState.IsValid)
@@ -112,9 +115,7 @@ namespace Ideku.Controllers
             });
         }
 
-        /// <summary>
         /// Helper method to send emails in background with proper scope management
-        /// </summary>
         private void SendEmailInBackground(Models.Entities.Idea idea)
         {
             _ = Task.Run(async () =>
@@ -165,6 +166,7 @@ namespace Ideku.Controllers
         }
 
         // GET: Idea/Index (My Ideas)
+        [ModuleAuthorize("idea_list")]
         public async Task<IActionResult> Index(
             int page = 1,
             int pageSize = 10,
@@ -278,6 +280,7 @@ namespace Ideku.Controllers
 
         // AJAX endpoint for real-time filtering
         [HttpGet]
+        [ModuleAuthorize("idea_list")]
         public async Task<IActionResult> FilterMyIdeas(
             int page = 1,
             int pageSize = 10,
@@ -391,6 +394,7 @@ namespace Ideku.Controllers
         }
 
         // GET: Idea/Details/{id}
+        [ModuleAuthorize("idea_list")]
         public async Task<IActionResult> Details(long id)
         {
             try

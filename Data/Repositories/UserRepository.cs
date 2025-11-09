@@ -100,9 +100,7 @@ namespace Ideku.Data.Repositories
                 .ToListAsync();
         }
 
-        /// <summary>
         /// Get users as IQueryable for pagination - same pattern as IdeaRepository
-        /// </summary>
         public async Task<IQueryable<User>> GetAllUsersQueryAsync()
         {
             // Return the query without executing it - this allows pagination to work at DB level
@@ -118,9 +116,7 @@ namespace Ideku.Data.Repositories
                 .OrderByDescending(u => u.Id);
         }
 
-        /// <summary>
         /// Create new user with automatic timestamp
-        /// </summary>
         public async Task<User> CreateUserAsync(User user)
         {
             user.CreatedAt = DateTime.Now;
@@ -131,9 +127,7 @@ namespace Ideku.Data.Repositories
             return await GetByIdAsync(user.Id) ?? user;
         }
 
-        /// <summary>
         /// Update existing user with automatic timestamp
-        /// </summary>
         public async Task<User> UpdateUserAsync(User user)
         {
             user.UpdatedAt = DateTime.Now;
@@ -144,10 +138,8 @@ namespace Ideku.Data.Repositories
             return await GetByIdAsync(user.Id) ?? user;
         }
 
-        /// <summary>
         /// Delete user with dependency checking
         /// Returns false if user has dependencies or doesn't exist
-        /// </summary>
         public async Task<bool> DeleteUserAsync(long id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -162,10 +154,8 @@ namespace Ideku.Data.Repositories
             return true;
         }
 
-        /// <summary>
         /// Check if username exists (excluding specific user ID for updates)
         /// Case-insensitive comparison for better user experience
-        /// </summary>
         public async Task<bool> UsernameExistsAsync(string username, long? excludeUserId = null)
         {
             var query = _context.Users
@@ -179,11 +169,8 @@ namespace Ideku.Data.Repositories
             return await query.AnyAsync();
         }
 
-
-        /// <summary>
         /// Count user dependencies to determine if user can be safely deleted
         /// Checks Ideas, WorkflowHistory, and Milestones
-        /// </summary>
         public async Task<int> GetUserDependenciesCountAsync(long userId)
         {
             var ideasCount = await _context.Ideas
@@ -200,12 +187,10 @@ namespace Ideku.Data.Repositories
             return ideasCount + workflowHistoryCount + milestonesCount;
         }
 
-        // =================== ACTING DURATION IMPLEMENTATIONS ===================
+        // ACTING DURATION IMPLEMENTATIONS
 
-        /// <summary>
         /// Get all users who are currently acting
         /// Includes complete navigation properties for display
-        /// </summary>
         public async Task<IEnumerable<User>> GetCurrentlyActingUsersAsync()
         {
             return await _context.Users
@@ -224,10 +209,8 @@ namespace Ideku.Data.Repositories
                 .ToListAsync();
         }
 
-        /// <summary>
         /// Get users whose acting period is about to expire within specified days
         /// Optimized query for notification purposes
-        /// </summary>
         public async Task<IEnumerable<User>> GetActingUsersExpiringInDaysAsync(int withinDays)
         {
             var thresholdDate = DateTime.Now.AddDays(withinDays);
@@ -244,10 +227,8 @@ namespace Ideku.Data.Repositories
                 .ToListAsync();
         }
 
-        /// <summary>
         /// Get users whose acting period has expired and needs auto-revert
         /// Used by background service for efficient processing
-        /// </summary>
         public async Task<IEnumerable<User>> GetExpiredActingUsersAsync()
         {
             return await _context.Users
@@ -258,10 +239,8 @@ namespace Ideku.Data.Repositories
                 .ToListAsync();
         }
 
-        /// <summary>
         /// Get acting statistics for dashboard/reporting
         /// Returns counts for various acting states
-        /// </summary>
         public async Task<ActingStatistics> GetActingStatisticsAsync()
         {
             var now = DateTime.Now;
@@ -319,10 +298,8 @@ namespace Ideku.Data.Repositories
             };
         }
 
-        /// <summary>
         /// Get users with specific acting role
         /// Useful for role-based queries and analysis
-        /// </summary>
         public async Task<IEnumerable<User>> GetUsersByActingRoleAsync(int roleId)
         {
             var now = DateTime.Now;
@@ -341,6 +318,23 @@ namespace Ideku.Data.Repositories
                            now >= u.ActingStartDate.Value &&
                            now < u.ActingEndDate.Value)
                 .OrderBy(u => u.Employee.NAME)
+                .ToListAsync();
+        }
+
+        /// Get all users with specific role (including acting users)
+        /// Used for access control cache clearing
+        public async Task<IEnumerable<User>> GetUsersByRoleAsync(int roleId)
+        {
+            var now = DateTime.Now;
+
+            return await _context.Users
+                .Where(u => u.RoleId == roleId ||
+                           (u.IsActing &&
+                            u.CurrentRoleId == roleId &&
+                            u.ActingStartDate.HasValue &&
+                            u.ActingEndDate.HasValue &&
+                            now >= u.ActingStartDate.Value &&
+                            now < u.ActingEndDate.Value))
                 .ToListAsync();
         }
     }

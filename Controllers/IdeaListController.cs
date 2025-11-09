@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 namespace Ideku.Controllers
 {
     [Authorize]
+    [ModuleAuthorize("idea_list")]
     public class IdeaListController : Controller
     {
         private readonly IIdeaService _ideaService;
@@ -256,8 +257,6 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
-
-        // =================== IMPLEMENTATOR MANAGEMENT ACTIONS ===================
 
         // GET: IdeaList/Detail/{id}
         public async Task<IActionResult> Detail(long id)
