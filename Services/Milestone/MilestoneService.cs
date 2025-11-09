@@ -172,8 +172,8 @@ namespace Ideku.Services.Milestone
                 return (false, "Milestone not found.", null);
             }
 
-            // Validate dates (for update, we don't check if start date is in past since it's readonly)
-            var dateValidation = ValidateMilestoneDatesForUpdate(startDate, endDate);
+            // Validate dates
+            var dateValidation = ValidateMilestoneDates(startDate, endDate);
             if (!dateValidation.IsValid)
             {
                 return (false, dateValidation.Message, null);
@@ -259,37 +259,6 @@ namespace Ideku.Services.Milestone
             // Allow past dates for start date (removed validation)
 
             return (true, string.Empty);
-        }
-
-        public (bool IsValid, string Message) ValidateMilestoneDatesForUpdate(DateTime startDate, DateTime endDate)
-        {
-            if (startDate > endDate)
-            {
-                return (false, "End date cannot be before start date.");
-            }
-
-            // No past date validation for updates since start date is readonly
-            return (true, string.Empty);
-        }
-
-        public async Task<bool> CanUserManageMilestonesAsync(string username, long ideaId)
-        {
-            var user = await _userRepository.GetByUsernameAsync(username);
-            if (user == null) return false;
-
-            var idea = await _milestoneRepository.GetIdeasWithMilestoneEligibility()
-                .FirstOrDefaultAsync(i => i.Id == ideaId);
-
-            if (idea == null) return false;
-
-            // User can manage milestones if they are:
-            // 1. The idea initiator
-            // 2. Assigned as implementator
-            // 3. Has admin/superuser role (you may need to adjust this based on your role system)
-            return idea.InitiatorUserId == user.Id ||
-                   idea.IdeaImplementators.Any(ii => ii.UserId == user.Id) ||
-                   user.Role.RoleName == "Superuser" || // Adjust based on your role names
-                   user.Role.RoleName == "Admin";
         }
     }
 }
