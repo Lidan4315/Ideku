@@ -11,6 +11,7 @@ using Ideku.Services.Workflow;
 using Ideku.Services.WorkflowManagement;
 using Ideku.Services.Approver;
 using Ideku.Services.IdeaRelation;
+using Ideku.Services.ApprovalToken;
 using Ideku.Models;
 using Ideku.Models.Entities;
 using WebOptimizer;
@@ -76,6 +77,7 @@ builder.Services.Configure<EmailSettings>(
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
+builder.Services.AddScoped<IApprovalTokenService, ApprovalTokenService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IApproverService, ApproverService>();
