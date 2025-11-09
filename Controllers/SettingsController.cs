@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Ideku.Helpers;
 
 namespace Ideku.Controllers
 {
-    [Authorize(Roles = "Superuser,Admin")]
+    [Authorize]
+    [ModuleAuthorize("settings")]
     public class SettingsController : Controller
     {
         public IActionResult Index()

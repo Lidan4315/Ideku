@@ -29,6 +29,10 @@ function navigateToBypassStage() {
     // Navigate to bypass stage page
     window.location.href = '/BypassStage/Index';
 }
+function navigateToAccessControl() {
+    // Navigate to access control page
+    window.location.href = '/AccessControl/Index';
+}
 
 function showComingSoon(featureName) {
     Swal.fire({

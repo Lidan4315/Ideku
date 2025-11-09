@@ -71,11 +71,13 @@
                 @* Show "Send to Approval S3" button if: Stage 2, has milestone, not yet approved *@
                 @if (Model.Idea.CurrentStage == 2 && Model.Idea.IsMilestoneCreated && Model.Idea.CurrentStatus != "Approved")
                 {
-                    <div class="mb-3 d-flex justify-content-end">
-                        <button type="button" class="btn btn-md btn-success" id="sendToS3ApprovalBtn">
-                            <i class="bi bi-send me-1"></i>Send to Approval S3
-                        </button>
-                    </div>
+                    <module-access module-key="milestone_send_approval">
+                        <div class="mb-3 d-flex justify-content-end">
+                            <button type="button" class="btn btn-md btn-success" id="sendToS3ApprovalBtn">
+                                <i class="bi bi-send me-1"></i>Send to Approval S3
+                            </button>
+                        </div>
+                    </module-access>
                 }
             }
 

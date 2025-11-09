@@ -5,12 +5,13 @@ using Ideku.Models;
 using Ideku.Models.Statistics;
 using Ideku.Services.Idea;
 using Ideku.Services.Lookup;
+using Ideku.Helpers;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
 namespace Ideku.Controllers;
 
-[Authorize]
+[ModuleAuthorize("dashboard")]
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;

@@ -16,7 +16,8 @@ namespace Ideku.Controllers
     /// Allows admins to change workflow assignments for existing ideas
     /// Follows the same pattern as UserManagementController for consistency
     /// </summary>
-    [Authorize(Roles = "Superuser,Admin")]
+    [Authorize]
+    [ModuleAuthorize("change_workflow")]
     public class ChangeWorkflowController : Controller
     {
         private readonly IIdeaService _ideaService;
@@ -145,10 +146,6 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
-        /// GET: Filter ideas via AJAX (same pattern as UserManagementController.FilterUsers)
-        /// Returns JSON with filtered ideas and pagination data
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> FilterIdeas(
             int page = 1,
@@ -162,7 +159,6 @@ namespace Ideku.Controllers
         {
             try
             {
-                // Same logic as Index method
                 pageSize = PaginationHelper.ValidatePageSize(pageSize);
                 page = Math.Max(1, page);
 
@@ -250,10 +246,8 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = "Error loading filtered ideas." });
             }
         }
-
-        /// <summary>
+    
         /// GET: Get departments by division for cascading dropdown
-        /// </summary>
         [HttpGet]
         public async Task<JsonResult> GetDepartmentsByDivision(string divisionId)
         {
@@ -275,9 +269,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// GET: Get available workflows for dropdown in change modal
-        /// </summary>
         [HttpGet]
         public async Task<JsonResult> GetAvailableWorkflows()
         {
@@ -298,11 +290,7 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
         /// POST: Update workflow for an idea
-        /// Returns JSON response for modal handling
-        /// Uses ChangeWorkflowService for business logic
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> UpdateWorkflow(long ideaId, int newWorkflowId)
         {

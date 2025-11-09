@@ -32,46 +32,46 @@
             </div>
 
             <ul class="nav-links">
-                <li>
+                <li module-access="dashboard">
                     <a asp-controller="Home" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" ? "active" : "")">
                         <i class="bi bi-house-door-fill"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
-                <li>
+                <li module-access="idea_create">
                     <a asp-controller="Idea" asp-action="Create" class="@(ViewContext.RouteData.Values["Action"]?.ToString() == "Create" ? "active" : "")">
                         <i class="bi bi-plus-circle-fill"></i>
                         <span>Submit New Idea</span>
                     </a>
                 </li>
-                <li>
+                <li module-access="idea_list">
                     <a asp-controller="Idea" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Idea" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
                         <i class="bi bi-list-task"></i>
                         <span>My Ideas</span>
                     </a>
                 </li>
-                
+
                 @if (User.Identity.IsAuthenticated)
                 {
-                    <li>
+                    <li module-access="approval">
                         <a asp-controller="Approval" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Approval" ? "active" : "")">
                             <i class="bi bi-check-square-fill"></i>
                             <span>Need Approval</span>
                         </a>
                     </li>
-                    <li>
+                    <li module-access="milestone">
                         <a asp-controller="Milestone" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Milestone" ? "active" : "")">
                             <i class="bi bi-flag-fill"></i>
                             <span>Milestone</span>
                         </a>
                     </li>
-                    <li>
+                    <li module-access="idea_all">
                         <a asp-controller="IdeaList" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaList" ? "active" : "")">
                             <i class="bi bi-clipboard-data-fill"></i>
                             <span>Idea List</span>
                         </a>
                     </li>
-                    <li>
+                    <li module-access="monitoring">
                         <a asp-controller="IdeaMonitoring" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaMonitoring" ? "active" : "")">
                             <i class="bi bi-graph-up-arrow"></i>
                             <span>Monitoring</span>

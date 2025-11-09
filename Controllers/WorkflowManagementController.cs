@@ -5,10 +5,12 @@ using Ideku.Services.Approver;
 using Ideku.Services.Lookup;
 using Ideku.ViewModels.WorkflowManagement;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Ideku.Helpers;
 
 namespace Ideku.Controllers
 {
     [Authorize]
+    [ModuleAuthorize("workflow_management")]
     public class WorkflowManagementController : Controller
     {
         private readonly IWorkflowManagementService _workflowService;

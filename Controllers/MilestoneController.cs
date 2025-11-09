@@ -7,10 +7,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Security.Claims;
+using Ideku.Helpers;
 
 namespace Ideku.Controllers
 {
     [Authorize]
+    [ModuleAuthorize("milestone")]
     public class MilestoneController : Controller
     {
         private readonly IMilestoneService _milestoneService;
@@ -162,9 +164,6 @@ namespace Ideku.Controllers
             }
         }
 
-        // NOTE: Edit milestone functionality has been moved to modal popup in Detail view
-        // using UpdateMilestone AJAX action below
-
         // POST: /Milestone/UpdateMilestone (AJAX)
         [HttpPost]
         public async Task<IActionResult> UpdateMilestone([FromBody] UpdateMilestoneRequest request)
@@ -244,6 +243,7 @@ namespace Ideku.Controllers
 
         // POST: /Milestone/SendToStage3Approval
         [HttpPost]
+        [ModuleAuthorize("milestone_send_approval")]
         public async Task<IActionResult> SendToStage3Approval(long ideaId)
         {
             try
