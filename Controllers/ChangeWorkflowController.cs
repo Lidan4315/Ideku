@@ -110,6 +110,8 @@ namespace Ideku.Controllers
                 var categories = await _lookupService.GetCategoriesAsync();
                 var workflows = await _workflowManagementRepository.GetAllWorkflowsAsync();
 
+                var statuses = await _ideaService.GetAvailableStatusesAsync();
+
                 var viewModel = new ChangeWorkflowViewModel
                 {
                     PagedIdeas = pagedResult,
@@ -120,7 +122,8 @@ namespace Ideku.Controllers
                     SelectedDepartment = selectedDepartment,
                     SelectedCategory = selectedCategory,
                     SelectedWorkflow = selectedWorkflow,
-                    SelectedStatus = selectedStatus
+                    SelectedStatus = selectedStatus,
+                    StatusOptions = statuses
                 };
 
                 // Pass lookup data to view

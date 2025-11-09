@@ -15,6 +15,8 @@ namespace Ideku.ViewModels.BypassStage
         public int? SelectedWorkflow { get; set; }
         public string? SelectedStatus { get; set; }
 
+        public List<string>? StatusOptions { get; set; }
+
         // Convenience Properties
         public IEnumerable<Idea> Ideas => PagedIdeas.Items;
         public int CurrentPage => PagedIdeas.Page;

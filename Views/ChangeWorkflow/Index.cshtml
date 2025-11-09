@@ -125,11 +125,13 @@
                         <label class="form-label">Status</label>
                         <select id="selectedStatus" name="selectedStatus" class="form-select">
                             <option value="">All Statuses</option>
-                            <option value="Draft" selected="@(Model.SelectedStatus == "Draft")">Draft</option>
-                            <option value="Submitted" selected="@(Model.SelectedStatus == "Submitted")">Submitted</option>
-                            <option value="In Progress" selected="@(Model.SelectedStatus == "In Progress")">In Progress</option>
-                            <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Approved</option>
-                            <option value="Rejected" selected="@(Model.SelectedStatus == "Rejected")">Rejected</option>
+                            @if (Model.StatusOptions != null)
+                            {
+                                @foreach (var status in Model.StatusOptions)
+                                {
+                                    <option value="@status" selected="@(Model.SelectedStatus == status)">@status</option>
+                                }
+                            }
                         </select>
                     </div>
                 </div>

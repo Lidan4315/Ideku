@@ -113,6 +113,8 @@ namespace Ideku.Controllers
             // Get available stages from database
             var stages = await _ideaService.GetAvailableStagesAsync();
 
+            var statuses = await _ideaService.GetAvailableStatusesAsync();
+
             var viewModel = new IdeaListViewModel
             {
                 PagedIdeas = pagedResult,
@@ -126,7 +128,8 @@ namespace Ideku.Controllers
                 {
                     Value = s.ToString(),
                     Text = $"Stage S{s}"
-                }).ToList()
+                }).ToList(),
+                StatusOptions = statuses
             };
 
             // Pass lookup data to view
