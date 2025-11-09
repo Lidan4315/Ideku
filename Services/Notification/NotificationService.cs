@@ -3,6 +3,7 @@ using Ideku.Models.Entities;
 using Ideku.Data.Context;
 using Ideku.Services.Email;
 using Ideku.Services.WorkflowManagement;
+using Ideku.Services.ApprovalToken;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -13,19 +14,22 @@ namespace Ideku.Services.Notification
         private readonly IEmailService _emailService;
         private readonly AppDbContext _context;
         private readonly IWorkflowManagementService _workflowManagementService;
+        private readonly IApprovalTokenService _approvalTokenService;
         private readonly ILogger<NotificationService> _logger;
         private readonly EmailSettings _emailSettings;
 
         public NotificationService(
-            IEmailService emailService, 
-            AppDbContext context, 
+            IEmailService emailService,
+            AppDbContext context,
             IWorkflowManagementService workflowManagementService,
+            IApprovalTokenService approvalTokenService,
             ILogger<NotificationService> logger,
             IOptions<EmailSettings> emailSettings)
         {
             _emailService = emailService;
             _context = context;
             _workflowManagementService = workflowManagementService;
+            _approvalTokenService = approvalTokenService;
             _logger = logger;
             _emailSettings = emailSettings.Value;
         }
@@ -48,11 +52,14 @@ namespace Ideku.Services.Notification
                 
                 foreach (var approver in approvers)
                 {
+                    var approveToken = _approvalTokenService.GenerateToken(idea.Id, approver.Id, "Approve", idea.CurrentStage);
+                    var rejectToken = _approvalTokenService.GenerateToken(idea.Id, approver.Id, "Reject", idea.CurrentStage);
+
                     var emailMessage = new EmailMessage
                     {
                         To = approver.Employee.EMAIL,
                         Subject = $"New Idea Submission: {idea.IdeaName}",
-                        Body = GenerateIdeaSubmittedEmailBody(idea, approver),
+                        Body = GenerateIdeaSubmittedEmailBody(idea, approver, approveToken, rejectToken),
                         IsHtml = true
                     };
                     emailMessages.Add(emailMessage);
@@ -160,9 +167,11 @@ namespace Ideku.Services.Notification
         }
 
 
-        private string GenerateIdeaSubmittedEmailBody(Models.Entities.Idea idea, User approver)
+        private string GenerateIdeaSubmittedEmailBody(Models.Entities.Idea idea, User approver, string approveToken, string rejectToken)
         {
             var approvalUrl = $"{_emailSettings.BaseUrl}/Approval/Review/{idea.Id}";
+            var approveViaEmailUrl = $"{_emailSettings.BaseUrl}/Approval/ApproveViaEmail?token={approveToken}";
+            var rejectViaEmailUrl = $"{_emailSettings.BaseUrl}/Approval/RejectViaEmail?token={rejectToken}";
 
             return $@"
 <!DOCTYPE html>
@@ -213,10 +222,19 @@ namespace Ideku.Services.Notification
             
             <p><strong>Proposed Solution:</strong></p>
             <p style='background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #28a745;'>{idea.IdeaSolution}</p>
-            
+
             <p>Please review the idea submission and provide your approval decision:</p>
-            
-            <a href='{approvalUrl}' class='action-button' style='color: white !important;'>Review & Approve Idea</a>
+
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='{approveViaEmailUrl}' style='display: inline-block; background-color: #28a745; color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; margin: 0 10px 10px 0; font-size: 16px; font-weight: bold;'>✅ Approve Idea</a>
+                <a href='{rejectViaEmailUrl}' style='display: inline-block; background-color: #dc3545; color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; margin: 0 10px 10px 0; font-size: 16px; font-weight: bold;'>❌ Reject Idea</a>
+            </div>
+
+            <p style='text-align: center; margin: 20px 0; color: #666; font-size: 14px;'>Or review in detail:</p>
+
+            <div style='text-align: center;'>
+                <a href='{approvalUrl}' class='action-button' style='color: white !important;'>Review & Approve Idea</a>
+            </div>
             
             <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
             <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{approvalUrl}</p>

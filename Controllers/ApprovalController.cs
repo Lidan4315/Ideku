@@ -2,6 +2,7 @@ using Ideku.Data.Repositories;
 using Ideku.Services.Workflow;
 using Ideku.Services.IdeaRelation;
 using Ideku.Services.Idea;
+using Ideku.Services.ApprovalToken;
 using Ideku.ViewModels.Approval;
 using Ideku.ViewModels.DTOs;
 using Ideku.Extensions;
@@ -28,6 +29,8 @@ namespace Ideku.Controllers
         private readonly IWebHostEnvironment _hostEnvironment;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<ApprovalController> _logger;
+        private readonly IApprovalTokenService _approvalTokenService;
+        private readonly IIdeaRepository _ideaRepository;
 
         public ApprovalController(
             IWorkflowService workflowService,
@@ -38,7 +41,9 @@ namespace Ideku.Controllers
             IIdeaService ideaService,
             IWebHostEnvironment hostEnvironment,
             IServiceScopeFactory serviceScopeFactory,
-            ILogger<ApprovalController> logger)
+            ILogger<ApprovalController> logger,
+            IApprovalTokenService approvalTokenService,
+            IIdeaRepository ideaRepository)
         {
             _workflowService = workflowService;
             _userRepository = userRepository;
@@ -49,6 +54,8 @@ namespace Ideku.Controllers
             _hostEnvironment = hostEnvironment;
             _serviceScopeFactory = serviceScopeFactory;
             _logger = logger;
+            _approvalTokenService = approvalTokenService;
+            _ideaRepository = ideaRepository;
         }
 
         // GET: /Approval or /Approval/Index
@@ -625,7 +632,7 @@ namespace Ideku.Controllers
                     var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
 
                     await workflowService.SendRejectionNotificationAsync(ideaId, username, reason);
-                    
+
                     _logger.LogInformation("Background rejection email sent successfully for idea {IdeaId}", ideaId);
                 }
                 catch (Exception ex)
@@ -633,6 +640,152 @@ namespace Ideku.Controllers
                     _logger.LogError(ex, "Failed to send background rejection email for idea {IdeaId}", ideaId);
                 }
             });
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> ApproveViaEmail(string token)
+        {
+            try
+            {
+                var tokenData = _approvalTokenService.ValidateAndDecryptToken(token);
+                if (!tokenData.IsValid)
+                {
+                    TempData["ErrorMessage"] = tokenData.ErrorMessage;
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var idea = await _ideaRepository.GetByIdAsync(tokenData.IdeaId);
+                if (idea == null)
+                {
+                    TempData["ErrorMessage"] = "Idea tidak ditemukan";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (idea.CurrentStage != tokenData.Stage)
+                {
+                    TempData["ErrorMessage"] = "Link approval sudah tidak berlaku. Idea telah diproses sebelumnya.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (!idea.CurrentStatus.StartsWith("Waiting Approval"))
+                {
+                    TempData["ErrorMessage"] = "Idea sudah diproses sebelumnya";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var approver = await _userRepository.GetByIdAsync(tokenData.ApproverId);
+                if (approver == null)
+                {
+                    TempData["ErrorMessage"] = "User tidak ditemukan";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var workflowHistory = await _workflowRepository.GetByIdeaIdAsync(idea.Id);
+                var alreadyProcessed = workflowHistory.Any(wh =>
+                    wh.ActorUserId == tokenData.ApproverId &&
+                    wh.FromStage == idea.CurrentStage);
+
+                if (alreadyProcessed)
+                {
+                    TempData["ErrorMessage"] = "Anda sudah memproses idea ini sebelumnya";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var approvalData = new ApprovalProcessDto
+                {
+                    IdeaId = tokenData.IdeaId,
+                    ValidatedSavingCost = idea.SavingCost,
+                    ApprovalComments = "Approved via email",
+                    RelatedDivisions = new List<string>(),
+                    ApprovedBy = tokenData.ApproverId
+                };
+
+                var result = await _workflowService.ProcessApprovalDatabaseAsync(approvalData);
+
+                if (result.IsSuccess)
+                {
+                    SendApprovalEmailInBackground(approvalData);
+                    TempData["SuccessMessage"] = $"Idea {idea.IdeaCode} - {idea.IdeaName} has been successfully approved via email!";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.ErrorMessage;
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ApproveViaEmail");
+                TempData["ErrorMessage"] = "Terjadi kesalahan saat memproses approval";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> RejectViaEmail(string token)
+        {
+            try
+            {
+                var tokenData = _approvalTokenService.ValidateAndDecryptToken(token);
+                if (!tokenData.IsValid)
+                {
+                    TempData["ErrorMessage"] = tokenData.ErrorMessage;
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var idea = await _ideaRepository.GetByIdAsync(tokenData.IdeaId);
+                if (idea == null)
+                {
+                    TempData["ErrorMessage"] = "Idea tidak ditemukan";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (idea.CurrentStage != tokenData.Stage)
+                {
+                    TempData["ErrorMessage"] = "Link rejection sudah tidak berlaku. Idea telah diproses sebelumnya.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (!idea.CurrentStatus.StartsWith("Waiting Approval"))
+                {
+                    TempData["ErrorMessage"] = "Idea sudah diproses sebelumnya";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var rejector = await _userRepository.GetByIdAsync(tokenData.ApproverId);
+                if (rejector == null)
+                {
+                    TempData["ErrorMessage"] = "User tidak ditemukan";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var workflowHistory = await _workflowRepository.GetByIdeaIdAsync(idea.Id);
+                var alreadyProcessed = workflowHistory.Any(wh =>
+                    wh.ActorUserId == tokenData.ApproverId &&
+                    wh.FromStage == idea.CurrentStage);
+
+                if (alreadyProcessed)
+                {
+                    TempData["ErrorMessage"] = "Anda sudah memproses idea ini sebelumnya";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                await _workflowService.ProcessRejectionDatabaseAsync(idea.Id, rejector.Username, "Rejected via email");
+
+                SendRejectionEmailInBackground(idea.Id, rejector.Username, "Rejected via email");
+
+                TempData["SuccessMessage"] = $"Idea {idea.IdeaCode} - {idea.IdeaName} has been successfully rejected via email!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in RejectViaEmail");
+                TempData["ErrorMessage"] = "Terjadi kesalahan saat memproses rejection";
+                return RedirectToAction(nameof(Index));
+            }
         }
     }
 }
