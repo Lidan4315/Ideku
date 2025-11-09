@@ -131,13 +131,6 @@
                             <option value="@status" selected="@(Model.SelectedStatus == status)">@status</option>
                         }
                     }
-                    else
-                    {
-                        <option value="Waiting Approval S1" selected="@(Model.SelectedStatus == "Waiting Approval S1")">Waiting Approval S1</option>
-                        <option value="Waiting Approval S2" selected="@(Model.SelectedStatus == "Waiting Approval S2")">Waiting Approval S2</option>
-                        <option value="Rejected S0" selected="@(Model.SelectedStatus == "Rejected S0")">Rejected S0</option>
-                        <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Approved</option>
-                    }
                 </select>
             </div>
         }

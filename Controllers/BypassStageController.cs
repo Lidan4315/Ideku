@@ -2,47 +2,42 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Ideku.Services.Idea;
 using Ideku.Services.Lookup;
-using Ideku.Services.ChangeWorkflow;
+using Ideku.Services.BypassStage;
+using Ideku.Data.Repositories;
 using Ideku.Data.Repositories.WorkflowManagement;
-using Ideku.ViewModels.ChangeWorkflow;
+using Ideku.ViewModels.BypassStage;
 using Ideku.Extensions;
 using Ideku.Helpers;
 using Ideku.Models.Entities;
 
 namespace Ideku.Controllers
 {
-    /// <summary>
-    /// Controller for Change Workflow operations
-    /// Allows admins to change workflow assignments for existing ideas
-    /// Follows the same pattern as UserManagementController for consistency
-    /// </summary>
     [Authorize(Roles = "Superuser,Admin")]
-    public class ChangeWorkflowController : Controller
+    public class BypassStageController : Controller
     {
         private readonly IIdeaService _ideaService;
         private readonly ILookupService _lookupService;
-        private readonly IChangeWorkflowService _changeWorkflowService;
+        private readonly IBypassStageService _bypassStageService;
+        private readonly IIdeaRepository _ideaRepository;
         private readonly IWorkflowManagementRepository _workflowManagementRepository;
-        private readonly ILogger<ChangeWorkflowController> _logger;
+        private readonly ILogger<BypassStageController> _logger;
 
-        public ChangeWorkflowController(
+        public BypassStageController(
             IIdeaService ideaService,
             ILookupService lookupService,
-            IChangeWorkflowService changeWorkflowService,
+            IBypassStageService bypassStageService,
+            IIdeaRepository ideaRepository,
             IWorkflowManagementRepository workflowManagementRepository,
-            ILogger<ChangeWorkflowController> logger)
+            ILogger<BypassStageController> logger)
         {
             _ideaService = ideaService;
             _lookupService = lookupService;
-            _changeWorkflowService = changeWorkflowService;
+            _bypassStageService = bypassStageService;
+            _ideaRepository = ideaRepository;
             _workflowManagementRepository = workflowManagementRepository;
             _logger = logger;
         }
 
-        /// <summary>
-        /// GET: Change Workflow Index page with pagination
-        /// Same pattern as UserManagementController.Index
-        /// </summary>
         public async Task<IActionResult> Index(
             int page = 1,
             int pageSize = 10,
@@ -55,18 +50,12 @@ namespace Ideku.Controllers
         {
             try
             {
-                // Validate and normalize pagination parameters (same as UserManagement)
                 pageSize = PaginationHelper.ValidatePageSize(pageSize);
                 page = Math.Max(1, page);
 
-                // Get all ideas using IdeaService (reuse existing service)
-                // Use "superuser" to get all ideas without role filtering
                 IQueryable<Idea> ideasQuery = await _ideaService.GetAllIdeasQueryAsync("superuser");
+                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && !i.IsRejected && i.CurrentStatus != "Approved");
 
-                // Filter out deleted ideas
-                ideasQuery = ideasQuery.Where(i => !i.IsDeleted);
-
-                // Apply progressive filters (same pattern as UserManagement)
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     ideasQuery = ideasQuery.Where(i =>
@@ -99,24 +88,19 @@ namespace Ideku.Controllers
                     ideasQuery = ideasQuery.Where(i => i.CurrentStatus == selectedStatus);
                 }
 
-                // Apply ordering after all filters
                 ideasQuery = ideasQuery.OrderByDescending(i => i.SubmittedDate);
 
-                // Apply pagination - this executes the database queries
                 var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
 
-                // Get lookup data for filters using LookupService
                 var divisions = await _lookupService.GetDivisionsAsync();
                 var categories = await _lookupService.GetCategoriesAsync();
                 var workflows = await _workflowManagementRepository.GetAllWorkflowsAsync();
 
                 var statuses = await _ideaService.GetAvailableStatusesAsync();
 
-                var viewModel = new ChangeWorkflowViewModel
+                var viewModel = new BypassStageViewModel
                 {
                     PagedIdeas = pagedResult,
-
-                    // Filter properties (preserve state)
                     SearchTerm = searchTerm,
                     SelectedDivision = selectedDivision,
                     SelectedDepartment = selectedDepartment,
@@ -126,7 +110,6 @@ namespace Ideku.Controllers
                     StatusOptions = statuses
                 };
 
-                // Pass lookup data to view
                 ViewBag.Divisions = divisions;
                 ViewBag.Categories = categories;
                 ViewBag.Workflows = workflows.Select(w => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
@@ -139,16 +122,12 @@ namespace Ideku.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading change workflow index");
+                _logger.LogError(ex, "Error loading bypass stage index");
                 TempData["ErrorMessage"] = "Error loading ideas. Please try again.";
                 return RedirectToAction("Index", "Settings");
             }
         }
 
-        /// <summary>
-        /// GET: Filter ideas via AJAX (same pattern as UserManagementController.FilterUsers)
-        /// Returns JSON with filtered ideas and pagination data
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> FilterIdeas(
             int page = 1,
@@ -162,15 +141,12 @@ namespace Ideku.Controllers
         {
             try
             {
-                // Same logic as Index method
                 pageSize = PaginationHelper.ValidatePageSize(pageSize);
                 page = Math.Max(1, page);
 
-                // Get all ideas using IdeaService (reuse existing service)
                 IQueryable<Idea> ideasQuery = await _ideaService.GetAllIdeasQueryAsync("superuser");
-                ideasQuery = ideasQuery.Where(i => !i.IsDeleted);
+                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && !i.IsRejected && i.CurrentStatus != "Approved");
 
-                // Apply progressive filters
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     ideasQuery = ideasQuery.Where(i =>
@@ -203,12 +179,10 @@ namespace Ideku.Controllers
                     ideasQuery = ideasQuery.Where(i => i.CurrentStatus == selectedStatus);
                 }
 
-                // Apply ordering after all filters
                 ideasQuery = ideasQuery.OrderByDescending(i => i.SubmittedDate);
 
                 var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
 
-                // Return JSON response (same pattern as UserManagement)
                 return Json(new
                 {
                     success = true,
@@ -227,6 +201,7 @@ namespace Ideku.Controllers
                         currentStage = idea.CurrentStage,
                         maxStage = idea.MaxStage,
                         currentStatus = idea.CurrentStatus,
+                        savingCost = idea.SavingCost,
                         submittedDate = idea.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss")
                     }),
                     pagination = new
@@ -251,9 +226,6 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
-        /// GET: Get departments by division for cascading dropdown
-        /// </summary>
         [HttpGet]
         public async Task<JsonResult> GetDepartmentsByDivision(string divisionId)
         {
@@ -264,7 +236,6 @@ namespace Ideku.Controllers
 
             try
             {
-                // Use LookupService for consistency
                 var departments = await _lookupService.GetDepartmentsByDivisionForAjaxAsync(divisionId);
                 return Json(new { success = true, departments });
             }
@@ -275,55 +246,56 @@ namespace Ideku.Controllers
             }
         }
 
-        /// <summary>
-        /// GET: Get available workflows for dropdown in change modal
-        /// </summary>
         [HttpGet]
-        public async Task<JsonResult> GetAvailableWorkflows()
+        public async Task<JsonResult> GetAvailableStages(long ideaId)
         {
             try
             {
-                var workflows = await _workflowManagementRepository.GetAllWorkflowsAsync();
-                var workflowList = workflows
-                    .Where(w => w.IsActive)
-                    .Select(w => new { id = w.Id, name = w.WorkflowName })
-                    .ToList();
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return Json(new { success = false, message = "Idea not found" });
+                }
 
-                return Json(new { success = true, workflows = workflowList });
+                var stages = new List<object>();
+                for (int i = idea.CurrentStage + 1; i <= idea.MaxStage; i++)
+                {
+                    stages.Add(new
+                    {
+                        value = i,
+                        text = i == idea.MaxStage ? $"Stage {i} (Approved)" : $"Stage {i}"
+                    });
+                }
+
+                return Json(new { success = true, stages, currentStage = idea.CurrentStage, maxStage = idea.MaxStage });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading workflows");
-                return Json(new { success = false, message = "Error loading workflows" });
+                _logger.LogError(ex, "Error loading available stages for idea {IdeaId}", ideaId);
+                return Json(new { success = false, message = "Error loading stages" });
             }
         }
 
-        /// <summary>
-        /// POST: Update workflow for an idea
-        /// Returns JSON response for modal handling
-        /// Uses ChangeWorkflowService for business logic
-        /// </summary>
         [HttpPost]
-        public async Task<IActionResult> UpdateWorkflow(long ideaId, int newWorkflowId)
+        public async Task<IActionResult> BypassStage(long ideaId, int targetStage, string reason)
         {
             try
             {
                 var username = User.Identity?.Name ?? "Unknown";
 
-                // Use service layer for business logic and validation
-                var result = await _changeWorkflowService.UpdateIdeaWorkflowAsync(ideaId, newWorkflowId, username);
+                var result = await _bypassStageService.BypassStageAsync(ideaId, targetStage, reason, username);
 
                 return Json(new
                 {
                     success = result.Success,
                     message = result.Message,
-                    workflowName = result.WorkflowName
+                    newStatus = result.NewStatus
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating workflow for idea {IdeaId}", ideaId);
-                return Json(new { success = false, message = "An unexpected error occurred while updating workflow." });
+                _logger.LogError(ex, "Error bypassing stage for idea {IdeaId}", ideaId);
+                return Json(new { success = false, message = "An unexpected error occurred while bypassing stage." });
             }
         }
     }

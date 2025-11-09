@@ -1,6 +1,6 @@
-@model Ideku.ViewModels.ChangeWorkflow.ChangeWorkflowViewModel
+@model Ideku.ViewModels.BypassStage.BypassStageViewModel
 @{
-    ViewData["Title"] = "Change Workflow";
+    ViewData["Title"] = "Bypass Stage";
 }
 
 <link rel="stylesheet" href="~/css/shared/ideas-list.css" asp-append-version="true" />
@@ -8,9 +8,9 @@
 <div class="container-fluid">
     <div class="page-header mb-4">
         <h2 class="page-title text-gradient">
-            <i class="bi bi-arrow-left-right me-2"></i>Change Workflow
+            <i class="bi bi-fast-forward me-2"></i>Bypass Stage
         </h2>
-        <p class="text-muted">Manage and change workflow assignments for existing ideas.</p>
+        <p class="text-muted">Skip approval stages for ideas in special cases.</p>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -31,12 +31,10 @@
         </div>
     }
 
-    <!-- Integrated Filter and Table Card -->
     <div class="card filter-card">
         <div class="card-body p-4">
             <form method="get" asp-action="Index">
                 <div class="row g-3">
-                    <!-- Search Input with Clear Button -->
                     <div class="col-12">
                         <div class="d-flex gap-2">
                             <div class="input-group flex-grow-1">
@@ -56,9 +54,6 @@
                         </div>
                     </div>
 
-                    <!-- Filters in Horizontal Layout -->
-
-                    <!-- Division -->
                     <div class="col-lg-3 col-md-6">
                         <label class="form-label">Division</label>
                         <select id="selectedDivision" name="selectedDivision" class="form-select">
@@ -76,7 +71,6 @@
                         </select>
                     </div>
 
-                    <!-- Department -->
                     <div class="col-lg-3 col-md-6">
                         <label class="form-label">Department</label>
                         <select id="selectedDepartment" name="selectedDepartment" class="form-select">
@@ -84,7 +78,6 @@
                         </select>
                     </div>
 
-                    <!-- Category -->
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Category</label>
                         <select id="selectedCategory" name="selectedCategory" class="form-select">
@@ -102,7 +95,6 @@
                         </select>
                     </div>
 
-                    <!-- Workflow -->
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Workflow</label>
                         <select id="selectedWorkflow" name="selectedWorkflow" class="form-select">
@@ -120,7 +112,6 @@
                         </select>
                     </div>
 
-                    <!-- Status -->
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Status</label>
                         <select id="selectedStatus" name="selectedStatus" class="form-select">
@@ -138,7 +129,6 @@
             </form>
         </div>
 
-        <!-- Table Section -->
         <div class="card-body border-top">
             @if (Model.Ideas.Any())
             {
@@ -163,7 +153,7 @@
                         <tbody id="ideas-table-body">
                             @foreach (var idea in Model.Ideas)
                             {
-                                <tr style="cursor: pointer;" onclick="openChangeWorkflowModal(@idea.Id, '@idea.IdeaCode', '@(idea.Workflow?.WorkflowName ?? "N/A")', @idea.WorkflowId)">
+                                <tr style="cursor: pointer;" onclick="openBypassStageModal(@idea.Id, '@idea.IdeaCode', @idea.CurrentStage, @idea.MaxStage)">
                                     <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
                                     <td>
                                         <div class="truncate-title" title="@idea.IdeaName">
@@ -218,7 +208,6 @@
                                             var statusClass = idea.CurrentStatus switch
                                             {
                                                 var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
-                                                var s when s.StartsWith("Rejected S") => "bg-danger",
                                                 "Approved" => "bg-success",
                                                 "Rejected" => "bg-danger",
                                                 "Completed" => "bg-primary",
@@ -246,7 +235,6 @@
                 </div>
             }
 
-            <!-- Pagination Controls -->
             @if (Model.ShowPagination)
             {
                 @await Html.PartialAsync("_PaginationPartial", Model.PagedIdeas)
@@ -255,61 +243,65 @@
     </div>
 </div>
 
-<!-- Change Workflow Modal -->
-<div class="modal fade" id="changeWorkflowModal" tabindex="-1" aria-labelledby="changeWorkflowModalLabel" aria-hidden="true">
+<div class="modal fade" id="bypassStageModal" tabindex="-1" aria-labelledby="bypassStageModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content app-modal">
             <div class="modal-header app-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="modal-icon">
-                        <i class="bi bi-arrow-left-right"></i>
+                        <i class="bi bi-fast-forward"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title mb-0" id="changeWorkflowModalLabel">Change Workflow</h5>
-                        <small class="text-white-50" id="modalIdeaCodeSubtitle">Update workflow for idea</small>
+                        <h5 class="modal-title mb-0" id="bypassStageModalLabel">Bypass Approval Stage</h5>
+                        <small class="text-white-50" id="modalIdeaCodeSubtitle">Bypass stage for idea</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="changeWorkflowForm">
+            <form id="bypassStageForm">
                 <div class="modal-body app-modal-body">
                     <input type="hidden" id="modalIdeaId" name="ideaId">
 
                     <div class="mb-3">
-                        <label class="form-label">Current Workflow</label>
-                        <input type="text" class="form-control" id="modalCurrentWorkflow" readonly>
+                        <label class="form-label">Current Stage</label>
+                        <input type="text" class="form-control" id="modalCurrentStage" readonly>
                     </div>
 
                     <div class="mb-3">
-                        <label for="modalNewWorkflow" class="form-label">
-                            New Workflow <span class="text-danger">*</span>
+                        <label for="modalTargetStage" class="form-label">
+                            Target Stage <span class="text-danger">*</span>
                         </label>
-                        <select class="form-select" id="modalNewWorkflow" name="newWorkflowId" required>
-                            <option value="">Select new workflow...</option>
-                            @if (ViewBag.Workflows != null)
-                            {
-                                foreach (var workflow in ViewBag.Workflows)
-                                {
-                                    <option value="@workflow.Value">@workflow.Text</option>
-                                }
-                            }
+                        <select class="form-select" id="modalTargetStage" name="targetStage" required>
+                            <option value="">Select target stage...</option>
                         </select>
                         <div class="invalid-feedback">
-                            Please select a new workflow.
+                            Please select a target stage.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalBypassReason" class="form-label">
+                            Bypass Reason <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="modalBypassReason" name="reason" rows="3"
+                                  placeholder="Enter reason for bypassing stages (minimum 10 characters)"
+                                  required minlength="10"></textarea>
+                        <div class="invalid-feedback">
+                            Please provide a reason (minimum 10 characters).
                         </div>
                     </div>
 
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle me-2"></i>
-                        <small><strong>Warning:</strong> Changing the workflow will reset the approval process for this idea.</small>
+                        <small><strong>Warning:</strong> Bypassing stages will skip intermediate approvals. This action is logged for audit purposes.</small>
                     </div>
                 </div>
                 <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
-                    <button type="submit" class="btn btn-primary btn-save" id="saveWorkflowBtn">
-                        <i class="bi bi-check-circle me-2"></i>Save Changes
+                    <button type="submit" class="btn btn-primary btn-save" id="bypassStageBtn">
+                        <i class="bi bi-fast-forward me-2"></i>Bypass Stage
                     </button>
                 </div>
             </form>
@@ -317,23 +309,18 @@
     </div>
 </div>
 
-
 @section Scripts {
     <script>
-    // Change Workflow Page JavaScript - Inline Version
-    let changeWorkflowModal;
+    let bypassStageModal;
     let searchInput, divisionSelect, departmentSelect, categorySelect, workflowSelect, statusSelect, tableBody;
     let debounceTimeout;
 
-    // Initialize on DOM ready
     document.addEventListener('DOMContentLoaded', function () {
-        // Initialize Bootstrap modal
-        const modalElement = document.getElementById('changeWorkflowModal');
+        const modalElement = document.getElementById('bypassStageModal');
         if (modalElement) {
-            changeWorkflowModal = new bootstrap.Modal(modalElement);
+            bypassStageModal = new bootstrap.Modal(modalElement);
         }
 
-        // Initialize DOM element references
         searchInput = document.getElementById('searchTerm');
         divisionSelect = document.getElementById('selectedDivision');
         departmentSelect = document.getElementById('selectedDepartment');
@@ -342,7 +329,6 @@
         statusSelect = document.getElementById('selectedStatus');
         tableBody = document.getElementById('ideas-table-body');
 
-        // Initialize cascading dropdown state on page load
         const initialDivision = '@Model.SelectedDivision';
         const initialDepartment = '@Model.SelectedDepartment';
 
@@ -350,7 +336,6 @@
             loadDepartmentsByDivision(initialDivision, initialDepartment);
         }
 
-        // Prevent form submission - use AJAX only
         const filterForm = document.querySelector('form[method="get"]');
         if (filterForm) {
             filterForm.addEventListener('submit', function (e) {
@@ -359,7 +344,6 @@
             });
         }
 
-        // Handle Enter key in search input
         if (searchInput) {
             searchInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
@@ -368,26 +352,22 @@
                 }
             });
 
-            // Debounced search input with AJAX
             searchInput.addEventListener('input', function () {
                 clearTimeout(debounceTimeout);
                 debounceTimeout = setTimeout(() => applyFilters(), 300);
             });
         }
 
-        // Dropdown change events with AJAX
         [departmentSelect, categorySelect, workflowSelect, statusSelect].forEach(select => {
             if (select) {
                 select.addEventListener('change', applyFilters);
             }
         });
 
-        // Special handling for Division dropdown (cascading)
         if (divisionSelect) {
             divisionSelect.addEventListener('change', function () {
                 const divisionId = this.value;
 
-                // Reset department dropdown
                 if (departmentSelect) {
                     departmentSelect.innerHTML = '<option value="">Please select Division first</option>';
                     departmentSelect.value = '';
@@ -399,26 +379,21 @@
                 }
 
                 loadDepartmentsByDivision(divisionId);
-
-                // Apply filters after department dropdown is updated
                 setTimeout(() => applyFilters(), 500);
             });
         }
 
-        // Handle form submission
-        const changeWorkflowForm = document.getElementById('changeWorkflowForm');
-        if (changeWorkflowForm) {
-            changeWorkflowForm.addEventListener('submit', function(e) {
+        const bypassStageForm = document.getElementById('bypassStageForm');
+        if (bypassStageForm) {
+            bypassStageForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                saveWorkflowChange();
+                saveBypassStage();
             });
         }
 
-        // Setup pagination event handlers (if pagination exists on load)
         setupPaginationHandlers();
     });
 
-    // Function to load departments for a division
     function loadDepartmentsByDivision(divisionId, selectedDepartmentId = '') {
         if (!departmentSelect) return;
 
@@ -428,12 +403,10 @@
             return;
         }
 
-        // Show loading state
         departmentSelect.innerHTML = '<option value="">Loading departments...</option>';
         departmentSelect.disabled = true;
 
-        // Fetch departments for selected division
-        fetch(`/ChangeWorkflow/GetDepartmentsByDivision?divisionId=${divisionId}`)
+        fetch(`/BypassStage/GetDepartmentsByDivision?divisionId=${divisionId}`)
             .then(response => response.json())
             .then(data => {
                 departmentSelect.innerHTML = '<option value="">All Departments</option>';
@@ -459,33 +432,31 @@
             });
     }
 
-    // Apply filters function
     function applyFilters() {
-        const searchTerm = searchInput?.value || '';
-        const selectedDivision = divisionSelect?.value || '';
-        const selectedDepartment = departmentSelect?.value || '';
-        const selectedCategory = categorySelect?.value || '';
-        const selectedWorkflow = workflowSelect?.value || '';
-        const selectedStatus = statusSelect?.value || '';
+        const filters = {
+            searchTerm: searchInput?.value?.trim() || '',
+            selectedDivision: divisionSelect?.value || '',
+            selectedDepartment: departmentSelect?.value || '',
+            selectedCategory: categorySelect?.value || '',
+            selectedWorkflow: workflowSelect?.value || '',
+            selectedStatus: statusSelect?.value || ''
+        };
 
-        // Check if all filters are empty
-        const isAllEmpty = !searchTerm.trim() &&
-            !selectedDivision &&
-            !selectedDepartment &&
-            !selectedCategory &&
-            !selectedWorkflow &&
-            !selectedStatus;
+        const isAllEmpty = !filters.searchTerm &&
+            !filters.selectedDivision &&
+            !filters.selectedDepartment &&
+            !filters.selectedCategory &&
+            !filters.selectedWorkflow &&
+            !filters.selectedStatus;
 
         if (isAllEmpty) {
             window.location.href = window.location.pathname;
             return;
         }
 
-        // Call load filtered results
         loadFilteredResults(1, getCurrentPageSize());
     }
 
-    // Get current filters
     function getCurrentFilters() {
         return {
             searchTerm: searchInput?.value?.trim() || '',
@@ -497,16 +468,13 @@
         };
     }
 
-    // Get current page size
     function getCurrentPageSize() {
         return parseInt(document.querySelector('.pagination select')?.value) || 10;
     }
 
-    // Load filtered results with pagination
     function loadFilteredResults(page = 1, pageSize = 10) {
         const filters = getCurrentFilters();
 
-        // Build parameters
         const params = new URLSearchParams();
         params.append('page', page.toString());
         params.append('pageSize', pageSize.toString());
@@ -518,17 +486,14 @@
         if (filters.selectedWorkflow) params.append('selectedWorkflow', filters.selectedWorkflow);
         if (filters.selectedStatus) params.append('selectedStatus', filters.selectedStatus);
 
-        // Show loading state
         showLoadingState();
 
-        // Update browser URL
-        const newUrl = `/ChangeWorkflow?${params.toString()}`;
+        const newUrl = `/BypassStage?${params.toString()}`;
         if (page !== 1 || hasActiveFilters()) {
             history.pushState({ page, filters }, null, newUrl);
         }
 
-        // Execute AJAX request
-        const requestUrl = `/ChangeWorkflow/FilterIdeas?${params.toString()}`;
+        const requestUrl = `/BypassStage/FilterIdeas?${params.toString()}`;
 
         fetch(requestUrl, {
             method: 'GET',
@@ -559,13 +524,11 @@
             });
     }
 
-    // Check if any filters are active
     function hasActiveFilters() {
         const filters = getCurrentFilters();
         return Object.values(filters).some(value => value && value.toString().trim() !== '');
     }
 
-    // Update table with filtered ideas
     function updateTable(ideas) {
         if (!tableBody) {
             console.error('Table body element not found');
@@ -581,7 +544,6 @@
         tableBody.innerHTML = rows;
     }
 
-    // Create table row HTML
     function createTableRow(idea) {
         const { dateStr, timeStr } = formatDateTime(idea.submittedDate);
         const categoryClass = getCategoryClass(idea.categoryName);
@@ -589,7 +551,7 @@
         const statusClass = getStatusClass(idea.currentStatus);
 
         return `
-            <tr style="cursor: pointer;" onclick="openChangeWorkflowModal(${idea.id}, '${idea.ideaCode}', '${idea.workflowName || 'N/A'}', ${idea.workflowId || 0})">
+            <tr style="cursor: pointer;" onclick="openBypassStageModal(${idea.id}, '${idea.ideaCode}', ${idea.currentStage}, ${idea.maxStage})">
                 <td><span class="badge bg-light text-dark">${idea.ideaCode}</span></td>
                 <td>
                     <div class="truncate-title" title="${escapeHtml(idea.ideaName)}">
@@ -619,7 +581,6 @@
         `;
     }
 
-    // Update AJAX pagination
     function updateAjaxPagination(paginationData, filters = {}) {
         const paginationContainer = document.querySelector('.pagination-container-single-row');
 
@@ -633,7 +594,6 @@
         if (paginationContainer) {
             paginationContainer.style.display = 'flex';
 
-            // Update pagination info
             const paginationInfo = paginationContainer.querySelector('.pagination-info span');
             if (paginationInfo) {
                 paginationInfo.innerHTML = `
@@ -642,15 +602,11 @@
                 `;
             }
 
-            // Regenerate pagination HTML
             regeneratePaginationHTML(paginationData, filters);
-
-            // Update pagination links with AJAX handlers
             setupPaginationHandlers();
         }
     }
 
-    // Regenerate pagination HTML
     function regeneratePaginationHTML(paginationData, filters = {}) {
         const paginationNav = document.querySelector('.pagination-navigation ul.pagination');
         if (!paginationNav) return;
@@ -666,7 +622,6 @@
             startPage = Math.max(1, endPage - maxVisible + 1);
         }
 
-        // Build filter parameters
         const filterParams = new URLSearchParams();
         if (filters.searchTerm) filterParams.append('searchTerm', filters.searchTerm);
         if (filters.selectedDivision) filterParams.append('selectedDivision', filters.selectedDivision);
@@ -678,53 +633,47 @@
 
         let paginationHTML = '';
 
-        // First button
         paginationHTML += `
             <li class="page-item first-last-btn ${currentPage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="/ChangeWorkflow?${filterParams}&page=1" data-page="1">
+                <a class="page-link" href="/BypassStage?${filterParams}&page=1" data-page="1">
                     <i class="bi bi-chevron-double-left"></i>
                 </a>
             </li>
         `;
 
-        // Previous button
         paginationHTML += `
             <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="/ChangeWorkflow?${filterParams}&page=${currentPage - 1}" data-page="${currentPage - 1}">
+                <a class="page-link" href="/BypassStage?${filterParams}&page=${currentPage - 1}" data-page="${currentPage - 1}">
                     <i class="bi bi-chevron-left"></i>
                 </a>
             </li>
         `;
 
-        // Page numbers
         for (let page = startPage; page <= endPage; page++) {
             paginationHTML += `
                 <li class="page-item page-number desktop-page ${page === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="/ChangeWorkflow?${filterParams}&page=${page}" data-page="${page}">${page}</a>
+                    <a class="page-link" href="/BypassStage?${filterParams}&page=${page}" data-page="${page}">${page}</a>
                 </li>
             `;
         }
 
-        // Mobile current page
         paginationHTML += `
             <li class="page-item page-number mobile-page">
                 <span class="page-link" style="background-color: white;">${currentPage}</span>
             </li>
         `;
 
-        // Next button
         paginationHTML += `
             <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="/ChangeWorkflow?${filterParams}&page=${currentPage + 1}" data-page="${currentPage + 1}">
+                <a class="page-link" href="/BypassStage?${filterParams}&page=${currentPage + 1}" data-page="${currentPage + 1}">
                     <i class="bi bi-chevron-right"></i>
                 </a>
             </li>
         `;
 
-        // Last button
         paginationHTML += `
             <li class="page-item first-last-btn ${currentPage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="/ChangeWorkflow?${filterParams}&page=${totalPages}" data-page="${totalPages}">
+                <a class="page-link" href="/BypassStage?${filterParams}&page=${totalPages}" data-page="${totalPages}">
                     <i class="bi bi-chevron-double-right"></i>
                 </a>
             </li>
@@ -733,7 +682,6 @@
         paginationNav.innerHTML = paginationHTML;
     }
 
-    // Setup pagination event handlers
     function setupPaginationHandlers() {
         const paginationLinks = document.querySelectorAll('.pagination a');
 
@@ -748,7 +696,6 @@
             });
         });
 
-        // Handle page size selector
         const pageSizeSelect = document.querySelector('.pagination select');
         if (pageSizeSelect) {
             pageSizeSelect.addEventListener('change', function () {
@@ -758,7 +705,6 @@
         }
     }
 
-    // Show loading state
     function showLoadingState() {
         if (tableBody) {
             tableBody.innerHTML = `
@@ -773,7 +719,6 @@
         }
     }
 
-    // Show error state
     function showErrorState(message) {
         if (tableBody) {
             tableBody.innerHTML = `
@@ -796,79 +741,82 @@
     }
 
     function hideLoadingState() {
-        // Loading state is replaced by updateTable()
     }
 
-    // Open change workflow modal
-    function openChangeWorkflowModal(ideaId, ideaCode, currentWorkflow, currentWorkflowId) {
-        console.log('Opening modal for:', ideaId, ideaCode, currentWorkflow, currentWorkflowId);
+    function openBypassStageModal(ideaId, ideaCode, currentStage, maxStage) {
+        console.log('Opening modal for:', ideaId, ideaCode, currentStage, maxStage);
 
         document.getElementById('modalIdeaId').value = ideaId;
-        document.getElementById('modalIdeaCodeSubtitle').textContent = `Update workflow for ${ideaCode}`;
-        document.getElementById('modalCurrentWorkflow').value = currentWorkflow || 'N/A';
+        document.getElementById('modalIdeaCodeSubtitle').textContent = `Bypass stage for ${ideaCode}`;
+        document.getElementById('modalCurrentStage').value = `Stage ${currentStage}`;
+        document.getElementById('modalBypassReason').value = '';
 
-        const form = document.getElementById('changeWorkflowForm');
+        const form = document.getElementById('bypassStageForm');
         form.classList.remove('was-validated');
 
-        const workflowSelect = document.getElementById('modalNewWorkflow');
-        workflowSelect.value = '';
+        fetch(`/BypassStage/GetAvailableStages?ideaId=${ideaId}`)
+            .then(response => response.json())
+            .then(data => {
+                const targetStageSelect = document.getElementById('modalTargetStage');
+                targetStageSelect.innerHTML = '<option value="">Select target stage...</option>';
 
-        // Filter out current workflow from options
-        Array.from(workflowSelect.options).forEach(option => {
-            if (option.value == currentWorkflowId) {
-                option.disabled = true;
-                option.textContent = option.textContent.replace(' (Current)', '') + ' (Current)';
-            } else {
-                option.disabled = false;
-                option.textContent = option.textContent.replace(' (Current)', '');
-            }
-        });
+                if (data.success && data.stages) {
+                    data.stages.forEach(stage => {
+                        const option = document.createElement('option');
+                        option.value = stage.value;
+                        option.textContent = stage.text;
+                        targetStageSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading stages:', error);
+            });
 
-        if (changeWorkflowModal) {
-            changeWorkflowModal.show();
+        if (bypassStageModal) {
+            bypassStageModal.show();
         } else {
             console.error('Modal not initialized');
         }
     }
 
-    // Save workflow change
-    function saveWorkflowChange() {
-        const form = document.getElementById('changeWorkflowForm');
+    function saveBypassStage() {
+        const form = document.getElementById('bypassStageForm');
 
         if (!form.checkValidity()) {
             form.classList.add('was-validated');
             Swal.fire({
                 icon: 'warning',
                 title: 'Validation Error',
-                text: 'Please select a new workflow',
+                text: 'Please fill all required fields',
                 confirmButtonColor: '#3b82f6'
             });
             return;
         }
 
         const ideaId = document.getElementById('modalIdeaId').value;
-        const newWorkflowId = document.getElementById('modalNewWorkflow').value;
-        const newWorkflowText = document.getElementById('modalNewWorkflow').options[document.getElementById('modalNewWorkflow').selectedIndex].text;
+        const targetStage = document.getElementById('modalTargetStage').value;
+        const targetStageText = document.getElementById('modalTargetStage').options[document.getElementById('modalTargetStage').selectedIndex].text;
+        const reason = document.getElementById('modalBypassReason').value;
 
-        if (!ideaId || !newWorkflowId) {
+        if (!ideaId || !targetStage || !reason) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Validation Error',
-                text: 'Please select a workflow',
+                text: 'Please fill all fields',
                 confirmButtonColor: '#3b82f6'
             });
             return;
         }
 
-        // Show confirmation dialog
         Swal.fire({
-            title: 'Confirm Workflow Change',
-            html: `Are you sure you want to change the workflow to <strong>${newWorkflowText}</strong>?<br><br><span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>This will reset the approval process.</span>`,
+            title: 'Confirm Stage Bypass',
+            html: `Are you sure you want to bypass to <strong>${targetStageText}</strong>?<br><br><span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>This will skip intermediate approval stages.</span>`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3b82f6',
             cancelButtonColor: '#6b7280',
-            confirmButtonText: '<i class="bi bi-check-circle me-2"></i>Yes, Change It',
+            confirmButtonText: '<i class="bi bi-fast-forward me-2"></i>Yes, Bypass It',
             cancelButtonText: '<i class="bi bi-x-circle me-2"></i>Cancel',
             customClass: {
                 confirmButton: 'btn btn-primary px-4 me-2',
@@ -877,10 +825,9 @@
             buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
-                // Show loading state
                 Swal.fire({
                     title: 'Processing...',
-                    text: 'Please wait while we update the workflow.',
+                    text: 'Please wait while we bypass the stages.',
                     icon: 'info',
                     allowOutsideClick: false,
                     allowEscapeKey: false,
@@ -890,31 +837,28 @@
                     }
                 });
 
-                fetch('/ChangeWorkflow/UpdateWorkflow', {
+                fetch('/BypassStage/BypassStage', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `ideaId=${ideaId}&newWorkflowId=${newWorkflowId}`
+                    body: `ideaId=${ideaId}&targetStage=${targetStage}&reason=${encodeURIComponent(reason)}`
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Close modal first
-                            if (changeWorkflowModal) {
-                                changeWorkflowModal.hide();
+                            if (bypassStageModal) {
+                                bypassStageModal.hide();
                             }
 
-                            // Show success message
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
-                                text: data.message || 'Workflow has been successfully changed!',
+                                text: data.message || 'Stage has been successfully bypassed!',
                                 confirmButtonColor: '#3b82f6',
                                 timer: 2000,
                                 timerProgressBar: true
                             }).then(() => {
-                                // Refresh table - check if filters are active
                                 if (hasActiveFilters()) {
                                     applyFilters();
                                 } else {
@@ -925,7 +869,7 @@
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
-                                text: data.message || 'Failed to update workflow',
+                                text: data.message || 'Failed to bypass stage',
                                 confirmButtonColor: '#dc2626'
                             });
                         }
@@ -935,7 +879,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: 'An error occurred while updating workflow',
+                            text: 'An error occurred while bypassing stage',
                             confirmButtonColor: '#dc2626'
                         });
                     });
@@ -943,53 +887,6 @@
         });
     }
 
-    // Show success message
-    function showSuccess(message) {
-        const alertHtml = `
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-
-        const container = document.querySelector('.container-fluid');
-        if (container) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = alertHtml;
-            const pageHeader = container.querySelector('.page-header');
-            container.insertBefore(tempDiv.firstElementChild, pageHeader.nextSibling);
-
-            setTimeout(() => {
-                const alert = container.querySelector('.alert-success');
-                if (alert) alert.remove();
-            }, 5000);
-        }
-    }
-
-    // Show error message
-    function showError(message) {
-        const alertHtml = `
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-
-        const container = document.querySelector('.container-fluid');
-        if (container) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = alertHtml;
-            const pageHeader = container.querySelector('.page-header');
-            container.insertBefore(tempDiv.firstElementChild, pageHeader.nextSibling);
-
-            setTimeout(() => {
-                const alert = container.querySelector('.alert-danger');
-                if (alert) alert.remove();
-            }, 5000);
-        }
-    }
-
-    // Helper functions
     function getCategoryClass(categoryName) {
         switch (categoryName) {
             case 'Cost Reduction (CR)': return 'bg-success';
@@ -1040,7 +937,6 @@
         return div.innerHTML;
     }
 
-    // Browser history management
     window.addEventListener('popstate', function (event) {
         if (event.state && event.state.filters) {
             const filters = event.state.filters;
@@ -1062,7 +958,6 @@
         }
     });
 
-    // Make function globally available
-    window.openChangeWorkflowModal = openChangeWorkflowModal;
+    window.openBypassStageModal = openBypassStageModal;
     </script>
 }

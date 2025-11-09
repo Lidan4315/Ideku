@@ -132,11 +132,20 @@ namespace Ideku.Data.Seeders
                     },
                     new Module
                     {
+                        ModuleName = "Bypass Stage",
+                        ModuleKey = "bypass_stage",
+                        ControllerName = "BypassStage",
+                        ActionName = "Index",
+                        SortOrder = 14,
+                        IsActive = true
+                    },
+                    new Module
+                    {
                         ModuleName = "Access Control",
                         ModuleKey = "access_control",
                         ControllerName = "AccessControl",
                         ActionName = "Index",
-                        SortOrder = 14,
+                        SortOrder = 15,
                         IsActive = true
                     }
                 };

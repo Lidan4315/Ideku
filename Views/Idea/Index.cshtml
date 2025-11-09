@@ -52,7 +52,8 @@
                     ShowCategoryFilter = true,
                     ShowStageFilter = true,
                     ShowStatusFilter = true,
-                    AvailableStages = Model.AvailableStages
+                    AvailableStages = Model.AvailableStages,
+                    StatusOptions = Model.StatusOptions
                 };
             }
             @await Html.PartialAsync("_IdeaFilterForm", filterConfig)

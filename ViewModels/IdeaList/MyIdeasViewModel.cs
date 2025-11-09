@@ -50,7 +50,11 @@ namespace Ideku.ViewModels.IdeaList
         /// Available stages for filtering (dynamically loaded from database)
         /// </summary>
         public List<SelectListItem> AvailableStages { get; set; } = new List<SelectListItem>();
-        
+        /// <summary>
+        /// Available statuses for filtering (dynamically loaded from database)
+        /// </summary>
+        public List<string>? StatusOptions { get; set; }
+
         // Convenience Properties for backward compatibility and ease of use
         /// <summary>
         /// Ideas for current page (shortcut to PagedIdeas.Items)

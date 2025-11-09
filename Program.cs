@@ -87,6 +87,7 @@ builder.Services.AddScoped<Ideku.Services.UserManagement.IUserManagementService,
 builder.Services.AddScoped<Ideku.Services.IdeaImplementators.IIdeaImplementatorService, Ideku.Services.IdeaImplementators.IdeaImplementatorService>();
 builder.Services.AddScoped<Ideku.Services.Milestone.IMilestoneService, Ideku.Services.Milestone.MilestoneService>();
 builder.Services.AddScoped<Ideku.Services.ChangeWorkflow.IChangeWorkflowService, Ideku.Services.ChangeWorkflow.ChangeWorkflowService>();
+builder.Services.AddScoped<Ideku.Services.BypassStage.IBypassStageService, Ideku.Services.BypassStage.BypassStageService>();
 builder.Services.AddScoped<Ideku.Services.IdeaMonitoring.IIdeaMonitoringService, Ideku.Services.IdeaMonitoring.IdeaMonitoringService>();
 
 // Register Background Services

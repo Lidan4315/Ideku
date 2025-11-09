@@ -44,6 +44,8 @@ namespace Ideku.ViewModels.ChangeWorkflow
         /// </summary>
         public string? SelectedStatus { get; set; }
 
+        public List<string>? StatusOptions { get; set; }
+
         // Convenience Properties
         /// <summary>
         /// Ideas for current page
