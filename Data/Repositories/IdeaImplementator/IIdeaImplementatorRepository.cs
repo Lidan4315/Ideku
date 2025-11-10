@@ -7,8 +7,6 @@ namespace Ideku.Data.Repositories.IdeaImplementators
         Task<IdeaImplementator> CreateAsync(IdeaImplementator ideaImplementator);
         Task<IdeaImplementator?> GetByIdAsync(long id);
         Task<IEnumerable<IdeaImplementator>> GetByIdeaIdAsync(long ideaId);
-        Task<IdeaImplementator?> GetLeaderByIdeaIdAsync(long ideaId);
-        Task<IEnumerable<IdeaImplementator>> GetMembersByIdeaIdAsync(long ideaId);
         Task<bool> IsUserAssignedToIdeaAsync(long ideaId, long userId);
         Task<bool> HasLeaderAsync(long ideaId);
         Task UpdateAsync(IdeaImplementator ideaImplementator);

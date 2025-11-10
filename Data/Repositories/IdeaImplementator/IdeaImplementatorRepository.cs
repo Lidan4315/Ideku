@@ -36,23 +36,6 @@ namespace Ideku.Data.Repositories.IdeaImplementators
                 .ToListAsync();
         }
 
-        public async Task<IdeaImplementator?> GetLeaderByIdeaIdAsync(long ideaId)
-        {
-            return await _context.IdeaImplementators
-                .Include(ii => ii.User)
-                    .ThenInclude(u => u.Employee)
-                .FirstOrDefaultAsync(ii => ii.IdeaId == ideaId && ii.Role == "Leader");
-        }
-
-        public async Task<IEnumerable<IdeaImplementator>> GetMembersByIdeaIdAsync(long ideaId)
-        {
-            return await _context.IdeaImplementators
-                .Include(ii => ii.User)
-                    .ThenInclude(u => u.Employee)
-                .Where(ii => ii.IdeaId == ideaId && ii.Role == "Member")
-                .ToListAsync();
-        }
-
         public async Task<bool> IsUserAssignedToIdeaAsync(long ideaId, long userId)
         {
             return await _context.IdeaImplementators
