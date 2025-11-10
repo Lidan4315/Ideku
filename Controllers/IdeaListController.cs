@@ -347,74 +347,76 @@ namespace Ideku.Controllers
             }
         }
 
-        // AJAX: Assign implementator
+        // AJAX: Assign multiple implementators in a single transaction
         [HttpPost]
-        public async Task<JsonResult> AssignImplementator(long ideaId, long userId, string role)
+        public async Task<JsonResult> AssignMultipleImplementators([FromBody] AssignMultipleImplementatorsRequest request)
         {
             try
             {
-                // Check if user has permission to manage implementators
-                var canManage = await _implementatorService.CanUserManageImplementatorsAsync(User.Identity!.Name!, ideaId);
-                if (!canManage)
+                if (request == null || request.Implementators == null || !request.Implementators.Any())
                 {
-                    return Json(new { success = false, message = "You don't have permission to assign implementators for this idea." });
+                    return Json(new { success = false, message = "No implementators provided." });
                 }
 
-                // Check if trying to add member and limit is reached
-                if (role == "Member")
-                {
-                    var canAddMore = await _implementatorService.CanAddMoreMembersAsync(User.Identity!.Name!, ideaId);
-                    if (!canAddMore)
-                    {
-                        return Json(new { success = false, message = "Maximum limit of 5 members has been reached." });
-                    }
-                }
+                // Convert DTO to tuple list
+                var implementators = request.Implementators
+                    .Select(i => (i.UserId, i.Role))
+                    .ToList();
 
-                var result = await _implementatorService.AssignImplementatorAsync(ideaId, userId, role);
+                var result = await _implementatorService.AssignMultipleImplementatorsAsync(
+                    User.Identity!.Name!,
+                    request.IdeaId,
+                    implementators);
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("Successfully assigned user {UserId} as {Role} to idea {IdeaId} by {Username}",
-                        userId, role, ideaId, User.Identity!.Name);
+                    _logger.LogInformation("Successfully assigned {Count} implementators to idea {IdeaId} by {Username}",
+                        implementators.Count, request.IdeaId, User.Identity!.Name);
                 }
 
                 return Json(new { success = result.Success, message = result.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error assigning implementator: IdeaId={IdeaId}, UserId={UserId}, Role={Role}",
-                    ideaId, userId, role);
-                return Json(new { success = false, message = "An error occurred while assigning implementator" });
+                _logger.LogError(ex, "Error assigning multiple implementators to idea {IdeaId}", request?.IdeaId);
+                return Json(new { success = false, message = "An error occurred while assigning implementators." });
             }
         }
 
-        // AJAX: Remove implementator
+        // AJAX: Update team implementators (remove + add in single transaction)
         [HttpPost]
-        public async Task<JsonResult> RemoveImplementator(long implementatorId, long ideaId)
+        public async Task<JsonResult> UpdateTeamImplementators([FromBody] UpdateTeamImplementatorsRequest request)
         {
             try
             {
-                // Check if user has permission to manage implementators
-                var canManage = await _implementatorService.CanUserManageImplementatorsAsync(User.Identity!.Name!, ideaId);
-                if (!canManage)
+                if (request == null)
                 {
-                    return Json(new { success = false, message = "You don't have permission to remove implementators for this idea." });
+                    return Json(new { success = false, message = "Invalid request." });
                 }
 
-                var result = await _implementatorService.RemoveImplementatorAsync(implementatorId);
+                // Convert DTO to tuple list
+                var implementatorsToAdd = request.ImplementatorsToAdd
+                    .Select(i => (i.UserId, i.Role))
+                    .ToList();
+
+                var result = await _implementatorService.UpdateTeamImplementatorsAsync(
+                    User.Identity!.Name!,
+                    request.IdeaId,
+                    request.ImplementatorsToRemove,
+                    implementatorsToAdd);
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("Successfully removed implementator {ImplementatorId} by {Username}",
-                        implementatorId, User.Identity!.Name);
+                    _logger.LogInformation("Successfully updated team for idea {IdeaId}: removed {RemovedCount}, added {AddedCount} by {Username}",
+                        request.IdeaId, request.ImplementatorsToRemove.Count, implementatorsToAdd.Count, User.Identity!.Name);
                 }
 
                 return Json(new { success = result.Success, message = result.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error removing implementator {ImplementatorId}", implementatorId);
-                return Json(new { success = false, message = "An error occurred while removing implementator" });
+                _logger.LogError(ex, "Error updating team implementators for idea {IdeaId}", request?.IdeaId);
+                return Json(new { success = false, message = "An error occurred while updating team implementators." });
             }
         }
 

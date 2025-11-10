@@ -18,17 +18,23 @@ namespace Ideku.Helpers
 
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
+            var logger = context.HttpContext.RequestServices.GetService<ILogger<ModuleAuthorizeAttribute>>();
+
             // Check if user is authenticated
             if (!context.HttpContext.User.Identity?.IsAuthenticated ?? true)
             {
+                logger?.LogWarning("[ModuleAuthorize] User not authenticated - redirecting to Login");
                 context.Result = new RedirectToActionResult("Login", "Auth", null);
                 return;
             }
 
             // Get user ID from claims
             var userIdClaim = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            logger?.LogInformation("[ModuleAuthorize] UserIdClaim: {UserIdClaim}", userIdClaim);
+
             if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId))
             {
+                logger?.LogWarning("[ModuleAuthorize] Invalid UserId claim - redirecting to Login");
                 context.Result = new RedirectToActionResult("Login", "Auth", null);
                 return;
             }
@@ -39,19 +45,23 @@ namespace Ideku.Helpers
 
             if (accessControlService == null)
             {
+                logger?.LogError("[ModuleAuthorize] AccessControlService not found in DI - denying access");
                 // If service not available, deny access for safety
                 context.Result = new RedirectToActionResult("AccessDenied", "Auth", null);
                 return;
             }
 
             // Get ALL ModuleAuthorize attributes from both class and method level
-            var controllerType = context.ActionDescriptor.EndpointMetadata
-                .OfType<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>()
-                .FirstOrDefault()?.ControllerTypeInfo;
+            var controllerActionDescriptor = context.ActionDescriptor as Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor;
 
-            var methodInfo = context.ActionDescriptor.EndpointMetadata
-                .OfType<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>()
-                .FirstOrDefault()?.MethodInfo;
+            if (controllerActionDescriptor == null)
+            {
+                logger?.LogWarning("[ModuleAuthorize] ActionDescriptor is not a ControllerActionDescriptor - allowing access");
+                return;
+            }
+
+            var controllerType = controllerActionDescriptor.ControllerTypeInfo;
+            var methodInfo = controllerActionDescriptor.MethodInfo;
 
             var allModuleKeys = new List<string>();
 
@@ -74,18 +84,35 @@ namespace Ideku.Helpers
             // Remove duplicates
             allModuleKeys = allModuleKeys.Distinct().ToList();
 
+            logger?.LogInformation("[ModuleAuthorize] Checking {Count} module(s): {Modules}",
+                allModuleKeys.Count, string.Join(", ", allModuleKeys));
+
+            // If no modules specified, allow access (failsafe for controllers without ModuleAuthorize)
+            if (allModuleKeys.Count == 0)
+            {
+                logger?.LogWarning("[ModuleAuthorize] No module keys found - allowing access");
+                return;
+            }
+
             // Check if user has access to ALL required modules
             foreach (var moduleKey in allModuleKeys)
             {
                 var hasAccess = await accessControlService.CanAccessModuleAsync(userId, moduleKey);
+
+                logger?.LogInformation("[ModuleAuthorize] UserId={UserId}, ModuleKey={ModuleKey}, HasAccess={HasAccess}",
+                    userId, moduleKey, hasAccess);
+
                 if (!hasAccess)
                 {
                     // User doesn't have access to at least one required module
+                    logger?.LogWarning("[ModuleAuthorize] Access DENIED for user {UserId} to module {ModuleKey} - Redirecting to AccessDenied",
+                        userId, moduleKey);
                     context.Result = new RedirectToActionResult("AccessDenied", "Auth", null);
                     return;
                 }
             }
 
+            logger?.LogInformation("[ModuleAuthorize] Access GRANTED for user {UserId} to all required modules", userId);
             // User has access to all required modules - allow request to proceed
         }
     }

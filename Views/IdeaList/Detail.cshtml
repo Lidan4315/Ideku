@@ -396,79 +396,63 @@ $(document).ready(function() {
         saveImplementators(implementators, submitBtn, originalText);
     });
 
-    // Function to save multiple implementators
+    // Function to save multiple implementators using batch endpoint
     function saveImplementators(implementators, submitBtn, originalText) {
-        let successCount = 0;
-        let errorCount = 0;
-        const totalCount = implementators.length;
+        // Prepare request payload
+        const request = {
+            ideaId: ideaId,
+            implementators: implementators
+        };
 
-        // Save each implementator
-        implementators.forEach((impl, index) => {
-            $.post('@Url.Action("AssignImplementator", "IdeaList")', {
-                ideaId: ideaId,
-                userId: impl.userId,
-                role: impl.role
-            })
-            .done(function(response) {
+        // Single batch API call
+        $.ajax({
+            url: '@Url.Action("AssignMultipleImplementators", "IdeaList")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(request),
+            success: function(response) {
+                // Restore button state
+                submitBtn.html(originalText).prop('disabled', false);
+
                 if (response.success) {
-                    successCount++;
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message,
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        $('#addImplementatorModal').modal('hide');
+                        location.reload();
+                    });
                 } else {
-                    errorCount++;
-                    console.error('Error saving implementator:', response.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response.message,
+                        confirmButtonColor: '#3b82f6'
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                // Restore button state
+                submitBtn.html(originalText).prop('disabled', false);
+
+                console.error('Error assigning implementators:', error);
+
+                // Try to get error message from backend response
+                let errorMessage = 'An error occurred while assigning implementators.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
                 }
 
-                // Check if all requests completed
-                if (successCount + errorCount === totalCount) {
-                    handleSaveComplete(successCount, errorCount, submitBtn, originalText);
-                }
-            })
-            .fail(function() {
-                errorCount++;
-                console.error('Failed to save implementator');
-
-                // Check if all requests completed
-                if (successCount + errorCount === totalCount) {
-                    handleSaveComplete(successCount, errorCount, submitBtn, originalText);
-                }
-            });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMessage,
+                    confirmButtonColor: '#3b82f6'
+                });
+            }
         });
-    }
-
-    // Handle save completion
-    function handleSaveComplete(successCount, errorCount, submitBtn, originalText) {
-        // Restore button state
-        submitBtn.html(originalText).prop('disabled', false);
-
-        if (errorCount === 0) {
-            // All successful
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: `All ${successCount} member(s) have been assigned successfully.`,
-                confirmButtonColor: '#3b82f6'
-            }).then(() => {
-                $('#addImplementatorModal').modal('hide');
-                location.reload();
-            });
-        } else if (successCount > 0) {
-            // Partial success
-            Swal.fire({
-                icon: 'warning',
-                title: 'Partial Success',
-                text: `${successCount} member(s) were assigned successfully, but ${errorCount} failed.`,
-                confirmButtonColor: '#3b82f6'
-            }).then(() => {
-                location.reload();
-            });
-        } else {
-            // All failed
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: 'Failed to assign any implementators. Please try again.',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
     }
 
     // Initialize dropdown when modal is opened
@@ -1097,84 +1081,65 @@ function getImplementatorChanges(currentImplementators, newImplementators) {
 
 function processTeamChanges(toAdd, toRemove, submitBtn, originalText) {
     const ideaId = @Model.Idea.Id;
-    let completed = 0;
-    let errors = 0;
-    const totalOperations = toAdd.length + toRemove.length;
 
-    // Process removals
-    toRemove.forEach(impl => {
-        $.post('@Url.Action("RemoveImplementator", "IdeaList")', {
-            implementatorId: impl.id
-        })
-        .done(function(response) {
-            if (!response.success) {
-                errors++;
-                console.error('Error removing implementator:', response.message);
+    // Prepare request payload
+    const request = {
+        ideaId: ideaId,
+        implementatorsToRemove: toRemove.map(impl => impl.id),
+        implementatorsToAdd: toAdd
+    };
+
+    // Single batch API call for update team
+    $.ajax({
+        url: '@Url.Action("UpdateTeamImplementators", "IdeaList")',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(request),
+        success: function(response) {
+            // Restore button state
+            submitBtn.html(originalText).prop('disabled', false);
+
+            if (response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: response.message,
+                    confirmButtonColor: '#3b82f6'
+                }).then(() => {
+                    if (editTeamModal) {
+                        editTeamModal.hide();
+                    }
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message,
+                    confirmButtonColor: '#3b82f6'
+                });
             }
-        })
-        .fail(function() {
-            errors++;
-            console.error('Failed to remove implementator');
-        })
-        .always(function() {
-            completed++;
-            if (completed === totalOperations) {
-                handleTeamUpdateComplete(errors, submitBtn, originalText);
+        },
+        error: function(xhr, status, error) {
+            // Restore button state
+            submitBtn.html(originalText).prop('disabled', false);
+
+            console.error('Error updating team:', error);
+
+            // Try to get error message from backend response
+            let errorMessage = 'An error occurred while updating team implementators.';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
             }
-        });
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: errorMessage,
+                confirmButtonColor: '#3b82f6'
+            });
+        }
     });
-
-    // Process additions
-    toAdd.forEach(impl => {
-        $.post('@Url.Action("AssignImplementator", "IdeaList")', {
-            ideaId: ideaId,
-            userId: impl.userId,
-            role: impl.role
-        })
-        .done(function(response) {
-            if (!response.success) {
-                errors++;
-                console.error('Error adding implementator:', response.message);
-            }
-        })
-        .fail(function() {
-            errors++;
-            console.error('Failed to add implementator');
-        })
-        .always(function() {
-            completed++;
-            if (completed === totalOperations) {
-                handleTeamUpdateComplete(errors, submitBtn, originalText);
-            }
-        });
-    });
-}
-
-function handleTeamUpdateComplete(errorCount, submitBtn, originalText) {
-    submitBtn.html(originalText).prop('disabled', false);
-
-    if (errorCount === 0) {
-        Swal.fire({
-            icon: 'success',
-            title: 'Success!',
-            text: 'Team assembly has been updated successfully.',
-            confirmButtonColor: '#3b82f6'
-        }).then(() => {
-            if (editTeamModal) {
-                editTeamModal.hide();
-            }
-            location.reload();
-        });
-    } else {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Partial Success',
-            text: `Some changes could not be saved. ${errorCount} error(s) occurred.`,
-            confirmButtonColor: '#3b82f6'
-        }).then(() => {
-            location.reload();
-        });
-    }
 }
 
 // Edit Implementator Search Functionality

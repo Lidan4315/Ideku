@@ -115,16 +115,17 @@ namespace Ideku.Controllers
 
                 var milestones = await _milestoneService.GetMilestonesByIdeaIdAsync(ideaId);
                 var availablePICUsers = await _milestoneService.GetAvailablePICUsersAsync(ideaId);
-                var canManage = await _milestoneService.CanUserManageMilestonesAsync(User.Identity!.Name!, ideaId);
 
                 var viewModel = new MilestoneDetailViewModel
                 {
                     Idea = idea,
                     Milestones = milestones,
                     AvailablePICUsers = availablePICUsers,
-                    CanManageMilestones = canManage,
                     IsEligibleForMilestones = true // Already filtered in service
                 };
+
+                _logger.LogInformation("[MilestoneDetail] IdeaId={IdeaId}, CurrentStage={Stage}, IsMilestoneCreated={IsMilestoneCreated}, CurrentStatus={Status}",
+                    ideaId, idea.CurrentStage, idea.IsMilestoneCreated, idea.CurrentStatus);
 
                 return View(viewModel);
             }
@@ -175,12 +176,7 @@ namespace Ideku.Controllers
                     return Json(new { success = false, message = "Invalid data provided." });
                 }
 
-                var canManage = await _milestoneService.CanUserManageMilestonesAsync(User.Identity!.Name!, request.IdeaId);
-                if (!canManage)
-                {
-                    return Json(new { success = false, message = "You don't have permission to update this milestone." });
-                }
-
+                // Authorization handled by ModuleAuthorize attribute
                 var result = await _milestoneService.UpdateMilestoneAsync(
                     request.MilestoneId,
                     request.Title,
@@ -206,38 +202,21 @@ namespace Ideku.Controllers
             }
         }
 
-        // POST: /Milestone/Delete/{milestoneId}
+        // POST: /Milestone/DeleteMilestone (AJAX)
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(long milestoneId, long ideaId)
+        public async Task<IActionResult> DeleteMilestone(long milestoneId)
         {
             try
             {
-                var canManage = await _milestoneService.CanUserManageMilestonesAsync(User.Identity!.Name!, ideaId);
-                if (!canManage)
-                {
-                    TempData["ErrorMessage"] = "You don't have permission to delete this milestone.";
-                    return RedirectToAction(nameof(Detail), new { ideaId });
-                }
-
+                // Authorization handled by ModuleAuthorize attribute
                 var result = await _milestoneService.DeleteMilestoneAsync(milestoneId);
 
-                if (result.Success)
-                {
-                    TempData["SuccessMessage"] = result.Message;
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = result.Message;
-                }
-
-                return RedirectToAction(nameof(Detail), new { ideaId });
+                return Json(new { success = result.Success, message = result.Message });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting milestone {MilestoneId}", milestoneId);
-                TempData["ErrorMessage"] = "An error occurred while deleting the milestone.";
-                return RedirectToAction(nameof(Detail), new { ideaId });
+                return Json(new { success = false, message = "An error occurred while deleting the milestone." });
             }
         }
 
@@ -248,12 +227,7 @@ namespace Ideku.Controllers
         {
             try
             {
-                // Verify user has permission
-                var canManage = await _milestoneService.CanUserManageMilestonesAsync(User.Identity!.Name!, ideaId);
-                if (!canManage)
-                {
-                    return Json(new { success = false, message = "You don't have permission to send this idea to approval." });
-                }
+                // Authorization handled by ModuleAuthorize attribute
 
                 // Get idea
                 var idea = await _milestoneService.GetMilestoneEligibleIdeaByIdAsync(ideaId);

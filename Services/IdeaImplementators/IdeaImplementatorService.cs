@@ -98,32 +98,6 @@ namespace Ideku.Services.IdeaImplementators
             }
         }
 
-        public async Task<IdeaImplementator?> GetLeaderByIdeaIdAsync(long ideaId)
-        {
-            try
-            {
-                return await _implementatorRepository.GetLeaderByIdeaIdAsync(ideaId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting leader for Idea {IdeaId}", ideaId);
-                return null;
-            }
-        }
-
-        public async Task<IEnumerable<IdeaImplementator>> GetMembersByIdeaIdAsync(long ideaId)
-        {
-            try
-            {
-                return await _implementatorRepository.GetMembersByIdeaIdAsync(ideaId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting members for Idea {IdeaId}", ideaId);
-                return Enumerable.Empty<IdeaImplementator>();
-            }
-        }
-
         public async Task<IEnumerable<object>> GetAvailableUsersForAssignmentAsync(long ideaId)
         {
             try
@@ -232,71 +206,139 @@ namespace Ideku.Services.IdeaImplementators
             }
         }
 
-        public async Task<bool> CanUserManageImplementatorsAsync(string username, long ideaId)
+        public async Task<(bool Success, string Message)> AssignMultipleImplementatorsAsync(
+            string username,
+            long ideaId,
+            List<(long UserId, string Role)> implementators)
         {
             try
             {
+                // Get current user for role-based validation
                 var user = await _userRepository.GetByUsernameAsync(username);
-                if (user == null) return false;
-
-                // Superuser can manage any idea's implementators
-                if (user.Role.RoleName == "Superuser")
+                if (user == null)
                 {
-                    return true;
+                    return (false, "User not found.");
                 }
 
-                // Workstream Leader can manage if department matches idea's target department
+                // Get current implementators
+                var currentImplementators = await GetImplementatorsByIdeaIdAsync(ideaId);
+                var currentLeaderCount = currentImplementators.Count(i => i.Role == "Leader");
+                var currentMemberCount = currentImplementators.Count(i => i.Role == "Member");
+
+                // Count new implementators by role
+                var newLeaders = implementators.Where(i => i.Role == "Leader").ToList();
+                var newMembers = implementators.Where(i => i.Role == "Member").ToList();
+
+                // Validation 1: Check leader limit (max 1 leader total)
+                var totalLeaders = currentLeaderCount + newLeaders.Count;
+                if (totalLeaders > 1)
+                {
+                    return (false, "Only one Leader can be assigned per idea.");
+                }
+
+                // Validation 2: Check member limit for Workstream Leader (max 5 members)
                 if (user.Role.RoleName == "Workstream Leader")
                 {
-                    var idea = await _context.Ideas
-                        .FirstOrDefaultAsync(i => i.Id == ideaId);
+                    var totalMembers = currentMemberCount + newMembers.Count;
+                    if (totalMembers > 5)
+                    {
+                        return (false, "Maximum limit of 5 members has been reached.");
+                    }
+                }
+                // Superuser has no member limit
 
-                    if (idea == null) return false;
-
-                    // Get workstream leaders for this department
-                    var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
-
-                    // Check if current user is one of the workstream leaders for this department
-                    return workstreamLeaders.Any(wl => wl.Id == user.Id);
+                // All validations passed - assign all implementators
+                foreach (var impl in implementators)
+                {
+                    var result = await AssignImplementatorAsync(ideaId, impl.UserId, impl.Role);
+                    if (!result.Success)
+                    {
+                        // If any assignment fails, return error
+                        return (false, result.Message);
+                    }
                 }
 
-                return false;
+                return (true, "Team has been assembled successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking if user can manage implementators: Username={Username}, IdeaId={IdeaId}",
-                    username, ideaId);
-                return false;
+                _logger.LogError(ex, "Error assigning multiple implementators: IdeaId={IdeaId}", ideaId);
+                return (false, "An error occurred while assigning implementators.");
             }
         }
 
-        public async Task<bool> CanAddMoreMembersAsync(string username, long ideaId)
+        public async Task<(bool Success, string Message)> UpdateTeamImplementatorsAsync(
+            string username,
+            long ideaId,
+            List<long> implementatorsToRemove,
+            List<(long UserId, string Role)> implementatorsToAdd)
         {
             try
             {
+                // Get current user for role-based validation
                 var user = await _userRepository.GetByUsernameAsync(username);
-                if (user == null) return false;
-
-                // Superuser has no limit
-                if (user.Role.RoleName == "Superuser")
+                if (user == null)
                 {
-                    return true;
+                    return (false, "User not found.");
                 }
 
-                // Workstream Leader has limit of 5 members
+                // Get current implementators after removal
+                var currentImplementators = await GetImplementatorsByIdeaIdAsync(ideaId);
+                var remainingImplementators = currentImplementators
+                    .Where(i => !implementatorsToRemove.Contains(i.Id))
+                    .ToList();
+
+                var currentLeaderCount = remainingImplementators.Count(i => i.Role == "Leader");
+                var currentMemberCount = remainingImplementators.Count(i => i.Role == "Member");
+
+                // Count new implementators by role
+                var newLeaders = implementatorsToAdd.Where(i => i.Role == "Leader").ToList();
+                var newMembers = implementatorsToAdd.Where(i => i.Role == "Member").ToList();
+
+                // Validation 1: Check leader limit (max 1 leader total after update)
+                var totalLeaders = currentLeaderCount + newLeaders.Count;
+                if (totalLeaders > 1)
+                {
+                    return (false, "Only one Leader can be assigned per idea.");
+                }
+
+                // Validation 2: Check member limit for Workstream Leader (max 5 members after update)
                 if (user.Role.RoleName == "Workstream Leader")
                 {
-                    var currentMemberCount = await _implementatorRepository.GetMemberCountAsync(ideaId);
-                    return currentMemberCount < 5;
+                    var totalMembers = currentMemberCount + newMembers.Count;
+                    if (totalMembers > 5)
+                    {
+                        return (false, "Maximum limit of 5 members has been reached.");
+                    }
+                }
+                // Superuser has no member limit
+
+                // All validations passed - remove old implementators
+                foreach (var implementatorId in implementatorsToRemove)
+                {
+                    var removeResult = await RemoveImplementatorAsync(implementatorId);
+                    if (!removeResult.Success)
+                    {
+                        return (false, $"Failed to remove implementator: {removeResult.Message}");
+                    }
                 }
 
-                return false;
+                // Add new implementators
+                foreach (var impl in implementatorsToAdd)
+                {
+                    var assignResult = await AssignImplementatorAsync(ideaId, impl.UserId, impl.Role);
+                    if (!assignResult.Success)
+                    {
+                        return (false, $"Failed to add implementator: {assignResult.Message}");
+                    }
+                }
+
+                return (true, "Team assembly has been updated successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking if user can add more members: Username={Username}, IdeaId={IdeaId}",
-                    username, ideaId);
-                return false;
+                _logger.LogError(ex, "Error updating team implementators: IdeaId={IdeaId}", ideaId);
+                return (false, "An error occurred while updating team implementators.");
             }
         }
     }

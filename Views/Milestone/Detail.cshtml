@@ -29,24 +29,6 @@
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle me-2"></i>
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
     <!-- View Toggle Section -->
     <div class="view-toggle-section mb-4">
         <div class="btn-group w-100" role="group" aria-label="View toggle">
@@ -66,19 +48,14 @@
     <div id="milestonesContent">
         <!-- List View -->
         <div id="listViewContent" class="view-content">
-            @if (Model.CanManageMilestones)
+            @* Show "Send to Approval S3" button if: Stage 2, has milestone, not yet approved *@
+            @if (Model.Idea.CurrentStage == 2 && Model.Idea.IsMilestoneCreated && Model.Idea.CurrentStatus != "Approved")
             {
-                @* Show "Send to Approval S3" button if: Stage 2, has milestone, not yet approved *@
-                @if (Model.Idea.CurrentStage == 2 && Model.Idea.IsMilestoneCreated && Model.Idea.CurrentStatus != "Approved")
-                {
-                    <module-access module-key="milestone_send_approval">
-                        <div class="mb-3 d-flex justify-content-end">
-                            <button type="button" class="btn btn-md btn-success" id="sendToS3ApprovalBtn">
-                                <i class="bi bi-send me-1"></i>Send to Approval S3
-                            </button>
-                        </div>
-                    </module-access>
-                }
+                <div class="mb-3 d-flex justify-content-end" module-access="milestone_send_approval">
+                    <button type="button" class="btn btn-md btn-success" id="sendToS3ApprovalBtn">
+                        <i class="bi bi-send me-1"></i>Send to Approval S3
+                    </button>
+                </div>
             }
 
             @if (Model.Milestones.Any())
@@ -88,12 +65,9 @@
                 <h5 class="card-title mb-0">
                     <i class="bi bi-list-check me-2"></i>Milestones (@Model.Milestones.Count())
                 </h5>
-                @if (Model.CanManageMilestones)
-                {
-                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal">
-                        <i class="bi bi-plus-circle me-1"></i>Add Milestone
-                    </button>
-                }
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal" module-access="milestone">
+                    <i class="bi bi-plus-circle me-1"></i>Add Milestone
+                </button>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -106,10 +80,7 @@
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Status</th>
-                                @if (Model.CanManageMilestones)
-                                {
-                                    <th>Actions</th>
-                                }
+                                <th module-access="milestone">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -165,25 +136,22 @@
                                         <span class="badge @statusBadgeClass">@milestone.Status</span>
                                     </td>
                                     <!-- Actions -->
-                                    @if (Model.CanManageMilestones)
-                                    {
-                                        <td>
-                                            <div class="d-flex gap-1">
-                                                <button type="button"
-                                                        class="btn btn-sm btn-outline-primary px-2 py-1"
-                                                        title="Edit Milestone"
-                                                        onclick="openEditModal('@milestone.Id', '@milestone.TitleMilestone', '@milestone.Note', '@milestone.StartDate.ToString("yyyy-MM-dd")', '@milestone.EndDate.ToString("yyyy-MM-dd")', '@milestone.Status')">
-                                                    <i class="bi bi-pencil" style="font-size: 0.9rem;"></i>
-                                                </button>
-                                                <button type="button"
-                                                        class="btn btn-sm btn-outline-danger px-2 py-1"
-                                                        title="Delete Milestone"
-                                                        onclick="confirmDelete('@milestone.Id', '@milestone.TitleMilestone')">
-                                                    <i class="bi bi-trash" style="font-size: 0.9rem;"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    }
+                                    <td module-access="milestone">
+                                        <div class="d-flex gap-1">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary px-2 py-1"
+                                                    title="Edit Milestone"
+                                                    onclick="openEditModal('@milestone.Id', '@milestone.TitleMilestone', '@milestone.Note', '@milestone.StartDate.ToString("yyyy-MM-dd")', '@milestone.EndDate.ToString("yyyy-MM-dd")', '@milestone.Status')">
+                                                <i class="bi bi-pencil" style="font-size: 0.9rem;"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger px-2 py-1"
+                                                    title="Delete Milestone"
+                                                    onclick="confirmDelete('@milestone.Id', '@milestone.TitleMilestone')">
+                                                <i class="bi bi-trash" style="font-size: 0.9rem;"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -200,12 +168,9 @@
                         <i class="bi bi-flag display-1 text-muted mb-3"></i>
                         <h5 class="text-muted">No Milestones Yet</h5>
                         <p class="text-muted">This idea doesn't have any milestones yet.</p>
-                        @if (Model.CanManageMilestones)
-                        {
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal">
-                                <i class="bi bi-plus-circle me-1"></i>Create First Milestone
-                            </button>
-                        }
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal" module-access="milestone">
+                            <i class="bi bi-plus-circle me-1"></i>Create First Milestone
+                        </button>
                     </div>
                 </div>
             }
@@ -222,14 +187,6 @@
         <div class="alert alert-warning mt-4" role="alert">
             <i class="bi bi-exclamation-triangle me-2"></i>
             <strong>Not Eligible:</strong> This idea is not eligible for milestone management. Ideas must reach stage 2 or higher.
-        </div>
-    }
-
-    @if (!Model.CanManageMilestones && Model.IsEligibleForMilestones)
-    {
-        <div class="alert alert-info mt-4" role="alert">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>View Only:</strong> You don't have permission to manage milestones for this idea.
         </div>
     }
 </div>
@@ -532,8 +489,8 @@ $(document).ready(function() {
     // Initialize PIC Selection
     initializePICSelection();
 
-    // Initialize Calendar
-    initializeCalendar();
+    // Initialize Calendar (not needed - using HTML5 date inputs)
+    // initializeCalendar();
 
     // Handle milestone form submission
     $('#addMilestoneForm').on('submit', function(e) {
@@ -717,35 +674,56 @@ function confirmDelete(milestoneId, milestoneTitle) {
                 }
             });
 
-            // Create form and submit
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '@Url.Action("Delete", "Milestone")';
-            form.style.display = 'none';
-
-            // Add CSRF token
-            const csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = '__RequestVerificationToken';
-            csrfToken.value = $('input[name="__RequestVerificationToken"]').val();
-            form.appendChild(csrfToken);
-
-            // Add milestone ID
-            const milestoneIdInput = document.createElement('input');
-            milestoneIdInput.type = 'hidden';
-            milestoneIdInput.name = 'milestoneId';
-            milestoneIdInput.value = milestoneId;
-            form.appendChild(milestoneIdInput);
-
-            // Add idea ID
-            const ideaIdInput = document.createElement('input');
-            ideaIdInput.type = 'hidden';
-            ideaIdInput.name = 'ideaId';
-            ideaIdInput.value = '@Model.Idea.Id';
-            form.appendChild(ideaIdInput);
-
-            document.body.appendChild(form);
-            form.submit();
+            // Send AJAX request
+            $.ajax({
+                url: '@Url.Action("DeleteMilestone", "Milestone")',
+                type: 'POST',
+                data: {
+                    milestoneId: milestoneId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: response.message,
+                            icon: 'success',
+                            confirmButtonText: 'OK',
+                            customClass: {
+                                confirmButton: 'btn btn-success px-4'
+                            },
+                            buttonsStyling: false
+                        }).then(() => {
+                            // Reload the page to refresh milestone list
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: response.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK',
+                            customClass: {
+                                confirmButton: 'btn btn-danger px-4'
+                            },
+                            buttonsStyling: false
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Delete milestone error:', error);
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An error occurred while deleting the milestone. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        customClass: {
+                            confirmButton: 'btn btn-danger px-4'
+                        },
+                        buttonsStyling: false
+                    });
+                }
+            });
         }
     });
 }
