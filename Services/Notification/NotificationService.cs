@@ -90,12 +90,20 @@ namespace Ideku.Services.Notification
         {
             try
             {
+                // Load workflow history for Historical Approval table
+                var workflowHistory = await _context.WorkflowHistories
+                    .Include(wh => wh.ActorUser)
+                        .ThenInclude(u => u.Employee)
+                    .Where(wh => wh.IdeaId == idea.Id && wh.Action == "Approved")
+                    .OrderBy(wh => wh.Timestamp)
+                    .ToListAsync();
+
                 // Notify initiator
                 var initiatorEmail = new EmailMessage
                 {
                     To = idea.InitiatorUser.Employee.EMAIL,
-                    Subject = $"Idea Approved: {idea.IdeaName}",
-                    Body = GenerateIdeaApprovedEmailBody(idea, approver),
+                    Subject = $"Ideku Approved {idea.IdeaName} | {idea.IdeaCode}",
+                    Body = GenerateIdeaApprovedEmailBody(idea, approver, workflowHistory),
                     IsHtml = true
                 };
 
@@ -229,7 +237,7 @@ namespace Ideku.Services.Notification
         .history-table tbody tr:nth-child(odd) {{ background-color: white; }}
         .history-table tbody tr:nth-child(even) {{ background-color: #f0f0f0; }}
         .button-container {{ text-align: left; margin: 20px 0 10px 0; page-break-inside: avoid; }}
-        .btn {{ display: inline-block; padding: 8px 40px; text-decoration: none; border-radius: 6px; margin: 0 10px 0 0; font-size: 15px; color: white !important; font-weight: 500; }}
+        .btn {{ display: inline-block; padding: 6px 30px; text-decoration: none; border-radius: 6px; margin: 0 10px 0 0; font-size: 15px; color: white !important; font-weight: 500; min-width: 100px; text-align: center; }}
         .btn-review {{ background-color: #007bff; }}
         .btn-approve {{ background-color: #17a2b8; }}
         .btn-reject {{ background-color: #e74c3c; }}
@@ -288,7 +296,7 @@ namespace Ideku.Services.Notification
             </div>
 
             <div class='footer-text'>
-                <p style='margin: 0 0 10px 0;'>This notification was generated automatically by the <span class='blue-text'>IdeKU Notification System</span>. For further information, please contact <span class='blue-text'>BI Department on ext 1156</span>.</p>
+                <p style='margin: 0 0 10px 0;'>This notification was generated automatically by the <span class='blue-text'>IdeKU Notification System</span>. For further information, please contact <span class='blue-text'>BI Department</span> on <span class='blue-text'>ext 1156</span>.</p>
                 <p style='margin: 0;'>Best regards,<br><span class='blue-text'>IdeKU</span> Notification</p>
             </div>
         </div>
@@ -297,9 +305,37 @@ namespace Ideku.Services.Notification
 </html>";
         }
 
-        private string GenerateIdeaApprovedEmailBody(Models.Entities.Idea idea, User approver)
+        private string GenerateIdeaApprovedEmailBody(Models.Entities.Idea idea, User approver, List<WorkflowHistory> workflowHistory)
         {
             var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
+
+            // Build Historical Approval table rows
+            var historyRows = new System.Text.StringBuilder();
+            var rowIndex = 0;
+            foreach (var history in workflowHistory)
+            {
+                var stage = $"S{history.ToStage}";
+                var approvalDate = history.Timestamp.ToString("dd. MMM yyyy HH:mm:ss");
+                var historyApproverName = history.ActorUser?.Employee?.NAME ?? "Unknown";
+
+                // Alternating background: row 0=white, row 1=gray, row 2=white, etc
+                var bgColor = (rowIndex % 2 == 0) ? "white" : "#f0f0f0";
+
+                historyRows.Append($@"
+                <tr style='background-color: {bgColor};'>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{stage}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{approvalDate}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{historyApproverName}</td>
+                </tr>");
+
+                rowIndex++;
+            }
+
+            // Get initiator info
+            var initiatorName = idea.InitiatorUser?.Employee?.NAME ?? idea.InitiatorUser?.Name ?? "Unknown";
+            var initiatorPosition = idea.InitiatorUser?.Employee?.POSITION_TITLE ?? "Unknown";
+            var stageNumber = idea.CurrentStage;
+            var currentApproverName = approver?.Employee?.NAME ?? approver?.Name ?? "Unknown";
 
             return $@"
 <!DOCTYPE html>
@@ -308,65 +344,76 @@ namespace Ideku.Services.Notification
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #16a085, #27ae60); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
-        .header h1 {{ margin: 0; font-size: 28px; }}
-        .content {{ line-height: 1.6; color: #333; }}
-        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
-        .approval-info {{ background-color: #d4edda; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #28a745; }}
-        .action-button {{ display: inline-block; background-color: #16a085; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
-        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
-        @media screen and (max-width: 768px) {{ 
-            .container {{ max-width: 95%; padding: 20px; }} 
-            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
-            .header h1 {{ font-size: 24px; }}
-            .idea-details {{ padding: 20px; }}
-            .approval-info {{ padding: 15px; }}
-            .action-button {{ padding: 12px 24px; font-size: 14px; }}
-        }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }}
+        .email-wrapper {{ max-width: 750px; margin: 20px auto; background-color: white; border: 3px solid #333; }}
+        .header {{ background-color: #c62828; padding: 20px; text-align: left; }}
+        .header-title {{ font-size: 16px; font-weight: bold; color: #000; }}
+        .content {{ padding: 25px; line-height: 1.5; color: #000; background-color: #e7f3ff; font-size: 14px; }}
+        .section-title {{ font-weight: bold; margin-top: 15px; margin-bottom: 5px; color: #000; font-size: 14px; }}
+        .blue-text {{ color: #0066cc; }}
+        .blue-bold {{ color: #0066cc; font-weight: bold; }}
+        .history-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; border: 3px solid white; }}
+        .history-table th {{ background-color: #4a90e2; color: white; border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; font-weight: bold; }}
+        .history-table td {{ border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; color: #000; }}
+        .button-container {{ text-align: left; margin: 20px 0 10px 0; page-break-inside: avoid; }}
+        .btn {{ display: inline-block; padding: 6px 30px; text-decoration: none; border-radius: 6px; margin: 0 10px 0 0; font-size: 15px; color: white !important; font-weight: 500; min-width: 100px; text-align: center; }}
+        .btn-view {{ background-color: #007bff; }}
+        .footer-text {{ margin-top: 15px; padding-top: 15px; font-size: 14px; color: #000; }}
     </style>
 </head>
 <body>
-    <div class='container'>
+    <div class='email-wrapper'>
         <div class='header'>
-            <h1>🎉 Great News! Your Idea Has Been Approved</h1>
+            <div class='header-title'>#{idea.IdeaCode} ""{idea.IdeaName}""</div>
         </div>
-        
+
         <div class='content'>
-            <p>Hello {idea.InitiatorUser?.Name},</p>
-            
-            <p>Congratulations! Your idea has been approved and is moving forward in the review process.</p>
-            
-            <div class='idea-details'>
-                <h3>{idea.IdeaName}</h3>
-                <p><strong>Idea ID:</strong> #{idea.IdeaCode}</p>
-                <p><strong>Submitted on:</strong> {idea.SubmittedDate:MMMM dd, yyyy HH:mm}</p>
-                <p><strong>Saving Cost:</strong> {idea.SavingCost:C}</p>
+            <p style='margin: 0 0 5px 0;'>Dear <span class='blue-text'>{initiatorName}</span>,</p>
+            <p style='margin: 0 0 15px 0;' class='blue-text'>Congratulations! Your idea <strong>#{idea.IdeaCode}</strong> <strong>""{idea.IdeaName}""</strong> has been approved at Stage <strong>S{stageNumber}</strong> by <strong>{currentApproverName}</strong>.</p>
+
+            <div class='section-title'>Summary:</div>
+            <div class='blue-text' style='margin-bottom: 15px;'>{idea.IdeaIssueBackground}</div>
+
+            <div class='section-title'>Details:</div>
+            <div style='margin: 5px 0 15px 20px;'>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Requested By:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{initiatorName} ({initiatorPosition})</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Expected Solution:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{idea.IdeaSolution}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Estimated Saving Cost:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>${idea.SavingCost:N2}</span>
+                </div>
             </div>
-            
-            <div class='approval-info'>
-                <h4>✅ Approval Details</h4>
-                <p><strong>Approved by:</strong> {approver?.Name} ({approver?.Role?.RoleName})</p>
-                <p><strong>Status:</strong> {idea.CurrentStatus}</p>
-                <p><strong>Approved on:</strong> {DateTime.Now:MMMM dd, yyyy HH:mm}</p>
+
+            <div class='section-title'>Historical Approval</div>
+            <table class='history-table'>
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Approval Date</th>
+                        <th>Approver</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {historyRows}
+                </tbody>
+            </table>
+
+            <p style='margin: 20px 0 15px 0;'>Your idea is now progressing to the next stage of the approval process. You will receive updates as it moves through the system.</p>
+
+            <div class='button-container'>
+                <a href='{ideaUrl}' class='btn btn-view'>View Idea Status</a>
             </div>
-            
-            <p>Your idea is now progressing to the next stage of the approval process. You will receive updates as it moves through the system.</p>
-            
-            <a href='{ideaUrl}' class='action-button' style='color: white !important;'>View Idea Status</a>
-            
-            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
-            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{ideaUrl}</p>
-            
-            <p>Thank you for your innovative contribution to our organization!</p>
-            
-            <p>Best regards,<br>
-            The Ideku Team</p>
-        </div>
-        
-        <div class='footer'>
-            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
+
+            <div class='footer-text'>
+                <p style='margin: 0 0 10px 0;'>This notification was generated automatically by the <span class='blue-text'>IdeKU Notification System</span>. For further information, please contact <span class='blue-text'>BI Department</span> on <span class='blue-text'>ext 1156</span>.</p>
+                <p style='margin: 0;'>Best regards,<br><span class='blue-text'>IdeKU</span> Notification</p>
+            </div>
         </div>
     </div>
 </body>
