@@ -38,18 +38,26 @@ namespace Ideku.Services.Notification
         {
             try
             {
-                _logger.LogInformation("Sending idea submitted notification for idea {IdeaId} to {ApproverCount} approvers", 
+                _logger.LogInformation("Sending idea submitted notification for idea {IdeaId} to {ApproverCount} approvers",
                     idea.Id, approvers.Count);
-                
+
                 if (!approvers.Any())
                 {
-                    _logger.LogWarning("No approvers provided for idea {IdeaId} at stage {CurrentStage}", 
+                    _logger.LogWarning("No approvers provided for idea {IdeaId} at stage {CurrentStage}",
                         idea.Id, idea.CurrentStage);
                     return;
                 }
-                
+
+                // Load workflow history for Historical Approval table
+                var workflowHistory = await _context.WorkflowHistories
+                    .Include(wh => wh.ActorUser)
+                        .ThenInclude(u => u.Employee)
+                    .Where(wh => wh.IdeaId == idea.Id && wh.Action == "Approved")
+                    .OrderBy(wh => wh.Timestamp)
+                    .ToListAsync();
+
                 var emailMessages = new List<EmailMessage>();
-                
+
                 foreach (var approver in approvers)
                 {
                     var approveToken = _approvalTokenService.GenerateToken(idea.Id, approver.Id, "Approve", idea.CurrentStage);
@@ -58,8 +66,8 @@ namespace Ideku.Services.Notification
                     var emailMessage = new EmailMessage
                     {
                         To = approver.Employee.EMAIL,
-                        Subject = $"New Idea Submission: {idea.IdeaName}",
-                        Body = GenerateIdeaSubmittedEmailBody(idea, approver, approveToken, rejectToken),
+                        Subject = $"Ideku Approval {idea.IdeaName} | {idea.IdeaCode}",
+                        Body = GenerateIdeaSubmittedEmailBody(idea, approver, approveToken, rejectToken, workflowHistory),
                         IsHtml = true
                     };
                     emailMessages.Add(emailMessage);
@@ -68,7 +76,7 @@ namespace Ideku.Services.Notification
                 if (emailMessages.Any())
                 {
                     await _emailService.SendBulkEmailAsync(emailMessages);
-                    _logger.LogInformation("Sent idea submission notifications for Idea ID: {IdeaId} to {ApproverCount} approvers", 
+                    _logger.LogInformation("Sent idea submission notifications for Idea ID: {IdeaId} to {ApproverCount} approvers",
                         idea.Id, approvers.Count);
                 }
             }
@@ -167,11 +175,38 @@ namespace Ideku.Services.Notification
         }
 
 
-        private string GenerateIdeaSubmittedEmailBody(Models.Entities.Idea idea, User approver, string approveToken, string rejectToken)
+        private string GenerateIdeaSubmittedEmailBody(Models.Entities.Idea idea, User approver, string approveToken, string rejectToken, List<WorkflowHistory> workflowHistory)
         {
             var approvalUrl = $"{_emailSettings.BaseUrl}/Approval/Review/{idea.Id}";
             var approveViaEmailUrl = $"{_emailSettings.BaseUrl}/Approval/ApproveViaEmail?token={approveToken}";
             var rejectViaEmailUrl = $"{_emailSettings.BaseUrl}/Approval/RejectViaEmail?token={rejectToken}";
+
+            // Build Historical Approval table rows
+            var historyRows = new System.Text.StringBuilder();
+            var rowIndex = 0;
+            foreach (var history in workflowHistory)
+            {
+                var stage = $"S{history.ToStage}";
+                var approvalDate = history.Timestamp.ToString("dd. MMM yyyy HH:mm:ss");
+                var approverName = history.ActorUser?.Employee?.NAME ?? "Unknown";
+
+                // Alternating background: row 0=white, row 1=gray, row 2=white, etc
+                var bgColor = (rowIndex % 2 == 0) ? "white" : "#f0f0f0";
+
+                historyRows.Append($@"
+                <tr style='background-color: {bgColor};'>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{stage}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{approvalDate}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{approverName}</td>
+                </tr>");
+
+                rowIndex++;
+            }
+
+            // Get submitter info
+            var submitterName = idea.InitiatorUser?.Employee?.NAME ?? idea.InitiatorUser?.Name ?? "Unknown";
+            var submitterPosition = idea.InitiatorUser?.Employee?.POSITION_TITLE ?? "Unknown";
+            var stageNumber = idea.CurrentStage + 1;
 
             return $@"
 <!DOCTYPE html>
@@ -180,73 +215,82 @@ namespace Ideku.Services.Notification
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #1b6ec2, #0077cc); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
-        .header h1 {{ margin: 0; font-size: 28px; }}
-        .content {{ line-height: 1.6; color: #333; }}
-        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
-        .action-button {{ display: inline-block; background-color: #1b6ec2; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
-        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
-        @media screen and (max-width: 768px) {{ 
-            .container {{ max-width: 95%; padding: 20px; }} 
-            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
-            .header h1 {{ font-size: 24px; }}
-            .idea-details {{ padding: 20px; }}
-            .action-button {{ padding: 12px 24px; font-size: 14px; }}
-        }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }}
+        .email-wrapper {{ max-width: 750px; margin: 20px auto; background-color: white; border: 3px solid #333; }}
+        .header {{ background-color: #c62828; padding: 20px; text-align: left; }}
+        .header-title {{ font-size: 16px; font-weight: bold; color: #000; }}
+        .content {{ padding: 25px; line-height: 1.5; color: #000; background-color: #e7f3ff; font-size: 14px; }}
+        .section-title {{ font-weight: bold; margin-top: 15px; margin-bottom: 5px; color: #000; font-size: 14px; }}
+        .blue-text {{ color: #0066cc; }}
+        .blue-bold {{ color: #0066cc; font-weight: bold; }}
+        .history-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; border: 3px solid white; }}
+        .history-table th {{ background-color: #4a90e2; color: white; border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; font-weight: bold; }}
+        .history-table td {{ border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; color: #000; }}
+        .history-table tbody tr:nth-child(odd) {{ background-color: white; }}
+        .history-table tbody tr:nth-child(even) {{ background-color: #f0f0f0; }}
+        .button-container {{ text-align: left; margin: 20px 0 10px 0; page-break-inside: avoid; }}
+        .btn {{ display: inline-block; padding: 8px 40px; text-decoration: none; border-radius: 6px; margin: 0 10px 0 0; font-size: 15px; color: white !important; font-weight: 500; }}
+        .btn-review {{ background-color: #007bff; }}
+        .btn-approve {{ background-color: #17a2b8; }}
+        .btn-reject {{ background-color: #e74c3c; }}
+        .footer-text {{ margin-top: 15px; padding-top: 15px; font-size: 14px; color: #000; }}
     </style>
 </head>
 <body>
-    <div class='container'>
+    <div class='email-wrapper'>
         <div class='header'>
-            <h1>💡 New Idea Requires Approval</h1>
+            <div class='header-title'>#{idea.IdeaCode} ""{idea.IdeaName}""</div>
         </div>
-        
+
         <div class='content'>
-            <p>Hello {approver.Employee.NAME},</p>
-            
-            <p>A new idea has been submitted in the Ideku system and requires your approval:</p>
-            
-            <div class='idea-details'>
-                <h3>{idea.IdeaName}</h3>
-                <p><strong>Submitted by:</strong> {idea.InitiatorUser?.Name} ({idea.InitiatorUser?.EmployeeId})</p>
-                <p><strong>Submission Date:</strong> {idea.SubmittedDate:MMMM dd, yyyy HH:mm}</p>
-                <p><strong>Idea ID:</strong> #{idea.IdeaCode}</p>
-                <p><strong>Category:</strong> {idea.Category?.CategoryName}</p>
-                <p><strong>Estimated Saving:</strong> {idea.SavingCost:C}</p>
-            </div>
-            
-            <p><strong>Idea Description:</strong></p>
-            <p style='background-color: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0;'>{idea.IdeaIssueBackground}</p>
-            
-            <p><strong>Proposed Solution:</strong></p>
-            <p style='background-color: #e8f5e8; padding: 15px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #28a745;'>{idea.IdeaSolution}</p>
+            <p style='margin: 0 0 5px 0;'>Dear <span class='blue-text'>{approver.Employee.NAME}</span>,</p>
+            <p style='margin: 0 0 15px 0;' class='blue-text'>A S{stageNumber} Approval Request for the <strong>#{idea.IdeaCode}</strong> <strong>""{idea.IdeaName}""</strong> requires your review and approval.</p>
 
-            <p>Please review the idea submission and provide your approval decision:</p>
+            <div class='section-title'>Summary:</div>
+            <div class='blue-text' style='margin-bottom: 15px;'>{idea.IdeaIssueBackground}</div>
 
-            <div style='text-align: center; margin: 30px 0;'>
-                <a href='{approveViaEmailUrl}' style='display: inline-block; background-color: #28a745; color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; margin: 0 10px 10px 0; font-size: 16px; font-weight: bold;'>✅ Approve Idea</a>
-                <a href='{rejectViaEmailUrl}' style='display: inline-block; background-color: #dc3545; color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; margin: 0 10px 10px 0; font-size: 16px; font-weight: bold;'>❌ Reject Idea</a>
+            <div class='section-title'>Details:</div>
+            <div style='margin: 5px 0 15px 20px;'>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Requested By:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{submitterName} ({submitterPosition})</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Expected Solution:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{idea.IdeaSolution}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Estimated Saving Cost:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>${idea.SavingCost:N2}</span>
+                </div>
             </div>
 
-            <p style='text-align: center; margin: 20px 0; color: #666; font-size: 14px;'>Or review in detail:</p>
+            <div class='section-title'>Historical Approval</div>
+            <table class='history-table'>
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Approval Date</th>
+                        <th>Approver</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {historyRows}
+                </tbody>
+            </table>
 
-            <div style='text-align: center;'>
-                <a href='{approvalUrl}' class='action-button' style='color: white !important;'>Review & Approve Idea</a>
+            <p style='margin: 20px 0 15px 0;'>Please review the detailed request below and take the necessary action using the provided links.</p>
+
+            <div class='button-container'>
+                <a href='{approvalUrl}' class='btn btn-review'>Review</a>
+                <a href='{approveViaEmailUrl}' class='btn btn-approve'>Approve</a>
+                <a href='{rejectViaEmailUrl}' class='btn btn-reject'>Reject</a>
             </div>
-            
-            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
-            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{approvalUrl}</p>
-            
-            <p>Thank you for your time and contribution to the innovation process.</p>
-            
-            <p>Best regards,<br>
-            The Ideku Team</p>
-        </div>
-        
-        <div class='footer'>
-            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
+
+            <div class='footer-text'>
+                <p style='margin: 0 0 10px 0;'>This notification was generated automatically by the <span class='blue-text'>IdeKU Notification System</span>. For further information, please contact <span class='blue-text'>BI Department on ext 1156</span>.</p>
+                <p style='margin: 0;'>Best regards,<br><span class='blue-text'>IdeKU</span> Notification</p>
+            </div>
         </div>
     </div>
 </body>
