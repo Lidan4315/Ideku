@@ -146,28 +146,6 @@ namespace Ideku.Services.Notification
             }
         }
 
-        public async Task NotifyIdeaCompleted(Models.Entities.Idea idea)
-        {
-            try
-            {
-                // Notify initiator and stakeholders
-                var emailMessage = new EmailMessage
-                {
-                    To = idea.InitiatorUser.Employee.EMAIL,
-                    Subject = $"Idea Completed: {idea.IdeaName}",
-                    Body = GenerateIdeaCompletedEmailBody(idea),
-                    IsHtml = true
-                };
-
-                await _emailService.SendEmailAsync(emailMessage);
-                _logger.LogInformation("Sent idea completion notification for Idea ID: {IdeaId}", idea.Id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send idea completion notification for Idea ID: {IdeaId}", idea.Id);
-            }
-        }
-
         public async Task NotifyMilestoneCreated(Models.Entities.Milestone milestone)
         {
             try
@@ -550,22 +528,6 @@ namespace Ideku.Services.Notification
     </div>
 </body>
 </html>";
-        }
-
-        private string GenerateIdeaCompletedEmailBody(Models.Entities.Idea idea)
-        {
-            return $@"
-            <h2>Idea Implementation Completed</h2>
-            <p>Dear {idea.InitiatorUser.Name},</p>
-            <p>Congratulations! Your idea has been successfully implemented:</p>
-            <ul>
-                <li><strong>Idea:</strong> {idea.IdeaName}</li>
-                <li><strong>Code:</strong> {idea.IdeaCode}</li>
-                <li><strong>Completed Date:</strong> {idea.CompletedDate:dd/MM/yyyy}</li>
-                <li><strong>Final Saving Cost:</strong> {idea.SavingCostValidated:C}</li>
-            </ul>
-            <p>Thank you for your valuable contribution to our organization!</p>
-            <p>Best regards,<br>Ideku System</p>";
         }
 
         private string GenerateMilestoneCreatedEmailBody(Models.Entities.Milestone milestone)
