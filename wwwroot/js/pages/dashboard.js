@@ -1238,7 +1238,7 @@ const DashboardCharts = {
         if (!data || data.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="3" class="text-center text-muted">
+                    <td colspan="4" class="text-center text-muted">
                         <i class="bi bi-inbox me-2"></i>No team role data found.
                     </td>
                 </tr>
@@ -1248,6 +1248,7 @@ const DashboardCharts = {
 
         tbody.innerHTML = data.map(item => `
             <tr>
+                <td>${item.employeeName}</td>
                 <td>${item.employeeBN}</td>
                 <td><span class="badge bg-primary">${item.teamRole}</span></td>
                 <td>${item.ideaCode}</td>
