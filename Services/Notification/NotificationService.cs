@@ -594,6 +594,14 @@ namespace Ideku.Services.Notification
                     return;
                 }
 
+                // Load workflow history for Historical Approval table
+                var workflowHistory = await _context.WorkflowHistories
+                    .Include(wh => wh.ActorUser)
+                        .ThenInclude(u => u.Employee)
+                    .Where(wh => wh.IdeaId == idea.Id && wh.Action == "Approved")
+                    .OrderBy(wh => wh.Timestamp)
+                    .ToListAsync();
+
                 var emailMessages = new List<EmailMessage>();
 
                 foreach (var implementator in implementators)
@@ -601,8 +609,8 @@ namespace Ideku.Services.Notification
                     var emailMessage = new EmailMessage
                     {
                         To = implementator.Employee.EMAIL,
-                        Subject = $"[Action Required] Create Milestone for Idea {idea.IdeaCode} - {idea.IdeaName}",
-                        Body = GenerateMilestoneCreationRequiredEmailBody(idea, implementator),
+                        Subject = $"Ideku Action Required - Create Milestone {idea.IdeaName} | {idea.IdeaCode}",
+                        Body = GenerateMilestoneCreationRequiredEmailBody(idea, implementator, workflowHistory),
                         IsHtml = true
                     };
                     emailMessages.Add(emailMessage);
@@ -621,9 +629,38 @@ namespace Ideku.Services.Notification
             }
         }
 
-        private string GenerateMilestoneCreationRequiredEmailBody(Models.Entities.Idea idea, User workstreamLeader)
+        private string GenerateMilestoneCreationRequiredEmailBody(Models.Entities.Idea idea, User implementator, List<WorkflowHistory> workflowHistory)
         {
             var milestoneUrl = $"{_emailSettings.BaseUrl}/Milestone/Detail/{idea.Id}";
+
+            // Build Historical Approval table rows
+            var historyRows = new System.Text.StringBuilder();
+            var rowIndex = 0;
+            foreach (var history in workflowHistory)
+            {
+                var stage = $"S{history.ToStage}";
+                var approvalDate = history.Timestamp.ToString("dd. MMM yyyy HH:mm:ss");
+                var historyApproverName = history.ActorUser?.Employee?.NAME ?? "Unknown";
+
+                // Alternating background: row 0=white, row 1=gray, row 2=white, etc
+                var bgColor = (rowIndex % 2 == 0) ? "white" : "#f0f0f0";
+
+                historyRows.Append($@"
+                <tr style='background-color: {bgColor};'>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{stage}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{approvalDate}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{historyApproverName}</td>
+                </tr>");
+
+                rowIndex++;
+            }
+
+            // Get info
+            var implementatorName = implementator.Employee?.NAME ?? implementator.Name ?? "Unknown";
+            var initiatorName = idea.InitiatorUser?.Employee?.NAME ?? idea.InitiatorUser?.Name ?? "Unknown";
+            var initiatorPosition = idea.InitiatorUser?.Employee?.POSITION_TITLE ?? "Unknown";
+            var targetDivision = idea.TargetDivision?.NameDivision ?? "Unknown";
+            var targetDepartment = idea.TargetDepartment?.NameDepartment ?? "Unknown";
 
             return $@"
 <!DOCTYPE html>
@@ -632,81 +669,84 @@ namespace Ideku.Services.Notification
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
-        .header h1 {{ margin: 0; font-size: 28px; }}
-        .content {{ line-height: 1.6; color: #333; }}
-        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
-        .warning-box {{ background-color: #fff3cd; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #f59e0b; }}
-        .action-button {{ display: inline-block; background-color: #f59e0b; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; font-weight: bold; }}
-        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }}
-        .checklist {{ background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0; }}
-        .checklist li {{ margin-bottom: 10px; }}
-        @media screen and (max-width: 768px) {{
-            .container {{ max-width: 95%; padding: 20px; }}
-            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
-            .header h1 {{ font-size: 24px; }}
-        }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }}
+        .email-wrapper {{ max-width: 750px; margin: 20px auto; background-color: white; border: 3px solid #333; }}
+        .header {{ background-color: #c62828; padding: 20px; text-align: left; }}
+        .header-title {{ font-size: 16px; font-weight: bold; color: #000; }}
+        .content {{ padding: 25px; line-height: 1.5; color: #000; background-color: #e7f3ff; font-size: 14px; }}
+        .section-title {{ font-weight: bold; margin-top: 15px; margin-bottom: 5px; color: #000; font-size: 14px; }}
+        .blue-text {{ color: #0066cc; }}
+        .blue-bold {{ color: #0066cc; font-weight: bold; }}
+        .history-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; border: 3px solid white; }}
+        .history-table th {{ background-color: #4a90e2; color: white; border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; font-weight: bold; }}
+        .history-table td {{ border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; color: #000; }}
+        .button-container {{ text-align: left; margin: 20px 0 10px 0; page-break-inside: avoid; }}
+        .btn {{ display: inline-block; padding: 6px 30px; text-decoration: none; border-radius: 6px; margin: 0 10px 0 0; font-size: 15px; color: white !important; font-weight: 500; min-width: 100px; text-align: center; }}
+        .btn-view {{ background-color: #007bff; }}
+        .footer-text {{ margin-top: 15px; padding-top: 15px; font-size: 14px; color: #000; }}
     </style>
 </head>
 <body>
-    <div class='container'>
+    <div class='email-wrapper'>
         <div class='header'>
-            <h1>⚠️ Action Required: Create Milestone</h1>
+            <div class='header-title'>#{idea.IdeaCode} ""{idea.IdeaName}""</div>
         </div>
 
         <div class='content'>
-            <p>Hello {workstreamLeader.Name},</p>
+            <p style='margin: 0 0 5px 0;'>Dear <span class='blue-text'>{implementatorName}</span>,</p>
+            <p style='margin: 0 0 15px 0;' class='blue-text'><strong>Action Required:</strong> Idea <strong>#{idea.IdeaCode}</strong> <strong>""{idea.IdeaName}""</strong> has been approved to Stage 2 and requires milestone planning to proceed to Stage 3.</p>
 
-            <p>An idea targeted to your department has been approved to <strong>Stage 2</strong> and requires milestone planning.</p>
+            <div class='section-title'>Summary:</div>
+            <div class='blue-text' style='margin-bottom: 15px;'>{idea.IdeaIssueBackground}</div>
 
-            <div class='idea-details'>
-                <h3>{idea.IdeaName}</h3>
-                <p><strong>Idea Code:</strong> {idea.IdeaCode}</p>
-                <p><strong>Initiator:</strong> {idea.InitiatorUser?.Name}</p>
-                <p><strong>Current Stage:</strong> Stage {idea.CurrentStage}</p>
-                <p><strong>Target Division:</strong> {idea.TargetDivision?.NameDivision}</p>
-                <p><strong>Target Department:</strong> {idea.TargetDepartment?.NameDepartment}</p>
-                <p><strong>Saving Cost:</strong> {idea.SavingCost:C}</p>
+            <div class='section-title'>Details:</div>
+            <div style='margin: 5px 0 15px 20px;'>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Initiator:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{initiatorName} ({initiatorPosition})</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Target Division:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{targetDivision}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Target Department:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{targetDepartment}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Expected Solution:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{idea.IdeaSolution}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Estimated Saving Cost:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>${idea.SavingCost:N2}</span>
+                </div>
             </div>
 
-            <div class='warning-box'>
-                <h4>📋 Next Steps Required</h4>
-                <p><strong>As the Workstream Leader of this department, you need to create a milestone plan for this idea to proceed to Stage 3 approval.</strong></p>
-                <p>The milestone should outline the implementation timeline and deliverables.</p>
+            <div class='section-title'>Historical Approval</div>
+            <table class='history-table'>
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Approval Date</th>
+                        <th>Approver</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {historyRows}
+                </tbody>
+            </table>
+
+            <p style='margin: 20px 0 15px 0;'>As Workstream Leader of <span class='blue-text'>{targetDepartment}</span>, you need to create a milestone plan for this idea to proceed to Stage 3 approval.</p>
+
+            <div class='button-container'>
+                <a href='{milestoneUrl}' class='btn btn-view'>Create Milestone Now</a>
             </div>
 
-            <div class='checklist'>
-                <h4>What You Need to Do:</h4>
-                <ol>
-                    <li>Click the button below to access the Milestone Management page</li>
-                    <li>Review the idea details and implementation plan</li>
-                    <li>Create at least one milestone with:
-                        <ul>
-                            <li>Milestone title and description</li>
-                            <li>Start and end dates</li>
-                            <li>Assign Person In Charge (PIC) from the implementators</li>
-                        </ul>
-                    </li>
-                    <li>Once milestone is created, click ""Send to Approval S3"" button to request Stage 3 approval</li>
-                </ol>
+            <div class='footer-text'>
+                <p style='margin: 0 0 10px 0;'>This notification was generated automatically by the <span class='blue-text'>IdeKU Notification System</span>. For further information, please contact <span class='blue-text'>BI Department</span> on <span class='blue-text'>ext 1156</span>.</p>
+                <p style='margin: 0;'>Best regards,<br><span class='blue-text'>IdeKU</span> Notification</p>
             </div>
-
-            <a href='{milestoneUrl}' class='action-button' style='color: white !important;'>Create Milestone Now</a>
-
-            <p>If you cannot click the button above, copy and paste this URL into your browser:</p>
-            <p style='word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;'>{milestoneUrl}</p>
-
-            <p><strong>Important:</strong> Stage 3 approval can only be requested after at least one milestone has been created.</p>
-
-            <p>If you have questions about milestone creation, please contact the Innovation Team or refer to the system documentation.</p>
-
-            <p>Best regards,<br>The Ideku Team</p>
-        </div>
-
-        <div class='footer'>
-            <p>This is an automated message from the Ideku Idea Management System. Please do not reply to this email.</p>
         </div>
     </div>
 </body>
