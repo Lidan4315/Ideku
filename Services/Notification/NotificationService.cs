@@ -146,28 +146,6 @@ namespace Ideku.Services.Notification
             }
         }
 
-        public async Task NotifyMilestoneCreated(Models.Entities.Milestone milestone)
-        {
-            try
-            {
-                // Notify idea initiator
-                var emailMessage = new EmailMessage
-                {
-                    To = milestone.Idea.InitiatorUser.Employee.EMAIL,
-                    Subject = $"New Milestone Created: {milestone.Idea.IdeaName}",
-                    Body = GenerateMilestoneCreatedEmailBody(milestone),
-                    IsHtml = true
-                };
-
-                await _emailService.SendEmailAsync(emailMessage);
-                _logger.LogInformation("Sent milestone creation notification for Milestone ID: {MilestoneId}", milestone.Id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send milestone creation notification for Milestone ID: {MilestoneId}", milestone.Id);
-            }
-        }
-
 
         private string GenerateIdeaSubmittedEmailBody(Models.Entities.Idea idea, User approver, string approveToken, string rejectToken, List<WorkflowHistory> workflowHistory)
         {
@@ -528,23 +506,6 @@ namespace Ideku.Services.Notification
     </div>
 </body>
 </html>";
-        }
-
-        private string GenerateMilestoneCreatedEmailBody(Models.Entities.Milestone milestone)
-        {
-            return $@"
-            <h2>New Milestone Created</h2>
-            <p>Dear {milestone.Idea.InitiatorUser.Name},</p>
-            <p>A new milestone has been created for your idea:</p>
-            <ul>
-                <li><strong>Idea:</strong> {milestone.Idea.IdeaName}</li>
-                <li><strong>Milestone Status:</strong> {milestone.Status}</li>
-                <li><strong>Start Date:</strong> {milestone.StartDate:dd/MM/yyyy}</li>
-                <li><strong>End Date:</strong> {milestone.EndDate:dd/MM/yyyy}</li>
-                <li><strong>Created by:</strong> {milestone.CreatorName}</li>
-            </ul>
-            <p><strong>Note:</strong> {milestone.Note}</p>
-            <p>Best regards,<br>Ideku System</p>";
         }
 
         public async Task NotifyWorkstreamLeadersAsync(Models.Entities.Idea idea, List<User> workstreamLeaders)
