@@ -564,7 +564,7 @@ namespace Ideku.Services.Notification
                     var emailMessage = new EmailMessage
                     {
                         To = workstreamLeader.Employee.EMAIL,
-                        Subject = $"[Ideku] Idea Approved - {idea.IdeaName} (Related to {workstreamLeader.Employee.DivisionNavigation?.NameDivision})",
+                        Subject = $"Ideku Related Idea Approved {idea.IdeaName} | {idea.IdeaCode}",
                         Body = GenerateWorkstreamLeaderNotificationEmailBody(idea, workstreamLeader),
                         IsHtml = true
                     };
@@ -716,67 +716,78 @@ namespace Ideku.Services.Notification
         private string GenerateWorkstreamLeaderNotificationEmailBody(Models.Entities.Idea idea, User workstreamLeader)
         {
             var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
-            
+
+            // Get initiator info
+            var initiatorName = idea.InitiatorUser?.Employee?.NAME ?? idea.InitiatorUser?.Name ?? "Unknown";
+            var initiatorPosition = idea.InitiatorUser?.Employee?.POSITION_TITLE ?? "Unknown";
+            var targetDivision = idea.TargetDivision?.NameDivision ?? "Unknown";
+            var workstreamLeaderName = workstreamLeader.Employee?.NAME ?? workstreamLeader.Name ?? "Unknown";
+            var workstreamDivision = workstreamLeader.Employee?.DivisionNavigation?.NameDivision ?? "Unknown";
+
             return $@"
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-        .container {{ width: 90%; max-width: 1200px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #17a2b8, #138496); color: white; padding: 25px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; }}
-        .header h1 {{ margin: 0; font-size: 28px; }}
-        .content {{ line-height: 1.6; color: #333; }}
-        .idea-details {{ background-color: #f8f9fa; padding: 25px; border-radius: 6px; margin: 20px 0; }}
-        .action-button {{ display: inline-block; background-color: #17a2b8; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-size: 16px; }}
-        .background-section {{ background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #6c757d; }}
-        .solution-section {{ background-color: #e8f5e8; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #28a745; }}
-        @media screen and (max-width: 768px) {{ 
-            .container {{ max-width: 95%; padding: 20px; }} 
-            .header {{ margin: -20px -20px 30px -20px; padding: 20px; }}
-            .header h1 {{ font-size: 24px; }}
-        }}
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }}
+        .email-wrapper {{ max-width: 750px; margin: 20px auto; background-color: white; border: 3px solid #333; }}
+        .header {{ background-color: #c62828; padding: 20px; text-align: left; }}
+        .header-title {{ font-size: 16px; font-weight: bold; color: #000; }}
+        .content {{ padding: 25px; line-height: 1.5; color: #000; background-color: #e7f3ff; font-size: 14px; }}
+        .section-title {{ font-weight: bold; margin-top: 15px; margin-bottom: 5px; color: #000; font-size: 14px; }}
+        .blue-text {{ color: #0066cc; }}
+        .blue-bold {{ color: #0066cc; font-weight: bold; }}
+        .button-container {{ text-align: left; margin: 20px 0 10px 0; page-break-inside: avoid; }}
+        .btn {{ display: inline-block; padding: 6px 30px; text-decoration: none; border-radius: 6px; margin: 0 10px 0 0; font-size: 15px; color: white !important; font-weight: 500; min-width: 100px; text-align: center; }}
+        .btn-view {{ background-color: #007bff; }}
+        .footer-text {{ margin-top: 15px; padding-top: 15px; font-size: 14px; color: #000; }}
     </style>
 </head>
 <body>
-    <div class='container'>
+    <div class='email-wrapper'>
         <div class='header'>
-            <h1>💡 Related Idea Approved</h1>
+            <div class='header-title'>#{idea.IdeaCode} ""{idea.IdeaName}""</div>
         </div>
-        
+
         <div class='content'>
-            <p>Dear {workstreamLeader.Name},</p>
-            
-            <p>An idea has been approved and your division (<strong>{workstreamLeader.Employee.DivisionNavigation?.NameDivision}</strong>) has been marked as related for potential collaboration.</p>
-            
-            <div class='idea-details'>
-                <h3>{idea.IdeaName}</h3>
-                <p><strong>Idea Code:</strong> {idea.IdeaCode}</p>
-                <p><strong>Initiator:</strong> {idea.InitiatorUser?.Name}</p>
-                <p><strong>Target Division:</strong> {idea.TargetDivision?.NameDivision}</p>
-                <p><strong>Category:</strong> {idea.Category?.CategoryName}</p>
-                <p><strong>Validated Saving Cost:</strong> {idea.SavingCostValidated:C}</p>
-                <p><strong>Current Status:</strong> {idea.CurrentStatus}</p>
+            <p style='margin: 0 0 5px 0;'>Dear <span class='blue-text'>{workstreamLeaderName}</span>,</p>
+            <p style='margin: 0 0 15px 0;' class='blue-text'>An approved idea <strong>#{idea.IdeaCode}</strong> <strong>""{idea.IdeaName}""</strong> is related to your division <strong>{workstreamDivision}</strong> for potential collaboration.</p>
+
+            <div class='section-title'>Summary:</div>
+            <div class='blue-text' style='margin-bottom: 15px;'>{idea.IdeaIssueBackground}</div>
+
+            <div class='section-title'>Details:</div>
+            <div style='margin: 5px 0 15px 20px;'>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Requested By:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{initiatorName} ({initiatorPosition})</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Target Division:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{targetDivision}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Expected Solution:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{idea.IdeaSolution}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Estimated Saving Cost:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>${idea.SavingCost:N2}</span>
+                </div>
             </div>
-            
-            <div class='background-section'>
-                <h4>Idea Description</h4>
-                <p>{idea.IdeaIssueBackground}</p>
+
+            <p style='margin: 20px 0 15px 0;'>As Workstream Leader for <span class='blue-text'>{workstreamDivision}</span>, your division may be involved in the implementation process. Please review the details and prepare for potential collaboration.</p>
+
+            <div class='button-container'>
+                <a href='{ideaUrl}' class='btn btn-view'>View Idea Details</a>
             </div>
-            
-            <div class='solution-section'>
-                <h4>Idea Solution</h4>
-                <p>{idea.IdeaSolution}</p>
+
+            <div class='footer-text'>
+                <p style='margin: 0 0 10px 0;'>This notification was generated automatically by the <span class='blue-text'>IdeKU Notification System</span>. For further information, please contact <span class='blue-text'>BI Department</span> on <span class='blue-text'>ext 1156</span>.</p>
+                <p style='margin: 0;'>Best regards,<br><span class='blue-text'>IdeKU</span> Notification</p>
             </div>
-            
-            <p>As the Workstream Leader for <strong>{workstreamLeader.Employee.DivisionNavigation?.NameDivision}</strong>, your division may be involved in the implementation process. Please review the details and prepare for potential collaboration.</p>
-            
-            <a href='{ideaUrl}' class='action-button' style='color: white !important;'>View Idea Details</a>
-            
-            <p>If you have questions about this idea or need clarification on your division's involvement, please contact the idea initiator.</p>
-            
-            <p>Best regards,<br>The Ideku Team</p>
         </div>
     </div>
 </body>
