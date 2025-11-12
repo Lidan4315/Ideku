@@ -532,7 +532,7 @@ public class HomeController : Controller
             CreateApprovalHistorySheet(approvalHistorySheet, approvalHistoryData);
 
             // Generate file
-            var fileName = $"Dashboard_Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            var fileName = $"IdeKU_Dashboard_Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
             var fileBytes = package.GetAsByteArray();
 
             _logger.LogInformation("ExportDashboard completed - User: {Username}, File: {FileName}, Size: {Size} bytes",
