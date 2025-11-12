@@ -7,10 +7,19 @@
 
 <div class="container-fluid">
     <div class="page-header mb-4">
-        <h2 class="page-title text-gradient">
-            <i class="bi bi-lightbulb me-2"></i>All Ideas
-        </h2>
-        <p class="text-muted">Complete list of all ideas in the system for superuser review.</p>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="page-title text-gradient">
+                    <i class="bi bi-lightbulb me-2"></i>All Ideas
+                </h2>
+                <p class="text-muted">Complete list of all ideas in the system for superuser review.</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-success" id="exportToExcel">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel
+                </button>
+            </div>
+        </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -30,6 +39,16 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
+
+    @* Hidden form for export *@
+    <form id="exportForm" method="get" action="@Url.Action("ExportToExcel", "IdeaList")" style="display: none;">
+        <input type="hidden" name="searchTerm" id="exportSearchTerm" />
+        <input type="hidden" name="selectedDivision" id="exportDivision" />
+        <input type="hidden" name="selectedDepartment" id="exportDepartment" />
+        <input type="hidden" name="selectedCategory" id="exportCategory" />
+        <input type="hidden" name="selectedStage" id="exportStage" />
+        <input type="hidden" name="selectedStatus" id="exportStatus" />
+    </form>
 
     @* Integrated Filter and Table Card *@
     <div class="card filter-card">
@@ -667,6 +686,43 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.reload();
         }
     });
+
+    // Export to Excel button handler
+    const exportButton = document.getElementById('exportToExcel');
+    if (exportButton) {
+        exportButton.addEventListener('click', function() {
+            console.log('Export button clicked');
+
+            // Get the hidden form
+            const exportForm = document.getElementById('exportForm');
+            const exportSearchTerm = document.getElementById('exportSearchTerm');
+            const exportDivision = document.getElementById('exportDivision');
+            const exportDepartment = document.getElementById('exportDepartment');
+            const exportCategory = document.getElementById('exportCategory');
+            const exportStage = document.getElementById('exportStage');
+            const exportStatus = document.getElementById('exportStatus');
+
+            // Set all current filter values to hidden form inputs
+            if (searchInput) exportSearchTerm.value = searchInput.value || '';
+            if (divisionSelect) exportDivision.value = divisionSelect.value || '';
+            if (departmentSelect) exportDepartment.value = departmentSelect.value || '';
+            if (categorySelect) exportCategory.value = categorySelect.value || '';
+            if (stageSelect) exportStage.value = stageSelect.value || '';
+            if (statusSelect) exportStatus.value = statusSelect.value || '';
+
+            console.log('Submitting export form with filters:', {
+                searchTerm: exportSearchTerm.value,
+                division: exportDivision.value,
+                department: exportDepartment.value,
+                category: exportCategory.value,
+                stage: exportStage.value,
+                status: exportStatus.value
+            });
+
+            // Submit the form
+            exportForm.submit();
+        });
+    }
 
     console.log('IdeaList AJAX initialized');
 });
