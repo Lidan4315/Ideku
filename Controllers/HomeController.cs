@@ -981,7 +981,7 @@ public class HomeController : Controller
         // Headers - 5 columns
         int col = 1;
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Idea Id";
-        sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "SavingCostValidated";
+        sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Saving Plan";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Idea Category";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Current Stage";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "ideaFlowValidated";
