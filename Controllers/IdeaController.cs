@@ -165,6 +165,19 @@ namespace Ideku.Controllers
             return Json(new { success = true, data = employee });
         }
 
+        // AJAX: Check if Idea Name exists
+        [HttpGet]
+        public async Task<JsonResult> CheckIdeaNameExists(string ideaName)
+        {
+            if (string.IsNullOrWhiteSpace(ideaName))
+            {
+                return Json(new { exists = false });
+            }
+
+            var exists = await _ideaService.IsIdeaNameExistsAsync(ideaName);
+            return Json(new { exists = exists });
+        }
+
         // GET: Idea/Index (My Ideas)
         [ModuleAuthorize("idea_list")]
         public async Task<IActionResult> Index(

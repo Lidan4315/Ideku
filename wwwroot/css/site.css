@@ -8,7 +8,7 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
@@ -314,6 +314,23 @@ body.modern-page {
     transform: translateY(-1px);
 }
 
+.btn-secondary-custom {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary-custom:hover {
+    background: linear-gradient(135deg, #7c8491 0%, #4b5563 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+    color: white;
+}
+
 .btn-success {
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     border: none;
@@ -371,9 +388,25 @@ body.modern-page {
     transition: all 0.2s ease;
 }
 
-.form-control:focus {
-    border-color: #9c1c31;
-    box-shadow: 0 0 0 3px rgba(156, 28, 49, 0.1);
+/* File Upload Styles */
+.file-upload-container {
+    border: 2px dashed #d1d5db;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    background-color: #fafbfc;
+    margin-top: 0.5rem;
+}
+
+.file-upload-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.files-list-container {
+    min-height: 60px;
 }
 
 /* =============================================================================
