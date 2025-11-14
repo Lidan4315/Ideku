@@ -674,6 +674,63 @@ namespace Ideku.Services.Workflow
             }
         }
 
+        public async Task ProcessFeedbackAsync(long ideaId, string username, string feedbackComment)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            var idea = await _ideaRepository.GetByIdAsync(ideaId);
+
+            if (user == null || idea == null)
+            {
+                _logger.LogError("User or Idea not found when processing feedback for IdeaId {IdeaId}", ideaId);
+                return;
+            }
+
+            // Create WorkflowHistory record with Action="Feedback"
+            // FromStage and ToStage are SAME (idea remains at current stage)
+            var workflowHistory = new Models.Entities.WorkflowHistory
+            {
+                IdeaId = ideaId,
+                ActorUserId = user.Id,
+                FromStage = idea.CurrentStage,
+                ToStage = idea.CurrentStage,  // Same stage - no progression
+                Action = "Feedback",
+                Comments = feedbackComment,
+                Timestamp = DateTime.Now
+            };
+
+            await _workflowRepository.CreateAsync(workflowHistory);
+
+            // Idea entity is NOT updated - stage and status remain unchanged
+            _logger.LogInformation("Feedback recorded for Idea {IdeaId} by user {Username} at stage {Stage}",
+                ideaId, username, idea.CurrentStage);
+        }
+
+        public async Task SendFeedbackNotificationsAsync(long ideaId, string username, string feedbackComment)
+        {
+            try
+            {
+                var user = await _userRepository.GetByUsernameAsync(username);
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+
+                if (user == null || idea == null) return;
+
+                // Get Workstream Leaders in the idea's division (same as Related Divisions logic)
+                var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDivisionsAsync(
+                    new List<string> { idea.ToDivisionId });
+
+                // Send email notifications
+                await _notificationService.NotifyFeedbackSent(idea, user, feedbackComment, workstreamLeaders);
+
+                _logger.LogInformation("Feedback notification emails sent for Idea {IdeaId} to initiator and {WLCount} workstream leaders",
+                    ideaId, workstreamLeaders.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send feedback notification emails for Idea {IdeaId}", ideaId);
+                throw;
+            }
+        }
+
         public async Task SaveApprovalFilesAsync(long ideaId, List<IFormFile> files, int stage)
         {
             var idea = await _ideaRepository.GetByIdAsync(ideaId);

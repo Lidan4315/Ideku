@@ -270,6 +270,26 @@
                     </div>
                 </form>
                 <hr />
+                <form asp-action="SendFeedback" asp-route-id="@Model.Idea.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="feedback-section">
+                        <h5><i class="fas fa-comment-dots text-info"></i> Feedback Idea</h5>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Provide feedback to the initiator and Workstream Leader without approving or rejecting. The idea will remain at the current stage.
+                        </p>
+                        <div class="form-group mb-3">
+                            <label asp-for="FeedbackComment" class="form-label">
+                                Feedback Comment <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="FeedbackComment" class="form-control" rows="3"
+                                      placeholder="Please provide your feedback or questions for the initiator"></textarea>
+                            <span asp-validation-for="FeedbackComment" class="text-danger"></span>
+                        </div>
+                        <button type="submit" class="btn btn-info" id="feedbackBtn"><i class="fas fa-comment"></i> Feedback Idea</button>
+                    </div>
+                </form>
+                <hr />
                 <form asp-action="Reject" asp-route-id="@Model.Idea.Id" method="post">
                     @Html.AntiForgeryToken()
                     <div class="reject-section">
@@ -720,6 +740,59 @@
             margin-bottom: 0.5rem;
         }
     }
+
+    /* Action Buttons Styling - Approve, Feedback, Reject */
+    #approveBtn, #feedbackBtn, #rejectBtn {
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.6rem 1.2rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+        min-width: 160px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        color: #ffffff !important;
+    }
+
+    #approveBtn:hover, #feedbackBtn:hover, #rejectBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    #approveBtn:active, #feedbackBtn:active, #rejectBtn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Specific button colors */
+    #approveBtn {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+
+    #approveBtn:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+
+    #feedbackBtn {
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+    }
+
+    #feedbackBtn:hover {
+        background-color: #138496;
+        border-color: #117a8b;
+    }
+
+    #rejectBtn {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    #rejectBtn:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -928,6 +1001,76 @@
                                 icon: 'error',
                                 title: 'Error!',
                                 text: 'An error occurred while processing rejection.'
+                            });
+                        });
+                    }
+                });
+            });
+        }
+
+        // Handle Feedback form
+        const feedbackForm = document.querySelector('form[action*="SendFeedback"]');
+        if (feedbackForm) {
+            feedbackForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const feedbackComment = document.querySelector('textarea[name="FeedbackComment"]').value;
+                if (!feedbackComment.trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning!',
+                        text: 'Feedback comment is required'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Send Feedback',
+                    text: 'Are you sure you want to send this feedback? The initiator and Workstream Leaders will be notified.',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#17a2b8',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Send!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading state
+                        const feedbackBtn = document.getElementById('feedbackBtn');
+                        const originalBtnContent = feedbackBtn.innerHTML;
+                        feedbackBtn.disabled = true;
+                        feedbackBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+                        // Submit form by creating a new form submission
+                        const formData = new FormData(feedbackForm);
+                        fetch(feedbackForm.action, {
+                            method: 'POST',
+                            body: formData
+                        }).then(response => {
+                            // Reset button state
+                            feedbackBtn.disabled = false;
+                            feedbackBtn.innerHTML = originalBtnContent;
+
+                            if (response.redirected) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: 'Feedback has been sent successfully!',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.location.href = response.url;
+                                });
+                            }
+                        }).catch(error => {
+                            // Reset button state on error
+                            feedbackBtn.disabled = false;
+                            feedbackBtn.innerHTML = originalBtnContent;
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: 'An error occurred while sending feedback.'
                             });
                         });
                     }

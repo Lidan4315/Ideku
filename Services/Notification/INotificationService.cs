@@ -9,5 +9,6 @@ namespace Ideku.Services.Notification
         Task NotifyIdeaRejected(Models.Entities.Idea idea, User rejector, string reason);
         Task NotifyWorkstreamLeadersAsync(Models.Entities.Idea idea, List<User> workstreamLeaders);
         Task NotifyMilestoneCreationRequiredAsync(Models.Entities.Idea idea, List<User> implementators);
+        Task NotifyFeedbackSent(Models.Entities.Idea idea, User feedbackSender, string feedbackComment, List<User> workstreamLeaders);
     }
 }

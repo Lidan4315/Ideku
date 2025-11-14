@@ -794,5 +794,319 @@ namespace Ideku.Services.Notification
 </body>
 </html>";
         }
+
+        public async Task NotifyFeedbackSent(Models.Entities.Idea idea, User feedbackSender, string feedbackComment, List<User> workstreamLeaders)
+        {
+            try
+            {
+                _logger.LogInformation("Sending feedback notification for idea {IdeaId} to initiator and {WLCount} workstream leaders",
+                    idea.Id, workstreamLeaders.Count);
+
+                // Load workflow history (Approved + Feedback)
+                var workflowHistory = await _context.WorkflowHistories
+                    .Include(wh => wh.ActorUser)
+                        .ThenInclude(u => u.Employee)
+                    .Where(wh => wh.IdeaId == idea.Id && (wh.Action == "Approved" || wh.Action == "Feedback"))
+                    .OrderBy(wh => wh.Timestamp)
+                    .ToListAsync();
+
+                // Send email to Initiator
+                var initiatorEmail = new EmailMessage
+                {
+                    To = idea.InitiatorUser.Employee.EMAIL,
+                    Subject = $"Ideku Feedback {idea.IdeaName} | {idea.IdeaCode}",
+                    Body = GenerateFeedbackEmailBodyForInitiator(idea, feedbackSender, feedbackComment, workflowHistory),
+                    IsHtml = true
+                };
+                await _emailService.SendEmailAsync(initiatorEmail);
+                _logger.LogInformation("Feedback email sent to initiator {Email}", idea.InitiatorUser.Employee.EMAIL);
+
+                // Send emails to Workstream Leaders
+                if (workstreamLeaders.Any())
+                {
+                    var emailMessages = new List<EmailMessage>();
+
+                    foreach (var wl in workstreamLeaders)
+                    {
+                        var wlEmail = new EmailMessage
+                        {
+                            To = wl.Employee.EMAIL,
+                            Subject = $"Ideku Feedback {idea.IdeaName} | {idea.IdeaCode}",
+                            Body = GenerateFeedbackEmailBodyForWL(idea, feedbackSender, feedbackComment, workflowHistory, wl),
+                            IsHtml = true
+                        };
+                        emailMessages.Add(wlEmail);
+                    }
+
+                    await _emailService.SendBulkEmailAsync(emailMessages);
+                    _logger.LogInformation("Feedback emails sent to {WLCount} workstream leaders", workstreamLeaders.Count);
+                }
+
+                _logger.LogInformation("Successfully sent all feedback notifications for idea {IdeaId}", idea.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send feedback notifications for Idea ID: {IdeaId}", idea.Id);
+            }
+        }
+
+        private string GenerateFeedbackEmailBodyForInitiator(Models.Entities.Idea idea, User feedbackSender, string feedbackComment, List<WorkflowHistory> workflowHistory)
+        {
+            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
+
+            // Build Historical Approval table rows
+            var historyRows = new System.Text.StringBuilder();
+            var rowIndex = 0;
+            foreach (var history in workflowHistory)
+            {
+                var historyStageNumber = history.Action == "Approved" ? history.ToStage : history.FromStage;
+                var stage = $"S{historyStageNumber}";
+                var approvalDate = history.Timestamp.ToString("dd. MMM yyyy HH:mm:ss");
+                var historyActorName = history.ActorUser?.Employee?.NAME ?? "Unknown";
+                var action = history.Action;
+
+                var bgColor = (rowIndex % 2 == 0) ? "white" : "#f0f0f0";
+
+                historyRows.Append($@"
+                <tr style='background-color: {bgColor};'>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{stage}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{approvalDate}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{historyActorName}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{action}</td>
+                </tr>");
+
+                rowIndex++;
+            }
+
+            // Get data
+            var initiatorName = idea.InitiatorUser?.Employee?.NAME ?? idea.InitiatorUser?.Name ?? "Unknown";
+            var initiatorPosition = idea.InitiatorUser?.Employee?.POSITION_TITLE ?? "Unknown";
+            var feedbackSenderName = feedbackSender.Employee?.NAME ?? feedbackSender.Name ?? "Unknown";
+            var feedbackSenderPosition = feedbackSender.Employee?.POSITION_TITLE ?? "Unknown";
+            var stageNumber = idea.CurrentStage;
+            var nextStageNumber = idea.CurrentStage + 1;
+
+            return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }}
+        .email-wrapper {{ max-width: 750px; margin: 20px auto; background-color: white; border: 3px solid #333; }}
+        .header {{ background-color: #c62828; padding: 20px; text-align: left; }}
+        .header-title {{ font-size: 16px; font-weight: bold; color: #000; }}
+        .content {{ padding: 25px; line-height: 1.5; color: #000; background-color: #e7f3ff; font-size: 14px; }}
+        .section-title {{ font-weight: bold; margin-top: 15px; margin-bottom: 5px; color: #000; font-size: 14px; }}
+        .blue-text {{ color: #0066cc; }}
+        .blue-bold {{ color: #0066cc; font-weight: bold; }}
+        .history-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; border: 3px solid white; }}
+        .history-table th {{ background-color: #4a90e2; color: white; border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; font-weight: bold; }}
+        .history-table td {{ border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; color: #000; }}
+        .button-container {{ text-align: left; margin: 20px 0 10px 0; page-break-inside: avoid; }}
+        .btn {{ display: inline-block; padding: 6px 30px; text-decoration: none; border-radius: 6px; margin: 0 10px 0 0; font-size: 15px; color: white !important; font-weight: 500; min-width: 100px; text-align: center; }}
+        .btn-view {{ background-color: #007bff; }}
+        .footer-text {{ margin-top: 15px; padding-top: 15px; font-size: 14px; color: #000; }}
+    </style>
+</head>
+<body>
+    <div class='email-wrapper'>
+        <div class='header'>
+            <div class='header-title'>#{idea.IdeaCode} ""{idea.IdeaName}""</div>
+        </div>
+
+        <div class='content'>
+            <p style='margin: 0 0 5px 0;'>Dear <span class='blue-text'>{initiatorName}</span>,</p>
+            <p style='margin: 0 0 15px 0;' class='blue-text'>You have received feedback on your idea <strong>#{idea.IdeaCode}</strong> <strong>""{idea.IdeaName}""</strong> from <strong>{feedbackSenderName}</strong> at Stage <strong>S{stageNumber}</strong>.</p>
+
+            <div class='section-title'>Summary:</div>
+            <div class='blue-text' style='margin-bottom: 15px;'>{idea.IdeaIssueBackground}</div>
+
+            <div class='section-title'>Details:</div>
+            <div style='margin: 5px 0 15px 20px;'>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Requested By:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{initiatorName} ({initiatorPosition})</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Expected Solution:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{idea.IdeaSolution}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Estimated Saving Cost:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>${idea.SavingCost:N2}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Feedback Comment:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1; font-style: italic;'>""{feedbackComment}"" — {feedbackSenderName} ({feedbackSenderPosition})</span>
+                </div>
+            </div>
+
+            <div class='section-title'>Historical Approval</div>
+            <table class='history-table'>
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Approval Date</th>
+                        <th>Approver</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {historyRows}
+                </tbody>
+            </table>
+
+            <p style='margin: 20px 0 15px 0;'><strong>Note:</strong> This is feedback only. Your idea remains at <strong>Stage S{stageNumber}</strong> and is still pending approval for <strong>Stage S{nextStageNumber}</strong>. Please review the feedback and consider any necessary revisions or clarifications.</p>
+
+            <div class='button-container'>
+                <a href='{ideaUrl}' class='btn btn-view'>View Idea Status</a>
+            </div>
+
+            <div class='footer-text'>
+                <p style='margin: 0 0 10px 0;'>This notification was generated automatically by the <span class='blue-text'>IdeKU Notification System</span>. For further information, please contact <span class='blue-text'>BI Department</span> on <span class='blue-text'>ext 1156</span>.</p>
+                <p style='margin: 0;'>Best regards,<br><span class='blue-text'>IdeKU</span> Notification</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+        }
+
+        private string GenerateFeedbackEmailBodyForWL(Models.Entities.Idea idea, User feedbackSender, string feedbackComment, List<WorkflowHistory> workflowHistory, User workstreamLeader)
+        {
+            var ideaUrl = $"{_emailSettings.BaseUrl}/Idea/Details/{idea.Id}";
+
+            // Build Historical Approval table rows
+            var historyRows = new System.Text.StringBuilder();
+            var rowIndex = 0;
+            foreach (var history in workflowHistory)
+            {
+                var historyStageNumber = history.Action == "Approved" ? history.ToStage : history.FromStage;
+                var stage = $"S{historyStageNumber}";
+                var approvalDate = history.Timestamp.ToString("dd. MMM yyyy HH:mm:ss");
+                var historyActorName = history.ActorUser?.Employee?.NAME ?? "Unknown";
+                var action = history.Action;
+
+                var bgColor = (rowIndex % 2 == 0) ? "white" : "#f0f0f0";
+
+                historyRows.Append($@"
+                <tr style='background-color: {bgColor};'>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{stage}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{approvalDate}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{historyActorName}</td>
+                    <td style='border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px;'>{action}</td>
+                </tr>");
+
+                rowIndex++;
+            }
+
+            // Get data
+            var wlName = workstreamLeader.Employee?.NAME ?? workstreamLeader.Name ?? "Unknown";
+            var initiatorName = idea.InitiatorUser?.Employee?.NAME ?? idea.InitiatorUser?.Name ?? "Unknown";
+            var initiatorPosition = idea.InitiatorUser?.Employee?.POSITION_TITLE ?? "Unknown";
+            var feedbackSenderName = feedbackSender.Employee?.NAME ?? feedbackSender.Name ?? "Unknown";
+            var feedbackSenderPosition = feedbackSender.Employee?.POSITION_TITLE ?? "Unknown";
+            var targetDivision = idea.TargetDivision?.NameDivision ?? "Unknown";
+            var targetDepartment = idea.TargetDepartment?.NameDepartment ?? "Unknown";
+            var stageNumber = idea.CurrentStage;
+            var nextStageNumber = idea.CurrentStage + 1;
+
+            return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }}
+        .email-wrapper {{ max-width: 750px; margin: 20px auto; background-color: white; border: 3px solid #333; }}
+        .header {{ background-color: #c62828; padding: 20px; text-align: left; }}
+        .header-title {{ font-size: 16px; font-weight: bold; color: #000; }}
+        .content {{ padding: 25px; line-height: 1.5; color: #000; background-color: #e7f3ff; font-size: 14px; }}
+        .section-title {{ font-weight: bold; margin-top: 15px; margin-bottom: 5px; color: #000; font-size: 14px; }}
+        .blue-text {{ color: #0066cc; }}
+        .blue-bold {{ color: #0066cc; font-weight: bold; }}
+        .history-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; border: 3px solid white; }}
+        .history-table th {{ background-color: #4a90e2; color: white; border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; font-weight: bold; }}
+        .history-table td {{ border: 3px solid white; padding: 5px 10px; text-align: center; font-size: 13px; color: #000; }}
+        .button-container {{ text-align: left; margin: 20px 0 10px 0; page-break-inside: avoid; }}
+        .btn {{ display: inline-block; padding: 6px 30px; text-decoration: none; border-radius: 6px; margin: 0 10px 0 0; font-size: 15px; color: white !important; font-weight: 500; min-width: 100px; text-align: center; }}
+        .btn-view {{ background-color: #007bff; }}
+        .footer-text {{ margin-top: 15px; padding-top: 15px; font-size: 14px; color: #000; }}
+    </style>
+</head>
+<body>
+    <div class='email-wrapper'>
+        <div class='header'>
+            <div class='header-title'>#{idea.IdeaCode} ""{idea.IdeaName}""</div>
+        </div>
+
+        <div class='content'>
+            <p style='margin: 0 0 5px 0;'>Dear <span class='blue-text'>{wlName}</span>,</p>
+            <p style='margin: 0 0 15px 0;' class='blue-text'>Feedback has been provided on idea <strong>#{idea.IdeaCode}</strong> <strong>""{idea.IdeaName}""</strong> at Stage <strong>S{stageNumber}</strong> by <strong>{feedbackSenderName}</strong>. As Workstream Leader of <strong>{targetDepartment}</strong>, you are notified for awareness and potential follow-up with the initiator.</p>
+
+            <div class='section-title'>Summary:</div>
+            <div class='blue-text' style='margin-bottom: 15px;'>{idea.IdeaIssueBackground}</div>
+
+            <div class='section-title'>Details:</div>
+            <div style='margin: 5px 0 15px 20px;'>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Initiator:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{initiatorName} ({initiatorPosition})</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Target Division:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{targetDivision}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Target Department:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{targetDepartment}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Expected Solution:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>{idea.IdeaSolution}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Estimated Saving Cost:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1;'>${idea.SavingCost:N2}</span>
+                </div>
+                <div style='margin: 5px 0; display: flex; align-items: flex-start;'>
+                    <span class='blue-bold' style='flex-shrink: 0; white-space: nowrap;'>• Feedback Comment:</span>
+                    <span class='blue-text' style='margin-left: 5px; flex: 1; font-style: italic;'>""{feedbackComment}"" — {feedbackSenderName} ({feedbackSenderPosition})</span>
+                </div>
+            </div>
+
+            <div class='section-title'>Historical Approval</div>
+            <table class='history-table'>
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Approval Date</th>
+                        <th>Approver</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {historyRows}
+                </tbody>
+            </table>
+
+            <p style='margin: 20px 0 15px 0;'>The idea remains at <strong>Stage S{stageNumber}</strong> and is still pending approval for <strong>Stage S{nextStageNumber}</strong>. You may want to follow up with the initiator to ensure any feedback is addressed appropriately.</p>
+
+            <div class='button-container'>
+                <a href='{ideaUrl}' class='btn btn-view'>View Idea Details</a>
+            </div>
+
+            <div class='footer-text'>
+                <p style='margin: 0 0 10px 0;'>This notification was generated automatically by the <span class='blue-text'>IdeKU Notification System</span>. For further information, please contact <span class='blue-text'>BI Department</span> on <span class='blue-text'>ext 1156</span>.</p>
+                <p style='margin: 0;'>Best regards,<br><span class='blue-text'>IdeKU</span> Notification</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+        }
     }
 }

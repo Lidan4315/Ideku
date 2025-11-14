@@ -89,5 +89,25 @@ namespace Ideku.Services.Workflow
         /// <param name="idea">The idea to get approvers for</param>
         /// <returns>List of users who can approve the next stage</returns>
         Task<List<Models.Entities.User>> GetApproversForNextStageAsync(Models.Entities.Idea idea);
+
+        /// <summary>
+        /// Process feedback database operations only (no email sending)
+        /// Creates WorkflowHistory record with Action="Feedback", idea stage remains unchanged
+        /// </summary>
+        /// <param name="ideaId">ID of the idea to provide feedback on</param>
+        /// <param name="username">Username of the user providing feedback</param>
+        /// <param name="feedbackComment">Feedback comment text</param>
+        /// <returns>Task</returns>
+        Task ProcessFeedbackAsync(long ideaId, string username, string feedbackComment);
+
+        /// <summary>
+        /// Send feedback notification emails only
+        /// Sends to initiator and workstream leaders in the idea's division/department
+        /// </summary>
+        /// <param name="ideaId">ID of the idea</param>
+        /// <param name="username">Username of the user who provided feedback</param>
+        /// <param name="feedbackComment">Feedback comment text</param>
+        /// <returns>Task</returns>
+        Task SendFeedbackNotificationsAsync(long ideaId, string username, string feedbackComment);
     }
 }
