@@ -6,6 +6,7 @@ using Ideku.Services.WorkflowManagement;
 using Ideku.Services.IdeaRelation;
 using Ideku.ViewModels.DTOs;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -109,7 +110,9 @@ namespace Ideku.Services.Workflow
             var user = await _userRepository.GetByUsernameAsync(username);
             if (user == null)
             {
-                return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+                // Return EF queryable with impossible condition (not in-memory)
+                var baseQueryEmpty = _ideaRepository.GetQueryableWithIncludes();
+                return baseQueryEmpty.Where(idea => false);
             }
 
             // Get base queryable for ideas with all necessary includes
@@ -119,7 +122,7 @@ namespace Ideku.Services.Workflow
             if (user.Role.RoleName == "Superuser")
             {
                 // Superuser can see all ideas regardless of stage or status
-                return baseQuery.Where(idea => 
+                return baseQuery.Where(idea =>
                     idea.CurrentStatus.StartsWith("Waiting Approval") ||
                     idea.CurrentStatus.StartsWith("Rejected S") ||
                     idea.CurrentStatus == "Approved")
@@ -128,19 +131,140 @@ namespace Ideku.Services.Workflow
             }
             else if (user.Role.RoleName == "Workstream Leader")
             {
-                // Workstream Leader can see:
-                // - Ideas at stage 0 waiting for S1 approval (their responsibility)
-                // - Ideas that were processed at stage 0 (their history)
-                return baseQuery.Where(idea => 
-                    (idea.CurrentStage == 0 && idea.CurrentStatus == "Waiting Approval S1") || // Current responsibility
-                    (idea.CurrentStage >= 1) || // Ideas that have passed their stage
-                    (idea.CurrentStatus.StartsWith("Rejected S0")) // Ideas they rejected
-                ).OrderByDescending(idea => idea.SubmittedDate)
-                .ThenByDescending(idea => idea.Id);
-            }
+                // Dynamic WL logic: Get stages where WL is assigned as approver
+                var approverStages = await _workflowManagementService.GetWorkflowStagesByRoleIdAsync(user.RoleId);
+                var approverStagesList = approverStages.ToList();
 
-            // Return empty queryable if the user is not a designated approver
-            return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
+                if (!approverStagesList.Any())
+                {
+                    // WL role not assigned to any workflow stage - no access
+                    return baseQuery.Where(idea => false);
+                }
+
+                // Calculate minimum stage per workflow where WL is approver
+                var minStagesByWorkflow = approverStagesList
+                    .GroupBy(s => s.WorkflowId)
+                    .ToDictionary(g => g.Key, g => g.Min(s => s.Stage));
+
+                // Get user's effective location
+                var userDivisionId = Helpers.LocationHelper.GetEffectiveDivisionId(user);
+                var userDepartmentId = Helpers.LocationHelper.GetEffectiveDepartmentId(user);
+
+                // Extract workflow IDs for SQL translation
+                var workflowIds = minStagesByWorkflow.Keys.ToList();
+
+                // Filter at database level
+                var query = baseQuery.Where(idea =>
+                    workflowIds.Contains(idea.WorkflowId) &&
+                    (string.IsNullOrEmpty(userDivisionId) || idea.ToDivisionId == userDivisionId) &&
+                    (string.IsNullOrEmpty(userDepartmentId) || idea.ToDepartmentId == userDepartmentId)
+                );
+
+                // Execute database query
+                var ideas = await query.ToListAsync();
+
+                // Filter in-memory for dynamic history logic
+                var filteredIdeas = ideas.Where(idea =>
+                {
+                    if (!minStagesByWorkflow.TryGetValue(idea.WorkflowId, out int minStage))
+                        return false;
+
+                    // WL can see:
+                    // 1. Current responsibility: CurrentStage = minStage - 1 AND Waiting Approval
+                    if (idea.CurrentStage == minStage - 1 && idea.CurrentStatus == $"Waiting Approval S{minStage}")
+                        return true;
+
+                    // 2. History: Ideas that have passed their minimum stage
+                    if (idea.CurrentStage >= minStage)
+                        return true;
+
+                    // 3. Rejected ideas at their stage
+                    if (idea.CurrentStatus == $"Rejected S{minStage - 1}")
+                        return true;
+
+                    return false;
+                })
+                .OrderByDescending(idea => idea.SubmittedDate)
+                .ThenByDescending(idea => idea.Id);
+
+                // Re-query database with filtered IDs
+                var filteredIdeaIds = filteredIdeas.Select(idea => idea.Id).ToList();
+
+                if (!filteredIdeaIds.Any())
+                {
+                    return baseQuery.Where(idea => false);
+                }
+
+                return baseQuery
+                    .Where(idea => filteredIdeaIds.Contains(idea.Id))
+                    .OrderByDescending(idea => idea.SubmittedDate)
+                    .ThenByDescending(idea => idea.Id);
+            }
+            else
+            {
+                // For other roles (Manager, CFO, Director, etc.): Check workflow configuration dynamically
+
+                // Step 1: Get all workflow stages where user's role is designated as approver
+                var approverStages = await _workflowManagementService.GetWorkflowStagesByRoleIdAsync(user.RoleId);
+                var approverStagesList = approverStages.ToList();
+
+                if (!approverStagesList.Any())
+                {
+                    // User's role is not assigned to any workflow stage - no access
+                    return baseQuery.Where(idea => false);
+                }
+
+                // Step 2: Get user's effective location (considering acting status)
+                var userDivisionId = Helpers.LocationHelper.GetEffectiveDivisionId(user);
+                var userDepartmentId = Helpers.LocationHelper.GetEffectiveDepartmentId(user);
+
+                // Step 3: Build SQL-compatible WHERE clause using Contains
+                // Extract workflow IDs and stages for SQL translation
+                var workflowIds = approverStagesList.Select(s => s.WorkflowId).Distinct().ToList();
+
+                // Filter ideas at database level as much as possible
+                var query = baseQuery.Where(idea =>
+                    // Idea must be waiting for approval
+                    idea.CurrentStatus.StartsWith("Waiting Approval") &&
+
+                    // Workflow must be in user's approver list
+                    workflowIds.Contains(idea.WorkflowId) &&
+
+                    // Division must match (if user has division)
+                    (string.IsNullOrEmpty(userDivisionId) || idea.ToDivisionId == userDivisionId) &&
+
+                    // Department must match (if user has department)
+                    (string.IsNullOrEmpty(userDepartmentId) || idea.ToDepartmentId == userDepartmentId)
+                );
+
+                // Execute database query first
+                var ideas = await query.ToListAsync();
+
+                // Step 4: Filter in-memory for exact stage matching (CurrentStage + 1)
+                var filteredIdeas = ideas.Where(idea =>
+                {
+                    // Check if user is approver for the next stage
+                    return approverStagesList.Any(s =>
+                        s.WorkflowId == idea.WorkflowId &&
+                        s.Stage == idea.CurrentStage + 1);
+                })
+                .OrderByDescending(idea => idea.SubmittedDate)
+                .ThenByDescending(idea => idea.Id);
+
+                // Re-query from database to get proper IQueryable with EF tracking
+                var filteredIdeaIds = filteredIdeas.Select(idea => idea.Id).ToList();
+
+                if (!filteredIdeaIds.Any())
+                {
+                    return baseQuery.Where(idea => false);
+                }
+
+                // Return EF queryable for proper pagination support
+                return baseQuery
+                    .Where(idea => filteredIdeaIds.Contains(idea.Id))
+                    .OrderByDescending(idea => idea.SubmittedDate)
+                    .ThenByDescending(idea => idea.Id);
+            }
         }
 
         public async Task<Models.Entities.Idea> GetIdeaForReview(int ideaId, string username)
@@ -550,6 +674,63 @@ namespace Ideku.Services.Workflow
             }
         }
 
+        public async Task ProcessFeedbackAsync(long ideaId, string username, string feedbackComment)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            var idea = await _ideaRepository.GetByIdAsync(ideaId);
+
+            if (user == null || idea == null)
+            {
+                _logger.LogError("User or Idea not found when processing feedback for IdeaId {IdeaId}", ideaId);
+                return;
+            }
+
+            // Create WorkflowHistory record with Action="Feedback"
+            // FromStage and ToStage are SAME (idea remains at current stage)
+            var workflowHistory = new Models.Entities.WorkflowHistory
+            {
+                IdeaId = ideaId,
+                ActorUserId = user.Id,
+                FromStage = idea.CurrentStage,
+                ToStage = idea.CurrentStage,  // Same stage - no progression
+                Action = "Feedback",
+                Comments = feedbackComment,
+                Timestamp = DateTime.Now
+            };
+
+            await _workflowRepository.CreateAsync(workflowHistory);
+
+            // Idea entity is NOT updated - stage and status remain unchanged
+            _logger.LogInformation("Feedback recorded for Idea {IdeaId} by user {Username} at stage {Stage}",
+                ideaId, username, idea.CurrentStage);
+        }
+
+        public async Task SendFeedbackNotificationsAsync(long ideaId, string username, string feedbackComment)
+        {
+            try
+            {
+                var user = await _userRepository.GetByUsernameAsync(username);
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+
+                if (user == null || idea == null) return;
+
+                // Get Workstream Leaders in the idea's division (same as Related Divisions logic)
+                var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDivisionsAsync(
+                    new List<string> { idea.ToDivisionId });
+
+                // Send email notifications
+                await _notificationService.NotifyFeedbackSent(idea, user, feedbackComment, workstreamLeaders);
+
+                _logger.LogInformation("Feedback notification emails sent for Idea {IdeaId} to initiator and {WLCount} workstream leaders",
+                    ideaId, workstreamLeaders.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send feedback notification emails for Idea {IdeaId}", ideaId);
+                throw;
+            }
+        }
+
         public async Task SaveApprovalFilesAsync(long ideaId, List<IFormFile> files, int stage)
         {
             var idea = await _ideaRepository.GetByIdAsync(ideaId);
@@ -701,7 +882,7 @@ namespace Ideku.Services.Workflow
             }
         }
 
-        private async Task<List<User>> GetApproversForNextStageAsync(Models.Entities.Idea idea)
+        public async Task<List<User>> GetApproversForNextStageAsync(Models.Entities.Idea idea)
         {
             return await GetApproversForStageAsync(idea, idea.CurrentStage + 1);
         }

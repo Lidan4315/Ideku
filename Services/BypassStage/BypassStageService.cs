@@ -86,6 +86,11 @@ namespace Ideku.Services.BypassStage
                 else
                 {
                     idea.CurrentStatus = $"Waiting Approval S{targetStage + 1}";
+                    // Clear CompletedDate if bypassing backward from a completed/approved stage
+                    if (targetStage < previousStage && idea.CompletedDate != null)
+                    {
+                        idea.CompletedDate = null;
+                    }
                 }
 
                 idea.UpdatedDate = DateTime.Now;
@@ -149,18 +154,18 @@ namespace Ideku.Services.BypassStage
                 return (false, $"Invalid target stage. Must be between 0 and {idea.MaxStage}");
             }
 
-            // Can only bypass forward
-            if (targetStage <= idea.CurrentStage)
+            // Cannot bypass to the same stage
+            if (targetStage == idea.CurrentStage)
             {
-                _logger.LogWarning("Attempt to bypass backward from S{CurrentStage} to S{TargetStage} for idea {IdeaId}",
-                    idea.CurrentStage, targetStage, idea.Id);
-                return (false, "Can only bypass forward to future stages");
+                _logger.LogWarning("Attempt to bypass to same stage S{CurrentStage} for idea {IdeaId}",
+                    idea.CurrentStage, idea.Id);
+                return (false, "Cannot bypass to the same stage");
             }
 
             // Reason is required
-            if (string.IsNullOrWhiteSpace(reason) || reason.Length < 10)
+            if (string.IsNullOrWhiteSpace(reason))
             {
-                return (false, "Bypass reason is required (minimum 10 characters)");
+                return (false, "Bypass reason is required");
             }
 
             return await Task.FromResult((true, "Validation passed"));
@@ -185,17 +190,19 @@ namespace Ideku.Services.BypassStage
                     // Notify next stage approvers if not completed
                     if (idea.CurrentStatus != "Approved")
                     {
+                        // Get approvers for the next stage (CurrentStage + 1)
+                        // Because if CurrentStage = 1, the status is "Waiting Approval S2" which needs approvers at WorkflowStage.Stage = 2
                         var nextStageApprovers = await workflowManagementService.GetApproversForWorkflowStageAsync(
                             idea.WorkflowId,
-                            idea.CurrentStage,
+                            idea.CurrentStage + 1,
                             idea.ToDivisionId,
                             idea.ToDepartmentId);
 
                         if (nextStageApprovers.Any())
                         {
                             await notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers.ToList());
-                            _logger.LogInformation("Next stage notification sent for idea {IdeaId} to {ApproverCount} approvers",
-                                idea.Id, nextStageApprovers.Count());
+                            _logger.LogInformation("Next stage notification sent for idea {IdeaId} to {ApproverCount} approvers at stage {Stage}",
+                                idea.Id, nextStageApprovers.Count(), idea.CurrentStage + 1);
                         }
                     }
 

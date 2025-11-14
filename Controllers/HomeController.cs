@@ -532,7 +532,7 @@ public class HomeController : Controller
             CreateApprovalHistorySheet(approvalHistorySheet, approvalHistoryData);
 
             // Generate file
-            var fileName = $"Dashboard_Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            var fileName = $"IdeKU_Dashboard_Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
             var fileBytes = package.GetAsByteArray();
 
             _logger.LogInformation("ExportDashboard completed - User: {Username}, File: {FileName}, Size: {Size} bytes",
@@ -924,12 +924,13 @@ public class HomeController : Controller
     {
         // Title
         sheet.Cells[$"A{EXCEL_TITLE_ROW}"].Value = "Team Role";
-        sheet.Cells["A1:C1"].Merge = true;
+        sheet.Cells["A1:D1"].Merge = true;
         sheet.Cells[$"A{EXCEL_TITLE_ROW}"].Style.Font.Size = EXCEL_TITLE_FONT_SIZE;
         sheet.Cells[$"A{EXCEL_TITLE_ROW}"].Style.Font.Bold = true;
 
-        // Headers - 3 columns
+        // Headers - 4 columns
         int col = 1;
+        sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Employee Name";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Employee BN";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Team Role";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Idea ID";
@@ -945,6 +946,7 @@ public class HomeController : Controller
         foreach (var item in teamRoleData)
         {
             col = 1;
+            sheet.Cells[row, col++].Value = item.EmployeeName;
             sheet.Cells[row, col++].Value = item.EmployeeBN;
             sheet.Cells[row, col++].Value = item.TeamRole;
             sheet.Cells[row, col++].Value = item.IdeaCode;
@@ -960,7 +962,7 @@ public class HomeController : Controller
         // Add borders to all cells
         if (sheet.Dimension != null)
         {
-            var allCells = sheet.Cells[EXCEL_HEADER_ROW, 1, row - 1, 3];
+            var allCells = sheet.Cells[EXCEL_HEADER_ROW, 1, row - 1, 4];
             allCells.Style.Border.Top.Style = ExcelBorderStyle.Thin;
             allCells.Style.Border.Left.Style = ExcelBorderStyle.Thin;
             allCells.Style.Border.Right.Style = ExcelBorderStyle.Thin;
@@ -979,7 +981,7 @@ public class HomeController : Controller
         // Headers - 5 columns
         int col = 1;
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Idea Id";
-        sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "SavingCostValidated";
+        sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Saving Plan";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Idea Category";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "Current Stage";
         sheet.Cells[EXCEL_HEADER_ROW, col++].Value = "ideaFlowValidated";

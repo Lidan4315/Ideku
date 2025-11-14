@@ -27,5 +27,6 @@ namespace Ideku.Services.WorkflowManagement
         // Stage & Approver Management
         Task<IEnumerable<User>> GetApproversForWorkflowStageAsync(int workflowId, int targetStage, string? targetDivisionId, string? targetDepartmentId);
         Task<WorkflowStage?> GetWorkflowStageAsync(int workflowId, int stage);
+        Task<IEnumerable<(int WorkflowId, int Stage)>> GetWorkflowStagesByRoleIdAsync(int roleId);
     }
 }

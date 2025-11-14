@@ -272,5 +272,17 @@ namespace Ideku.Data.Repositories.WorkflowManagement
                         .ThenInclude(la => la.Role)
                 .FirstOrDefaultAsync(ws => ws.WorkflowId == workflowId && ws.Stage == stage);
         }
+
+        public async Task<IEnumerable<(int WorkflowId, int Stage)>> GetWorkflowStagesByRoleIdAsync(int roleId)
+        {
+            var stages = await _context.WorkflowStages
+                .Include(ws => ws.Approver)
+                    .ThenInclude(a => a.ApproverRoles)
+                .Where(ws => ws.Approver.ApproverRoles.Any(ar => ar.RoleId == roleId))
+                .Select(ws => new { ws.WorkflowId, ws.Stage })
+                .ToListAsync();
+
+            return stages.Select(s => (s.WorkflowId, s.Stage));
+        }
     }
 }

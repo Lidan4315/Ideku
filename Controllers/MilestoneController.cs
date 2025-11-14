@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Security.Claims;
 using Ideku.Helpers;
+using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 
 namespace Ideku.Controllers
 {
@@ -359,6 +362,235 @@ namespace Ideku.Controllers
                 _logger.LogError(ex, "Error getting departments for division {DivisionId}", divisionId);
                 return Json(new { success = false, message = ex.Message });
             }
+        }
+
+        // Export Milestone to Excel
+        [HttpGet]
+        [Route("Milestone/ExportToExcel")]
+        public async Task<IActionResult> ExportToExcel(
+            string? searchTerm = null,
+            string? selectedDivision = null,
+            string? selectedDepartment = null,
+            int? selectedCategory = null,
+            int? selectedStage = null,
+            string? selectedStatus = null)
+        {
+            var username = User.Identity?.Name ?? "";
+            _logger.LogInformation("ExportMilestone started - User: {Username}, Filters: SearchTerm={SearchTerm}, Division={Division}, Department={Department}, Category={Category}, Stage={Stage}, Status={Status}",
+                username, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
+
+            try
+            {
+                // Get base queryable (same as Index method)
+                var ideasQuery = await _milestoneService.GetMilestoneEligibleIdeasAsync(
+                    1, int.MaxValue, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
+
+                // Get all filtered results (no pagination)
+                var ideas = ideasQuery.Items.ToList();
+
+                // Get lookup data for filter summary display
+                var categoryName = "";
+                if (selectedCategory.HasValue)
+                {
+                    var categories = await _lookupService.GetCategoriesAsync();
+                    var category = categories.FirstOrDefault(c => c.Value == selectedCategory.Value.ToString());
+                    categoryName = category?.Text ?? "";
+                }
+
+                var divisionName = "";
+                if (!string.IsNullOrWhiteSpace(selectedDivision))
+                {
+                    var divisions = await _lookupService.GetDivisionsAsync();
+                    var division = divisions.FirstOrDefault(d => d.Value == selectedDivision);
+                    divisionName = division?.Text ?? "";
+                }
+
+                // EPPlus 7: Set license context
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                using var package = new ExcelPackage();
+
+                // Create worksheet
+                var worksheet = package.Workbook.Worksheets.Add("Milestone");
+
+                // Row 1: Filter Summary
+                CreateFilterSummary(worksheet, searchTerm, divisionName, selectedDepartment, categoryName, selectedStage, selectedStatus);
+
+                // Row 3: Headers
+                CreateMilestoneHeaders(worksheet);
+
+                // Row 4+: Data
+                PopulateMilestoneData(worksheet, ideas);
+
+                // Generate file
+                var fileName = $"IdeKU_Milestone_Export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                var fileBytes = package.GetAsByteArray();
+
+                _logger.LogInformation("ExportMilestone completed - User: {Username}, File: {FileName}, TotalRecords: {Count}, Size: {Size} bytes",
+                    username, fileName, ideas.Count, fileBytes.Length);
+
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ExportMilestone failed - User: {Username}", username);
+                TempData["ErrorMessage"] = $"Error exporting milestone data: {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // Helper: Create filter summary in row 1
+        private void CreateFilterSummary(ExcelWorksheet sheet, string? searchTerm, string? divisionName,
+            string? departmentId, string? categoryName, int? stage, string? status)
+        {
+            var filters = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+                filters.Add($"Search: {searchTerm}");
+
+            if (!string.IsNullOrWhiteSpace(divisionName))
+                filters.Add($"Division: {divisionName}");
+
+            if (!string.IsNullOrWhiteSpace(departmentId))
+                filters.Add($"Department: {departmentId}");
+
+            if (!string.IsNullOrWhiteSpace(categoryName))
+                filters.Add($"Category: {categoryName}");
+
+            if (stage.HasValue)
+                filters.Add($"Stage: S{stage.Value}");
+
+            if (!string.IsNullOrWhiteSpace(status))
+                filters.Add($"Status: {status}");
+
+            var filterText = filters.Any()
+                ? $"Milestone | Export Date: {DateTime.Now:yyyy-MM-dd} | Filters: {string.Join(", ", filters)}"
+                : $"Milestone | Export Date: {DateTime.Now:yyyy-MM-dd} | Filters: None (All Data)";
+
+            sheet.Cells["A1:L1"].Merge = true;
+            sheet.Cells["A1"].Value = filterText;
+            sheet.Cells["A1"].Style.Font.Size = 11;
+            sheet.Cells["A1"].Style.Font.Bold = true;
+            sheet.Cells["A1"].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+            sheet.Row(1).Height = 25;
+        }
+
+        // Helper: Create column headers in row 3
+        private void CreateMilestoneHeaders(ExcelWorksheet sheet)
+        {
+            var headers = new[]
+            {
+                "Idea ID",
+                "Idea Title",
+                "Initiator",
+                "Implementor",
+                "Division",
+                "Department",
+                "Category",
+                "Event",
+                "Stage",
+                "Saving Cost",
+                "Status",
+                "Submitted Date"
+            };
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                var cell = sheet.Cells[3, i + 1];
+                cell.Value = headers[i];
+                cell.Style.Font.Bold = true;
+                cell.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                cell.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+                cell.Style.Border.BorderAround(ExcelBorderStyle.Thin);
+            }
+
+            sheet.Row(3).Height = 20;
+        }
+
+        // Helper: Populate data rows starting from row 4
+        private void PopulateMilestoneData(ExcelWorksheet sheet, List<Models.Entities.Idea> ideas)
+        {
+            if (!ideas.Any())
+            {
+                sheet.Cells["A4"].Value = "No data available";
+                return;
+            }
+
+            int row = 4;
+            foreach (var idea in ideas)
+            {
+                // Column 1: Idea ID
+                sheet.Cells[row, 1].Value = idea.IdeaCode ?? "";
+
+                // Column 2: Idea Title
+                sheet.Cells[row, 2].Value = idea.IdeaName ?? "";
+                sheet.Cells[row, 2].Style.WrapText = true;
+
+                // Column 3: Initiator
+                sheet.Cells[row, 3].Value = idea.InitiatorUser?.Employee?.NAME ?? "";
+
+                // Column 4: Implementor(s) - Multi-valued with line breaks
+                var implementors = idea.IdeaImplementators?
+                    .Select(imp => $"{imp.User?.Name ?? "Unknown"} ({imp.Role ?? "Member"})")
+                    .ToList() ?? new List<string>();
+
+                if (implementors.Any())
+                {
+                    sheet.Cells[row, 4].Value = string.Join("\n", implementors);
+                    sheet.Cells[row, 4].Style.WrapText = true;
+                }
+                else
+                {
+                    sheet.Cells[row, 4].Value = "";
+                }
+
+                // Column 5: Division
+                sheet.Cells[row, 5].Value = idea.TargetDivision?.NameDivision ?? "";
+
+                // Column 6: Department
+                sheet.Cells[row, 6].Value = idea.TargetDepartment?.NameDepartment ?? "";
+
+                // Column 7: Category
+                sheet.Cells[row, 7].Value = idea.Category?.CategoryName ?? "";
+
+                // Column 8: Event (optional)
+                sheet.Cells[row, 8].Value = idea.Event?.EventName ?? "";
+
+                // Column 9: Stage
+                sheet.Cells[row, 9].Value = $"S{idea.CurrentStage}";
+                sheet.Cells[row, 9].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                // Column 10: Saving Cost (currency format)
+                sheet.Cells[row, 10].Value = idea.SavingCost;
+                sheet.Cells[row, 10].Style.Numberformat.Format = "$#,##0";
+
+                // Column 11: Status
+                sheet.Cells[row, 11].Value = idea.CurrentStatus ?? "";
+
+                // Column 12: Submitted Date (date format)
+                sheet.Cells[row, 12].Value = idea.SubmittedDate;
+                sheet.Cells[row, 12].Style.Numberformat.Format = "yyyy-mm-dd hh:mm";
+
+                // Apply borders to all cells in this row
+                for (int col = 1; col <= 12; col++)
+                {
+                    sheet.Cells[row, col].Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                    sheet.Cells[row, col].Style.VerticalAlignment = ExcelVerticalAlignment.Top;
+                }
+
+                row++;
+            }
+
+            // Auto-fit columns
+            sheet.Cells[sheet.Dimension.Address].AutoFitColumns();
+
+            // Set minimum column widths for better readability
+            sheet.Column(1).Width = Math.Max(sheet.Column(1).Width, 15);  // Idea ID
+            sheet.Column(2).Width = Math.Max(sheet.Column(2).Width, 40);  // Idea Title
+            sheet.Column(3).Width = Math.Max(sheet.Column(3).Width, 20);  // Initiator
+            sheet.Column(4).Width = Math.Max(sheet.Column(4).Width, 30);  // Implementor
+            sheet.Column(10).Width = Math.Max(sheet.Column(10).Width, 15); // Saving Cost
         }
     }
 

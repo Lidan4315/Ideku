@@ -298,16 +298,22 @@ namespace Ideku.Controllers
             // Determine if user can actually approve/reject this idea
             var user = await _userRepository.GetByUsernameAsync(username);
             bool canTakeAction = false;
-            
+
             if (user?.Role?.RoleName == "Superuser" && ideaForReview.CurrentStatus.StartsWith("Waiting Approval"))
             {
                 canTakeAction = true;
             }
-            else if (user?.Role?.RoleName == "Workstream Leader" && 
-                     ideaForReview.CurrentStage == 0 && 
+            else if (user?.Role?.RoleName == "Workstream Leader" &&
+                     ideaForReview.CurrentStage == 0 &&
                      ideaForReview.CurrentStatus == "Waiting Approval S1")
             {
                 canTakeAction = true;
+            }
+            else if (ideaForReview.CurrentStatus.StartsWith("Waiting Approval"))
+            {
+                // For other roles: Check if user is designated approver for the next stage
+                var approversForNextStage = await _workflowService.GetApproversForNextStageAsync(ideaForReview);
+                canTakeAction = approversForNextStage.Any(a => a.Id == user.Id);
             }
 
             // Get workflow history for this idea
@@ -449,13 +455,13 @@ namespace Ideku.Controllers
             if (ModelState.IsValid)
             {
                 var rejectionReason = viewModel.RejectionReason ?? "No reason provided";
-                
+
                 // Process rejection database operations only (fast)
                 await _workflowService.ProcessRejectionDatabaseAsync((long)id, username, rejectionReason);
-                
+
                 // Send rejection notification in background (non-blocking)
                 SendRejectionEmailInBackground((long)id, username, rejectionReason);
-                
+
                 TempData["SuccessMessage"] = "Idea has been successfully rejected!";
                 return RedirectToAction(nameof(Index));
             }
@@ -470,12 +476,59 @@ namespace Ideku.Controllers
             return View("Review", viewModel);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendFeedback(int id, ApprovalReviewViewModel viewModel)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Challenge();
+            }
+
+            // Clean up ModelState for feedback validation
+            CleanupModelStateForFeedback();
+
+            if (ModelState.IsValid)
+            {
+                var feedbackComment = viewModel.FeedbackComment ?? "No feedback provided";
+
+                // Process feedback database operations only (fast)
+                await _workflowService.ProcessFeedbackAsync((long)id, username, feedbackComment);
+
+                // Send feedback notification in background (non-blocking)
+                SendFeedbackEmailInBackground((long)id, username, feedbackComment);
+
+                TempData["SuccessMessage"] = "Feedback has been successfully sent!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // If model state is invalid, reload the review page
+            var reloadedIdeaForFeedback = await _workflowService.GetIdeaForReview(id, username);
+            if (reloadedIdeaForFeedback == null)
+            {
+                return NotFound();
+            }
+            viewModel.Idea = reloadedIdeaForFeedback;
+            return View("Review", viewModel);
+        }
+
         /// Helper method to clean up ModelState for rejection validation
         private void CleanupModelStateForReject()
         {
             ModelState.Remove("Idea");
             ModelState.Remove("ValidatedSavingCost");
             ModelState.Remove("ApprovalComments");
+            ModelState.Remove("FeedbackComment");
+        }
+
+        /// Helper method to clean up ModelState for feedback validation
+        private void CleanupModelStateForFeedback()
+        {
+            ModelState.Remove("Idea");
+            ModelState.Remove("ValidatedSavingCost");
+            ModelState.Remove("ApprovalComments");
+            ModelState.Remove("RejectionReason");
         }
 
         /// Download attachment file
@@ -591,11 +644,12 @@ namespace Ideku.Controllers
             };
         }
 
-        /// Helper method to clean up ModelState for approval validation  
+        /// Helper method to clean up ModelState for approval validation
         private void CleanupModelStateForApprove()
         {
             ModelState.Remove("Idea");
             ModelState.Remove("RejectionReason");
+            ModelState.Remove("FeedbackComment");
         }
 
         private void SendApprovalEmailInBackground(ApprovalProcessDto approvalData)
@@ -638,6 +692,28 @@ namespace Ideku.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to send background rejection email for idea {IdeaId}", ideaId);
+                }
+            });
+        }
+
+        private void SendFeedbackEmailInBackground(long ideaId, string username, string feedbackComment)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Starting background feedback email process for idea {IdeaId}", ideaId);
+
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
+
+                    await workflowService.SendFeedbackNotificationsAsync(ideaId, username, feedbackComment);
+
+                    _logger.LogInformation("Background feedback email sent successfully for idea {IdeaId}", ideaId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send background feedback email for idea {IdeaId}", ideaId);
                 }
             });
         }

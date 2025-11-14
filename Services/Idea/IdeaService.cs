@@ -1369,6 +1369,7 @@ namespace Ideku.Services.Idea
                 .ThenBy(x => x.Implementator.User.EmployeeId)
                 .Select(x => new TeamRoleItemDto
                 {
+                    EmployeeName = x.Implementator.User.Employee.NAME,
                     EmployeeBN = x.Implementator.User.EmployeeId,
                     TeamRole = x.Implementator.Role,
                     IdeaCode = x.Idea.IdeaCode
@@ -1471,6 +1472,7 @@ namespace Ideku.Services.Idea
                 .ThenBy(x => x.Implementator.User.EmployeeId)
                 .Select(x => new TeamRoleItemDto
                 {
+                    EmployeeName = x.Implementator.User.Employee.NAME,
                     EmployeeBN = x.Implementator.User.EmployeeId,
                     TeamRole = x.Implementator.Role,
                     IdeaCode = x.Idea.IdeaCode
