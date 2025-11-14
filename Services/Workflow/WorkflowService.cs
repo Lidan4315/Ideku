@@ -131,15 +131,74 @@ namespace Ideku.Services.Workflow
             }
             else if (user.Role.RoleName == "Workstream Leader")
             {
-                // Workstream Leader can see:
-                // - Ideas at stage 0 waiting for S1 approval (their responsibility)
-                // - Ideas that were processed at stage 0 (their history)
-                return baseQuery.Where(idea =>
-                    (idea.CurrentStage == 0 && idea.CurrentStatus == "Waiting Approval S1") || // Current responsibility
-                    (idea.CurrentStage >= 1) || // Ideas that have passed their stage
-                    (idea.CurrentStatus.StartsWith("Rejected S0")) // Ideas they rejected
-                ).OrderByDescending(idea => idea.SubmittedDate)
+                // Dynamic WL logic: Get stages where WL is assigned as approver
+                var approverStages = await _workflowManagementService.GetWorkflowStagesByRoleIdAsync(user.RoleId);
+                var approverStagesList = approverStages.ToList();
+
+                if (!approverStagesList.Any())
+                {
+                    // WL role not assigned to any workflow stage - no access
+                    return baseQuery.Where(idea => false);
+                }
+
+                // Calculate minimum stage per workflow where WL is approver
+                var minStagesByWorkflow = approverStagesList
+                    .GroupBy(s => s.WorkflowId)
+                    .ToDictionary(g => g.Key, g => g.Min(s => s.Stage));
+
+                // Get user's effective location
+                var userDivisionId = Helpers.LocationHelper.GetEffectiveDivisionId(user);
+                var userDepartmentId = Helpers.LocationHelper.GetEffectiveDepartmentId(user);
+
+                // Extract workflow IDs for SQL translation
+                var workflowIds = minStagesByWorkflow.Keys.ToList();
+
+                // Filter at database level
+                var query = baseQuery.Where(idea =>
+                    workflowIds.Contains(idea.WorkflowId) &&
+                    (string.IsNullOrEmpty(userDivisionId) || idea.ToDivisionId == userDivisionId) &&
+                    (string.IsNullOrEmpty(userDepartmentId) || idea.ToDepartmentId == userDepartmentId)
+                );
+
+                // Execute database query
+                var ideas = await query.ToListAsync();
+
+                // Filter in-memory for dynamic history logic
+                var filteredIdeas = ideas.Where(idea =>
+                {
+                    if (!minStagesByWorkflow.TryGetValue(idea.WorkflowId, out int minStage))
+                        return false;
+
+                    // WL can see:
+                    // 1. Current responsibility: CurrentStage = minStage - 1 AND Waiting Approval
+                    if (idea.CurrentStage == minStage - 1 && idea.CurrentStatus == $"Waiting Approval S{minStage}")
+                        return true;
+
+                    // 2. History: Ideas that have passed their minimum stage
+                    if (idea.CurrentStage >= minStage)
+                        return true;
+
+                    // 3. Rejected ideas at their stage
+                    if (idea.CurrentStatus == $"Rejected S{minStage - 1}")
+                        return true;
+
+                    return false;
+                })
+                .OrderByDescending(idea => idea.SubmittedDate)
                 .ThenByDescending(idea => idea.Id);
+
+                // Re-query database with filtered IDs
+                var filteredIdeaIds = filteredIdeas.Select(idea => idea.Id).ToList();
+
+                if (!filteredIdeaIds.Any())
+                {
+                    return baseQuery.Where(idea => false);
+                }
+
+                return baseQuery
+                    .Where(idea => filteredIdeaIds.Contains(idea.Id))
+                    .OrderByDescending(idea => idea.SubmittedDate)
+                    .ThenByDescending(idea => idea.Id);
             }
             else
             {
