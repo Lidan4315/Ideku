@@ -258,12 +258,26 @@ namespace Ideku.Controllers
                 }
 
                 var stages = new List<object>();
+
+                // Backward stages (stages before current stage, including Stage 0)
+                for (int i = 0; i < idea.CurrentStage; i++)
+                {
+                    stages.Add(new
+                    {
+                        value = i,
+                        text = $"Stage {i} (Backward)",
+                        isBackward = true
+                    });
+                }
+
+                // Forward stages (stages after current stage)
                 for (int i = idea.CurrentStage + 1; i <= idea.MaxStage; i++)
                 {
                     stages.Add(new
                     {
                         value = i,
-                        text = i == idea.MaxStage ? $"Stage {i} (Approved)" : $"Stage {i}"
+                        text = i == idea.MaxStage ? $"Stage {i} (Approved)" : $"Stage {i}",
+                        isBackward = false
                     });
                 }
 
