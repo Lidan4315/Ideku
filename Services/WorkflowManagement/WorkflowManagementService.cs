@@ -130,5 +130,10 @@ namespace Ideku.Services.WorkflowManagement
         {
             return await _workflowRepository.GetWorkflowStageAsync(workflowId, stage);
         }
+
+        public async Task<IEnumerable<(int WorkflowId, int Stage)>> GetWorkflowStagesByRoleIdAsync(int roleId)
+        {
+            return await _workflowRepository.GetWorkflowStagesByRoleIdAsync(roleId);
+        }
     }
 }

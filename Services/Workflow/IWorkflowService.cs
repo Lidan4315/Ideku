@@ -82,5 +82,12 @@ namespace Ideku.Services.Workflow
         /// <param name="ideaId">ID of the idea</param>
         /// <returns>List of workflow history entries</returns>
         Task<IEnumerable<Models.Entities.WorkflowHistory>> GetWorkflowHistoryByIdeaIdAsync(long ideaId);
+
+        /// <summary>
+        /// Get approvers for the next stage of an idea
+        /// </summary>
+        /// <param name="idea">The idea to get approvers for</param>
+        /// <returns>List of users who can approve the next stage</returns>
+        Task<List<Models.Entities.User>> GetApproversForNextStageAsync(Models.Entities.Idea idea);
     }
 }

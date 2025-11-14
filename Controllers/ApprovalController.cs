@@ -298,16 +298,22 @@ namespace Ideku.Controllers
             // Determine if user can actually approve/reject this idea
             var user = await _userRepository.GetByUsernameAsync(username);
             bool canTakeAction = false;
-            
+
             if (user?.Role?.RoleName == "Superuser" && ideaForReview.CurrentStatus.StartsWith("Waiting Approval"))
             {
                 canTakeAction = true;
             }
-            else if (user?.Role?.RoleName == "Workstream Leader" && 
-                     ideaForReview.CurrentStage == 0 && 
+            else if (user?.Role?.RoleName == "Workstream Leader" &&
+                     ideaForReview.CurrentStage == 0 &&
                      ideaForReview.CurrentStatus == "Waiting Approval S1")
             {
                 canTakeAction = true;
+            }
+            else if (ideaForReview.CurrentStatus.StartsWith("Waiting Approval"))
+            {
+                // For other roles: Check if user is designated approver for the next stage
+                var approversForNextStage = await _workflowService.GetApproversForNextStageAsync(ideaForReview);
+                canTakeAction = approversForNextStage.Any(a => a.Id == user.Id);
             }
 
             // Get workflow history for this idea
