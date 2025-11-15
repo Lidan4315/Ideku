@@ -433,6 +433,88 @@
             </div>
         </div>
     }
+
+    <!-- Supporting Documents Section -->
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-paperclip me-2"></i>Supporting Documents
+            </h5>
+            @if (Model.CanEditCostSavings)
+            {
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadAttachmentModal">
+                    <i class="bi bi-upload me-2"></i>Upload Documents
+                </button>
+            }
+        </div>
+        <div class="card-body">
+            @await Html.PartialAsync("_IdeaAttachments", Model.Idea)
+        </div>
+    </div>
+</div>
+
+<!-- Include File Preview Modal -->
+@await Html.PartialAsync("_FilePreviewModal")
+
+<!-- Upload Attachment Modal -->
+<div class="modal fade" id="uploadAttachmentModal" tabindex="-1" aria-labelledby="uploadAttachmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-upload"></i>
+                    </div>
+                    <h5 class="modal-title mb-0" id="uploadAttachmentModalLabel">Upload Supporting Documents</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="uploadAttachmentForm" enctype="multipart/form-data">
+                <div class="modal-body app-modal-body">
+                    <input type="hidden" name="IdeaId" value="@Model.Idea.Id" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Select Files</label>
+                        <div class="file-upload-container">
+                            <div class="file-upload-header">
+                                <label for="attachmentFileInput" class="btn btn-outline-primary mb-0">
+                                    <i class="bi bi-folder2-open me-2"></i>Browse Files
+                                </label>
+                                <input type="file"
+                                       id="attachmentFileInput"
+                                       name="AttachmentFiles"
+                                       multiple
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+                                       style="display: none;">
+                                <small class="text-muted ms-3">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Allowed: PDF, Word, Excel, PowerPoint, Images (Max 10MB per file, 10MB total)
+                                </small>
+                            </div>
+
+                            <div class="files-list-container mt-3">
+                                <div id="attachmentFilesList"></div>
+                                <div id="noAttachmentFilesMessage" class="text-center text-muted py-3">
+                                    <i class="bi bi-cloud-upload" style="font-size: 2rem; opacity: 0.5;"></i>
+                                    <p class="mt-2 mb-0">No files selected</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="hiddenAttachmentFileInputs"></div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="uploadAttachmentBtn">
+                        <i class="bi bi-upload me-2"></i>Upload Files
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Extend Duration Modal -->
@@ -878,5 +960,224 @@ function openValidateModal(monitoringId, costSaveActualValidated, monthName) {
     $('#validateMonthName').text(monthName);
     $('#validateCostSavingsModal').modal('show');
 }
+
+// ============================================================================
+// FILE UPLOAD HANDLER (from Create.cshtml)
+// ============================================================================
+
+const FILE_CONFIG = {
+    allowedExtensions: ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png'],
+    maxSizePerFile: 10 * 1024 * 1024, // 10MB
+    maxTotalSize: 10 * 1024 * 1024    // 10MB
+};
+
+let selectedAttachmentFiles = [];
+let attachmentFileCounter = 0;
+
+function validateFile(file) {
+    const fileName = file.name.toLowerCase();
+    const fileExt = fileName.substring(fileName.lastIndexOf('.'));
+
+    if (!FILE_CONFIG.allowedExtensions.includes(fileExt)) {
+        return `File type '${fileExt}' is not allowed. Allowed types: ${FILE_CONFIG.allowedExtensions.join(', ')}`;
+    }
+
+    if (file.size > FILE_CONFIG.maxSizePerFile) {
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        return `File '${file.name}' (${fileSizeMB} MB) exceeds the maximum size of 10 MB per file`;
+    }
+
+    return null;
+}
+
+$('#attachmentFileInput').change(function() {
+    const files = Array.from(this.files);
+    if (!files.length) return;
+
+    const currentTotalSize = selectedAttachmentFiles.reduce((sum, f) => sum + f.size, 0);
+    let newFilesSize = 0;
+    const validFiles = [];
+    let errorMessage = '';
+
+    for (const file of files) {
+        errorMessage = validateFile(file);
+        if (errorMessage) break;
+
+        newFilesSize += file.size;
+        validFiles.push(file);
+    }
+
+    const totalSizeAfterAdd = currentTotalSize + newFilesSize;
+    if (!errorMessage && totalSizeAfterAdd > FILE_CONFIG.maxTotalSize) {
+        const totalSizeMB = (totalSizeAfterAdd / (1024 * 1024)).toFixed(2);
+        const maxTotalMB = (FILE_CONFIG.maxTotalSize / (1024 * 1024)).toFixed(0);
+        errorMessage = `Total file size (${totalSizeMB} MB) would exceed the maximum allowed total size of ${maxTotalMB} MB`;
+    }
+
+    if (errorMessage) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'File Validation Failed',
+            text: errorMessage,
+            confirmButtonText: 'OK'
+        });
+        this.value = '';
+        return;
+    }
+
+    validFiles.forEach(file => {
+        const fileObj = {
+            id: attachmentFileCounter++,
+            file: file,
+            name: file.name,
+            size: file.size,
+            type: file.type
+        };
+
+        selectedAttachmentFiles.push(fileObj);
+        addAttachmentFileToList(fileObj);
+        createHiddenAttachmentInput(fileObj);
+    });
+
+    updateAttachmentFilesDisplay();
+    this.value = '';
+});
+
+function addAttachmentFileToList(fileObj) {
+    const fileSize = formatFileSize(fileObj.size);
+    const fileIcon = getFileIcon(fileObj.name);
+
+    const fileItem = `
+        <div class="d-flex align-items-center justify-content-between p-2 border rounded mb-2 bg-white" id="attachmentFile-${fileObj.id}">
+            <div class="d-flex align-items-center">
+                <i class="bi ${fileIcon} fs-4 me-3 text-primary"></i>
+                <div>
+                    <div class="fw-medium">${fileObj.name}</div>
+                    <small class="text-muted">${fileSize}</small>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeAttachmentFile(${fileObj.id})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+
+    $('#attachmentFilesList').append(fileItem);
+}
+
+function removeAttachmentFile(fileId) {
+    selectedAttachmentFiles = selectedAttachmentFiles.filter(f => f.id !== fileId);
+    $(`#attachmentFile-${fileId}`).remove();
+    $(`#hiddenAttachmentFile-${fileId}`).remove();
+    updateAttachmentFilesDisplay();
+}
+
+function createHiddenAttachmentInput(fileObj) {
+    const input = $(`<input type="file" name="AttachmentFiles" id="hiddenAttachmentFile-${fileObj.id}" style="display:none" />`);
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(fileObj.file);
+    input[0].files = dataTransfer.files;
+    $('#hiddenAttachmentFileInputs').append(input);
+}
+
+function updateAttachmentFilesDisplay() {
+    const noFilesMsg = $('#noAttachmentFilesMessage');
+    if (selectedAttachmentFiles.length === 0) {
+        noFilesMsg.show();
+    } else {
+        noFilesMsg.hide();
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getFileIcon(filename) {
+    const ext = filename.toLowerCase().split('.').pop();
+    const icons = {
+        'pdf': 'bi-file-earmark-pdf',
+        'doc': 'bi-file-earmark-word',
+        'docx': 'bi-file-earmark-word',
+        'xls': 'bi-file-earmark-excel',
+        'xlsx': 'bi-file-earmark-excel',
+        'ppt': 'bi-file-earmark-ppt',
+        'pptx': 'bi-file-earmark-ppt',
+        'jpg': 'bi-file-earmark-image',
+        'jpeg': 'bi-file-earmark-image',
+        'png': 'bi-file-earmark-image',
+        'gif': 'bi-file-earmark-image'
+    };
+    return icons[ext] || 'bi-file-earmark';
+}
+
+window.removeAttachmentFile = removeAttachmentFile;
+
+// Form Submit
+$('#uploadAttachmentForm').submit(function(e) {
+    e.preventDefault();
+
+    if (selectedAttachmentFiles.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Files Selected',
+            text: 'Please select at least one file to upload.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    const submitBtn = $('#uploadAttachmentBtn');
+    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Uploading...');
+
+    const formData = new FormData(this);
+    formData.append('__RequestVerificationToken', $('input[name="__RequestVerificationToken"]').val());
+
+    $.ajax({
+        url: '@Url.Action("UploadAttachments", "IdeaMonitoring")',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: response.message || 'Files uploaded successfully',
+                    confirmButtonText: 'OK'
+                }).then(function() {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Upload Failed',
+                    text: response.message || 'Failed to upload files',
+                    confirmButtonText: 'Try Again'
+                });
+                submitBtn.prop('disabled', false).html('<i class="bi bi-upload me-2"></i>Upload Files');
+            }
+        },
+        error: function(xhr) {
+            let errorMessage = 'An unexpected error occurred';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: errorMessage,
+                confirmButtonText: 'Try Again'
+            });
+            submitBtn.prop('disabled', false).html('<i class="bi bi-upload me-2"></i>Upload Files');
+        }
+    });
+});
 </script>
 }

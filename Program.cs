@@ -92,6 +92,7 @@ builder.Services.AddScoped<Ideku.Services.ChangeWorkflow.IChangeWorkflowService,
 builder.Services.AddScoped<Ideku.Services.BypassStage.IBypassStageService, Ideku.Services.BypassStage.BypassStageService>();
 builder.Services.AddScoped<Ideku.Services.IdeaMonitoring.IIdeaMonitoringService, Ideku.Services.IdeaMonitoring.IdeaMonitoringService>();
 builder.Services.AddScoped<Ideku.Services.AccessControl.IAccessControlService, Ideku.Services.AccessControl.AccessControlService>();
+builder.Services.AddScoped<Ideku.Services.FileAttachment.IFileAttachmentService, Ideku.Services.FileAttachment.FileAttachmentService>();
 
 // Register Background Services
 builder.Services.AddHostedService<Ideku.Services.BackgroundServices.ActingRoleReversionService>();
