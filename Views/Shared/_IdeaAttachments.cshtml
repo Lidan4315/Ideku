@@ -5,8 +5,8 @@
     @foreach (var file in Model.AttachmentFiles.Split(';', StringSplitOptions.RemoveEmptyEntries))
     {
         var filename = System.IO.Path.GetFileName(file);
-        var viewUrl = Url.Action("ViewAttachment", "Approval", new { filename = filename, ideaId = Model.Id });
-        var downloadUrl = Url.Action("DownloadAttachment", "Approval", new { filename = filename, ideaId = Model.Id });
+        var viewUrl = $"/attached/view/{Model.Id}/{Uri.EscapeDataString(filename)}";
+        var downloadUrl = $"/attached/download/{Model.Id}/{Uri.EscapeDataString(filename)}";
 
         <div class="attachment-item d-flex justify-content-between align-items-center mb-2">
             <span class="filename text-truncate me-2" title="@filename">

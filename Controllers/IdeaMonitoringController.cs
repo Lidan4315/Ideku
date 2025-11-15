@@ -67,6 +67,9 @@ namespace Ideku.Controllers
             // Get ideas based on user role (same as IdeaList)
             var ideasQuery = await _ideaService.GetAllIdeasQueryAsync(username);
 
+            // Filter only ideas in Stage 3 and above for monitoring
+            ideasQuery = ideasQuery.Where(i => i.CurrentStage >= 3);
+
             // Apply filters
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -159,6 +162,9 @@ namespace Ideku.Controllers
 
             // Get base queryable with role-based filtering
             var ideasQuery = await _ideaService.GetAllIdeasQueryAsync(username);
+
+            // Filter only ideas in Stage 3 and above for monitoring
+            ideasQuery = ideasQuery.Where(i => i.CurrentStage >= 3);
 
             // Apply filters (same logic as Index method)
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -444,5 +450,41 @@ namespace Ideku.Controllers
 
             return Json(new { success = result.Success, message = result.Message });
         }
+
+        // POST: IdeaMonitoring/UploadAttachments
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadAttachments(long ideaId, List<IFormFile> attachmentFiles)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+
+            if (attachmentFiles == null || !attachmentFiles.Any())
+            {
+                return Json(new { success = false, message = "No files selected" });
+            }
+
+            try
+            {
+                // Use MonitoringService for file upload (includes permission check)
+                var result = await _monitoringService.UploadMonitoringAttachmentsAsync(ideaId, attachmentFiles, username);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Monitoring attachments uploaded for Idea {IdeaId} by user {Username}", ideaId, username);
+                }
+
+                return Json(new { success = result.Success, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading monitoring attachments for Idea {IdeaId}", ideaId);
+                return Json(new { success = false, message = "Error uploading files. Please try again." });
+            }
+        }
+
     }
 }

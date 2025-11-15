@@ -99,40 +99,7 @@
             </div>
             <div class="form-group-view mb-3">
                 <label>Attachments</label>
-                @if (!string.IsNullOrEmpty(Model.Idea.AttachmentFiles))
-                {
-                    @foreach (var file in Model.Idea.AttachmentFiles.Split(';', StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        var filename = System.IO.Path.GetFileName(file);
-                        var viewUrl = Url.Action("ViewAttachment", new { filename = filename, ideaId = Model.Idea.Id });
-                        var downloadUrl = Url.Action("DownloadAttachment", new { filename = filename, ideaId = Model.Idea.Id });
-
-                        <div class="attachment-item d-flex justify-content-between align-items-center mb-2">
-                            <span class="filename text-truncate me-2" title="@filename">
-                                <i class="bi bi-paperclip me-1"></i>@filename
-                            </span>
-                            <div class="attachment-actions">
-                                <button type="button" 
-                                        class="btn btn-sm btn-outline-secondary view-attachment-btn" 
-                                        data-filename="@filename"
-                                        data-view-url="@viewUrl"
-                                        data-download-url="@downloadUrl"
-                                        title="View @filename">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <a href="@downloadUrl" 
-                                   class="btn btn-sm btn-outline-secondary ms-1"
-                                   title="Download @filename">
-                                    <i class="bi bi-download"></i>
-                                </a>
-                            </div>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <p class="text-muted">No attachments</p>
-                }
+                @await Html.PartialAsync("_IdeaAttachments", Model.Idea)
             </div>
         </div>
     </div>

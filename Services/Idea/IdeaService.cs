@@ -163,9 +163,16 @@ namespace Ideku.Services.Idea
 
                 // Generate IdeaCode based on the actual ID
                 var ideaCode = _ideaRepository.GenerateIdeaCodeFromId(createdIdea.Id);
-                
+
                 // Handle file uploads with proper naming now that we have idea code
-                var attachmentPaths = await HandleFileUploadsWithNamingAsync(files, ideaCode, createdIdea.CurrentStage);
+                var existingFilesCount = Helpers.FileUploadHelper.GetExistingFilesCount(ideaCode, _webHostEnvironment.WebRootPath);
+                var attachmentPaths = await Helpers.FileUploadHelper.HandleFileUploadsAsync(
+                    files,
+                    ideaCode,
+                    _webHostEnvironment.WebRootPath,
+                    stage: createdIdea.CurrentStage,
+                    existingFilesCount: existingFilesCount
+                );
                 
                 // Update IdeaCode and AttachmentFiles
                 await _ideaRepository.UpdateIdeaCodeAsync(createdIdea.Id, ideaCode);
@@ -224,56 +231,6 @@ namespace Ideku.Services.Idea
             };
         }
 
-        #region Private Methods
-
-        private async Task<List<string>> HandleFileUploadsWithNamingAsync(List<IFormFile>? files, string ideaCode, int currentStage)
-        {
-            var filePaths = new List<string>();
-
-            if (files == null || !files.Any())
-                return filePaths;
-
-            // Create uploads directory if it doesn't exist
-            var uploadsPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "ideas");
-            if (!Directory.Exists(uploadsPath))
-            {
-                Directory.CreateDirectory(uploadsPath);
-            }
-
-            // Get existing files count for sequential numbering (ALL files from this idea)
-            var ideaPattern = $"{ideaCode}_";
-            var existingFiles = Directory.GetFiles(uploadsPath)
-                .Where(f => Path.GetFileName(f).StartsWith(ideaPattern))
-                .ToList();
-
-            int fileCounter = existingFiles.Count + 1;
-            foreach (var file in files)
-            {
-                if (file.Length > 0)
-                {
-                    var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
-                    // Generate filename with format: ideaCode_S(currentStage)_00X.extension
-                    var fileName = $"{ideaCode}_S{currentStage}_{fileCounter:D3}{fileExtension}";
-                    var filePath = Path.Combine(uploadsPath, fileName);
-
-                    // Save file
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    // Store relative path
-                    filePaths.Add($"uploads/ideas/{fileName}");
-                    fileCounter++;
-                }
-            }
-
-            return filePaths;
-        }
-
-        #endregion
-
         #region Idea List Methods
 
         public async Task<IQueryable<Models.Entities.Idea>> GetAllIdeasQueryAsync(string username)
@@ -290,12 +247,14 @@ namespace Ideku.Services.Idea
             // Apply role-based filtering
             if (user.Role.RoleName == "Superuser")
             {
-                // Superuser can see ALL ideas regardless of status or ownership
+                // Superuser can see ALL ideas
                 return baseQuery.OrderByDescending(idea => idea.SubmittedDate)
                     .ThenByDescending(idea => idea.Id);
             }
-            else if (user.Role.RoleName == "Workstream Leader")
+            else
             {
+                // All non-Superuser roles: filter by division and department
+                // Access control (via ModuleAuthorize) determines which roles can access this data
                 var userDivision = user.Employee?.DIVISION;
                 var userDepartment = user.Employee?.DEPARTEMENT;
 
@@ -304,8 +263,8 @@ namespace Ideku.Services.Idea
                     return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
                 }
 
-                // Workstream Leader can see:
-                // 1. Ideas for their division and department
+                // Users can see:
+                // 1. Ideas targeted to their division and department
                 // 2. Ideas where their division is in RelatedDivisionsJson
                 return baseQuery.Where(idea =>
                     // Ideas targeted to their division/department
@@ -316,9 +275,6 @@ namespace Ideku.Services.Idea
                 ).OrderByDescending(idea => idea.SubmittedDate)
                 .ThenByDescending(idea => idea.Id);
             }
-
-            // For other roles, return empty for now (will be implemented later)
-            return Enumerable.Empty<Models.Entities.Idea>().AsQueryable();
         }
 
         #endregion
