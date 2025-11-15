@@ -223,7 +223,7 @@ namespace Ideku.Controllers
                     savingCostValidated = i.SavingCostValidated,
                     currentStatus = i.CurrentStatus,
                     submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
-                    detailUrl = Url.Action("Details", new { id = i.Id })
+                    detailUrl = Url.Action("Detail", new { id = i.Id })
                 }),
                 pagination = new {
                     currentPage = pagedResult.Page,
