@@ -147,5 +147,18 @@ namespace Ideku.Data.Repositories
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<bool> IsIdeaNameExistsAsync(string ideaName, long? excludeIdeaId = null)
+        {
+            var query = _context.Ideas
+                .Where(i => !i.IsDeleted && i.IdeaName == ideaName);
+
+            if (excludeIdeaId.HasValue)
+            {
+                query = query.Where(i => i.Id != excludeIdeaId.Value);
+            }
+
+            return await query.AnyAsync();
+        }
     }
 }

@@ -79,6 +79,20 @@ namespace Ideku.Services.Idea
         {
             try
             {
+                // VALIDATE FILES FIRST - before creating idea in database
+                var fileValidation = Helpers.FileUploadHelper.ValidateFiles(files);
+                if (!fileValidation.IsValid)
+                {
+                    return (false, fileValidation.ErrorMessage, null);
+                }
+
+                // Validate Idea Name uniqueness
+                var ideaNameExists = await _ideaRepository.IsIdeaNameExistsAsync(model.IdeaName);
+                if (ideaNameExists)
+                {
+                    return (false, "An idea with this name already exists. Please use a different name.", null);
+                }
+
                 // Validate employee exists
                 var employee = await _employeeRepository.GetByEmployeeIdAsync(model.BadgeNumber);
                 if (employee == null)
@@ -237,20 +251,7 @@ namespace Ideku.Services.Idea
             {
                 if (file.Length > 0)
                 {
-                    // Validate file type
-                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png" };
                     var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                    
-                    if (!allowedExtensions.Contains(fileExtension))
-                    {
-                        throw new InvalidOperationException($"File type {fileExtension} is not allowed. Allowed types: {string.Join(", ", allowedExtensions)}");
-                    }
-
-                    // Validate file size (max 10MB)
-                    if (file.Length > 10 * 1024 * 1024)
-                    {
-                        throw new InvalidOperationException($"File {file.FileName} is too large. Maximum size is 10MB.");
-                    }
 
                     // Generate filename with format: ideaCode_S(currentStage)_00X.extension
                     var fileName = $"{ideaCode}_S{currentStage}_{fileCounter:D3}{fileExtension}";
@@ -265,58 +266,6 @@ namespace Ideku.Services.Idea
                     // Store relative path
                     filePaths.Add($"uploads/ideas/{fileName}");
                     fileCounter++;
-                }
-            }
-
-            return filePaths;
-        }
-
-        // Keep the old method for backward compatibility if needed
-        private async Task<List<string>> HandleFileUploadsAsync(List<IFormFile>? files)
-        {
-            var filePaths = new List<string>();
-
-            if (files == null || !files.Any())
-                return filePaths;
-
-            // Create uploads directory if it doesn't exist
-            var uploadsPath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "ideas");
-            if (!Directory.Exists(uploadsPath))
-            {
-                Directory.CreateDirectory(uploadsPath);
-            }
-
-            foreach (var file in files)
-            {
-                if (file.Length > 0)
-                {
-                    // Validate file type (optional)
-                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png" };
-                    var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                    
-                    if (!allowedExtensions.Contains(fileExtension))
-                    {
-                        throw new InvalidOperationException($"File type {fileExtension} is not allowed. Allowed types: {string.Join(", ", allowedExtensions)}");
-                    }
-
-                    // Validate file size (max 10MB)
-                    if (file.Length > 10 * 1024 * 1024)
-                    {
-                        throw new InvalidOperationException($"File {file.FileName} is too large. Maximum size is 10MB.");
-                    }
-
-                    // Generate unique filename
-                    var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-                    var filePath = Path.Combine(uploadsPath, fileName);
-
-                    // Save file
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    // Store relative path
-                    filePaths.Add($"uploads/ideas/{fileName}");
                 }
             }
 
@@ -1886,6 +1835,11 @@ namespace Ideku.Services.Idea
 
             var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
             return pagedResult;
+        }
+
+        public async Task<bool> IsIdeaNameExistsAsync(string ideaName, long? excludeIdeaId = null)
+        {
+            return await _ideaRepository.IsIdeaNameExistsAsync(ideaName, excludeIdeaId);
         }
 
         #endregion

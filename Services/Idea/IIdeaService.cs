@@ -34,5 +34,8 @@ namespace Ideku.Services.Idea
         // Filters
         Task<List<int>> GetAvailableStagesAsync();
         Task<List<string>> GetAvailableStatusesAsync();
+
+        // Validation
+        Task<bool> IsIdeaNameExistsAsync(string ideaName, long? excludeIdeaId = null);
     }
 }

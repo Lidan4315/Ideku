@@ -736,6 +736,13 @@ namespace Ideku.Services.Workflow
             var idea = await _ideaRepository.GetByIdAsync(ideaId);
             if (idea == null) return;
 
+            // Validate files before uploading
+            var fileValidation = Helpers.FileUploadHelper.ValidateFiles(files);
+            if (!fileValidation.IsValid)
+            {
+                throw new InvalidOperationException(fileValidation.ErrorMessage);
+            }
+
             var newFilePaths = await HandleFileUploadsAsync(files, idea.IdeaCode, stage, true);
             
             if (newFilePaths.Any())
@@ -778,18 +785,7 @@ namespace Ideku.Services.Workflow
             {
                 if (file.Length > 0)
                 {
-                    var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png" };
                     var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                    
-                    if (!allowedExtensions.Contains(fileExtension))
-                    {
-                        throw new InvalidOperationException($"File type {fileExtension} is not allowed");
-                    }
-
-                    if (file.Length > 10 * 1024 * 1024)
-                    {
-                        throw new InvalidOperationException($"File {file.FileName} is too large. Maximum size is 10MB");
-                    }
 
                     var fileName = $"{ideaCode}_S{stage}_{fileCounter:D3}{fileExtension}";
                     var filePath = Path.Combine(uploadsPath, fileName);

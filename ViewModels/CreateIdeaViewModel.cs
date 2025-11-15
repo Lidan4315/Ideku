@@ -60,7 +60,6 @@ namespace Ideku.ViewModels
 
         // Financial Impact Section
         [Required(ErrorMessage = "Saving Cost is required")]
-        [Range(1, long.MaxValue, ErrorMessage = "Saving Cost must be greater than 0")]
         [Display(Name = "Saving Cost (USD)")]
         public long? SavingCost { get; set; }
 
