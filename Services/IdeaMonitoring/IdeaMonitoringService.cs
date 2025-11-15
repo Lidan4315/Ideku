@@ -9,17 +9,20 @@ namespace Ideku.Services.IdeaMonitoring
         private readonly IIdeaMonitoringRepository _monitoringRepository;
         private readonly IIdeaRepository _ideaRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<IdeaMonitoringService> _logger;
 
         public IdeaMonitoringService(
             IIdeaMonitoringRepository monitoringRepository,
             IIdeaRepository ideaRepository,
             IUserRepository userRepository,
+            IWebHostEnvironment webHostEnvironment,
             ILogger<IdeaMonitoringService> logger)
         {
             _monitoringRepository = monitoringRepository;
             _ideaRepository = ideaRepository;
             _userRepository = userRepository;
+            _webHostEnvironment = webHostEnvironment;
             _logger = logger;
         }
 
@@ -347,6 +350,66 @@ namespace Ideku.Services.IdeaMonitoring
             {
                 _logger.LogError(ex, "Error extending monitoring duration for Idea {IdeaId}", ideaId);
                 return (false, $"Error extending monitoring duration: {ex.Message}");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> UploadMonitoringAttachmentsAsync(long ideaId, List<IFormFile> files, string username)
+        {
+            try
+            {
+                // Get idea
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return (false, "Idea not found");
+                }
+
+                // Check permission - must be able to edit cost savings
+                var canEdit = await CanEditCostSavingsAsync(ideaId, username);
+                if (!canEdit)
+                {
+                    return (false, "You do not have permission to upload attachments for this idea");
+                }
+
+                // Validate files
+                var fileValidation = Helpers.FileUploadHelper.ValidateFiles(files);
+                if (!fileValidation.IsValid)
+                {
+                    return (false, fileValidation.ErrorMessage);
+                }
+
+                // Get existing files count for sequential numbering
+                var existingFilesCount = Helpers.FileUploadHelper.GetExistingFilesCount(idea.IdeaCode, _webHostEnvironment.WebRootPath);
+
+                // Upload files using FileUploadHelper (with null stage for monitoring files = "M" prefix)
+                var uploadedFilePaths = await Helpers.FileUploadHelper.HandleFileUploadsAsync(
+                    files,
+                    idea.IdeaCode,
+                    _webHostEnvironment.WebRootPath,
+                    stage: null, // null = monitoring files (M prefix)
+                    existingFilesCount: existingFilesCount
+                );
+
+                // Update idea AttachmentFiles field
+                var existingFiles = string.IsNullOrEmpty(idea.AttachmentFiles)
+                    ? new List<string>()
+                    : idea.AttachmentFiles.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+                var allFiles = existingFiles.Concat(uploadedFilePaths).ToList();
+                idea.AttachmentFiles = string.Join(";", allFiles);
+                idea.UpdatedDate = DateTime.Now;
+
+                await _ideaRepository.UpdateAsync(idea);
+
+                _logger.LogInformation("{Count} monitoring attachment(s) uploaded for Idea {IdeaId} by user {Username}",
+                    files.Count, ideaId, username);
+
+                return (true, $"{files.Count} file(s) uploaded successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading monitoring attachments for Idea {IdeaId}", ideaId);
+                return (false, $"Error uploading files: {ex.Message}");
             }
         }
     }
