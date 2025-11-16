@@ -37,5 +37,9 @@ namespace Ideku.Services.Idea
 
         // Validation
         Task<bool> IsIdeaNameExistsAsync(string ideaName, long? excludeIdeaId = null);
+
+        // Inactive Management
+        Task<(bool Success, string Message)> ReactivateIdeaAsync(long ideaId, string activatedBy);
+        Task SendReactivationEmailAsync(long ideaId);
     }
 }

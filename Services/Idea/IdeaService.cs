@@ -1,4 +1,5 @@
 using Ideku.Data.Repositories;
+using Ideku.Data.Context;
 using Ideku.ViewModels;
 using Ideku.ViewModels.Common;
 using Ideku.Models.Entities;
@@ -7,8 +8,10 @@ using Ideku.Services.WorkflowManagement;
 using Ideku.Services.Lookup;
 using Ideku.Services.UserManagement;
 using Ideku.Services.Workflow;
+using Ideku.Services.Notification;
 using Ideku.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Ideku.Services.Idea
 {
@@ -23,6 +26,9 @@ namespace Ideku.Services.Idea
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IUserManagementService _userManagementService;
         private readonly IWorkflowService _workflowService;
+        private readonly AppDbContext _context;
+        private readonly INotificationService _notificationService;
+        private readonly ILogger<IdeaService> _logger;
 
         public IdeaService(
             IIdeaRepository ideaRepository,
@@ -33,7 +39,10 @@ namespace Ideku.Services.Idea
             IEmployeeRepository employeeRepository,
             IWebHostEnvironment webHostEnvironment,
             IUserManagementService userManagementService,
-            IWorkflowService workflowService)
+            IWorkflowService workflowService,
+            AppDbContext context,
+            INotificationService notificationService,
+            ILogger<IdeaService> logger)
         {
             _ideaRepository = ideaRepository;
             _userRepository = userRepository;
@@ -44,6 +53,9 @@ namespace Ideku.Services.Idea
             _webHostEnvironment = webHostEnvironment;
             _userManagementService = userManagementService;
             _workflowService = workflowService;
+            _context = context;
+            _notificationService = notificationService;
+            _logger = logger;
         }
 
         public async Task<CreateIdeaViewModel> PrepareCreateViewModelAsync(string username)
@@ -1796,6 +1808,170 @@ namespace Ideku.Services.Idea
         public async Task<bool> IsIdeaNameExistsAsync(string ideaName, long? excludeIdeaId = null)
         {
             return await _ideaRepository.IsIdeaNameExistsAsync(ideaName, excludeIdeaId);
+        }
+
+        #endregion
+
+        #region Inactive Management
+
+        /// <summary>
+        /// Reactivate inactive idea and send notification to approvers (Superuser only)
+        /// </summary>
+        public async Task<(bool Success, string Message)> ReactivateIdeaAsync(long ideaId, string activatedBy)
+        {
+            try
+            {
+                var idea = await _context.Ideas
+                    .Include(i => i.WorkflowHistories)
+                    .Include(i => i.Workflow)
+                    .Include(i => i.InitiatorUser)
+                        .ThenInclude(u => u.Employee)
+                    .Include(i => i.TargetDivision)
+                    .Include(i => i.TargetDepartment)
+                    .Include(i => i.Category)
+                    .FirstOrDefaultAsync(i => i.Id == ideaId);
+
+                if (idea == null)
+                {
+                    return (false, "Idea not found.");
+                }
+
+                if (!idea.IsRejected || idea.CurrentStatus != "Inactive")
+                {
+                    return (false, "Only inactive ideas can be reactivated.");
+                }
+
+                // ========================================
+                // STEP 1: Cari status sebelumnya dari WorkflowHistory
+                // ========================================
+                var lastAutoReject = idea.WorkflowHistories
+                    .Where(h => h.Action == "Auto-Rejected")
+                    .OrderByDescending(h => h.Timestamp)
+                    .FirstOrDefault();
+
+                string previousStatus = "Waiting Approval S1"; // Default fallback
+
+                if (lastAutoReject?.Comments != null)
+                {
+                    // Extract dari comment: "Previous status: Waiting Approval S2"
+                    var match = System.Text.RegularExpressions.Regex.Match(
+                        lastAutoReject.Comments,
+                        @"Previous status: (.+)$"
+                    );
+                    if (match.Success)
+                    {
+                        previousStatus = match.Groups[1].Value;
+                    }
+                }
+                else
+                {
+                    // Fallback: reconstruct dari CurrentStage
+                    if (idea.CurrentStage == 0)
+                    {
+                        previousStatus = "Waiting Approval S1";
+                    }
+                    else if (idea.CurrentStage >= idea.MaxStage)
+                    {
+                        previousStatus = "Approved"; // Edge case
+                    }
+                    else
+                    {
+                        previousStatus = $"Waiting Approval S{idea.CurrentStage + 1}";
+                    }
+                }
+
+                // ========================================
+                // STEP 2: REACTIVATE idea
+                // ========================================
+                idea.IsRejected = false;
+                idea.CurrentStatus = previousStatus; // Restore status sebelumnya
+                idea.RejectedReason = null;
+                idea.UpdatedDate = DateTime.Now; // Reset 60 day counter
+                idea.CompletedDate = null;
+
+                // ========================================
+                // STEP 3: Log ke WorkflowHistory
+                // ========================================
+                var activator = await _userRepository.GetByUsernameAsync(activatedBy);
+                if (activator != null)
+                {
+                    var history = new WorkflowHistory
+                    {
+                        IdeaId = ideaId,
+                        ActorUserId = activator.Id,
+                        FromStage = idea.CurrentStage,
+                        ToStage = idea.CurrentStage,
+                        Action = "Reactivated",
+                        Comments = $"Idea reactivated by {activator.Employee?.NAME} ({activator.EmployeeId})",
+                        Timestamp = DateTime.Now
+                    };
+                    _context.WorkflowHistories.Add(history);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Email will be sent in background by controller
+                return (true, $"✅ Idea {idea.IdeaCode} successfully reactivated!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating idea {IdeaId}", ideaId);
+                return (false, $"Error reactivating idea: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Send reactivation email notification to approvers (called by background job)
+        /// </summary>
+        public async Task SendReactivationEmailAsync(long ideaId)
+        {
+            try
+            {
+                var idea = await _context.Ideas
+                    .Include(i => i.Workflow)
+                    .Include(i => i.InitiatorUser)
+                        .ThenInclude(u => u.Employee)
+                    .Include(i => i.TargetDivision)
+                    .Include(i => i.TargetDepartment)
+                    .Include(i => i.Category)
+                    .FirstOrDefaultAsync(i => i.Id == ideaId);
+
+                if (idea == null)
+                {
+                    _logger.LogWarning("Cannot send reactivation email: Idea {IdeaId} not found", ideaId);
+                    return;
+                }
+
+                // Get approvers for current stage
+                var approvers = await _workflowService.GetApproversForNextStageAsync(idea);
+
+                if (!approvers.Any())
+                {
+                    _logger.LogWarning("No approvers found for reactivated idea {IdeaId} at stage {Stage}",
+                        ideaId, idea.CurrentStage + 1);
+                    return;
+                }
+
+                // Send email notification
+                try
+                {
+                    await _notificationService.NotifyIdeaSubmitted(idea, approvers);
+
+                    _logger.LogInformation(
+                        "Reactivation notification sent for idea {IdeaId} to {ApproverCount} approvers at stage {Stage}",
+                        ideaId, approvers.Count, idea.CurrentStage + 1
+                    );
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Failed to send reactivation email for idea {IdeaId}", ideaId);
+                    // Don't fail just because email failed
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending reactivation email for idea {IdeaId}", ideaId);
+            }
         }
 
         #endregion
