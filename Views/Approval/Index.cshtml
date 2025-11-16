@@ -82,7 +82,14 @@
                         <tbody id="ideas-table-body">
                             @foreach (var idea in Model.IdeasForApproval)
                             {
-                                <tr style="cursor: pointer;" onclick="window.location='@Url.Action("Review", "Approval", new { id = idea.Id })'">
+                                var rowClass = idea.CurrentStatus switch
+                                {
+                                    "Completed" => "table-success",
+                                    "Inactive" => "table-active",
+                                    var s when s.StartsWith("Rejected") => "table-danger",
+                                    _ => ""
+                                };
+                                <tr class="@rowClass" style="cursor: pointer;" onclick="window.location='@Url.Action("Review", "Approval", new { id = idea.Id })'">
                                     <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
                                     <td>
                                         <div class="truncate-title" title="@idea.IdeaName">

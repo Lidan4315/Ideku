@@ -163,7 +163,14 @@
                         <tbody id="ideas-table-body">
                             @foreach (var idea in Model.Ideas)
                             {
-                                <tr style="cursor: pointer;" onclick="openChangeWorkflowModal(@idea.Id, '@idea.IdeaCode', '@(idea.Workflow?.WorkflowName ?? "N/A")', @idea.WorkflowId)">
+                                var rowClass = idea.CurrentStatus switch
+                                {
+                                    "Completed" => "table-success",
+                                    "Inactive" => "table-active",
+                                    var s when s.StartsWith("Rejected") => "table-danger",
+                                    _ => ""
+                                };
+                                <tr class="@rowClass" style="cursor: pointer;" onclick="openChangeWorkflowModal(@idea.Id, '@idea.IdeaCode', '@(idea.Workflow?.WorkflowName ?? "N/A")', @idea.WorkflowId)">
                                     <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
                                     <td>
                                         <div class="truncate-title" title="@idea.IdeaName">
