@@ -287,6 +287,9 @@ namespace Ideku.Controllers
                     HasMonitoring = monitorings.Any()
                 };
 
+                // Set flag for inactive idea to disable UI elements
+                ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
+
                 return View(viewModel);
             }
             catch (Exception ex)
@@ -312,6 +315,13 @@ namespace Ideku.Controllers
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
                 return Json(new { success = false, message = "Validation failed", errors });
+            }
+
+            // Validate idea is not inactive
+            var idea = await _ideaRepository.GetByIdAsync(model.IdeaId);
+            if (idea != null && idea.IsRejected && idea.CurrentStatus == "Inactive")
+            {
+                return Json(new { success = false, message = "Cannot create monitoring for inactive idea." });
             }
 
             var result = await _monitoringService.CreateMonitoringAsync(
@@ -353,6 +363,13 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = "Validation failed", errors });
             }
 
+            // Validate idea is not inactive
+            var monitoring = await _monitoringService.GetMonitoringByIdAsync(model.MonitoringId);
+            if (monitoring?.Idea != null && monitoring.Idea.IsRejected && monitoring.Idea.CurrentStatus == "Inactive")
+            {
+                return Json(new { success = false, message = "Cannot update cost savings for inactive idea." });
+            }
+
             var result = await _monitoringService.UpdateCostSavingsAsync(
                 model.MonitoringId,
                 model.CostSavePlan,
@@ -385,6 +402,13 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = "Validation failed", errors });
             }
 
+            // Validate idea is not inactive
+            var monitoring = await _monitoringService.GetMonitoringByIdAsync(model.MonitoringId);
+            if (monitoring?.Idea != null && monitoring.Idea.IsRejected && monitoring.Idea.CurrentStatus == "Inactive")
+            {
+                return Json(new { success = false, message = "Cannot validate cost savings for inactive idea." });
+            }
+
             var result = await _monitoringService.UpdateCostSaveValidatedAsync(
                 model.MonitoringId,
                 model.CostSaveActualValidated,
@@ -408,6 +432,13 @@ namespace Ideku.Controllers
             if (string.IsNullOrEmpty(username))
             {
                 return Json(new { success = false, message = "Unauthorized" });
+            }
+
+            // Validate idea is not inactive
+            var monitoring = await _monitoringService.GetMonitoringByIdAsync(id);
+            if (monitoring?.Idea != null && monitoring.Idea.IsRejected && monitoring.Idea.CurrentStatus == "Inactive")
+            {
+                return Json(new { success = false, message = "Cannot delete monitoring for inactive idea." });
             }
 
             var result = await _monitoringService.DeleteMonitoringAsync(id, username);
@@ -435,6 +466,13 @@ namespace Ideku.Controllers
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
                 return Json(new { success = false, message = "Validation failed", errors });
+            }
+
+            // Validate idea is not inactive
+            var idea = await _ideaRepository.GetByIdAsync(model.IdeaId);
+            if (idea != null && idea.IsRejected && idea.CurrentStatus == "Inactive")
+            {
+                return Json(new { success = false, message = "Cannot extend duration for inactive idea." });
             }
 
             var result = await _monitoringService.ExtendDurationAsync(
@@ -465,6 +503,13 @@ namespace Ideku.Controllers
             if (attachmentFiles == null || !attachmentFiles.Any())
             {
                 return Json(new { success = false, message = "No files selected" });
+            }
+
+            // Validate idea is not inactive
+            var idea = await _ideaRepository.GetByIdAsync(ideaId);
+            if (idea != null && idea.IsRejected && idea.CurrentStatus == "Inactive")
+            {
+                return Json(new { success = false, message = "Cannot upload attachments for inactive idea." });
             }
 
             try

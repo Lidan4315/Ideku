@@ -116,7 +116,9 @@ namespace Ideku.Services.Workflow
             }
 
             // Get base queryable for ideas with all necessary includes
-            var baseQuery = _ideaRepository.GetQueryableWithIncludes();
+            // IMPORTANT: Filter out inactive ideas - they should not appear in approval queue
+            var baseQuery = _ideaRepository.GetQueryableWithIncludes()
+                .Where(idea => !idea.IsRejected || idea.CurrentStatus != "Inactive");
 
             // Apply role-based filtering using the same logic as GetPendingApprovalsForUserAsync
             if (user.Role.RoleName == "Superuser")

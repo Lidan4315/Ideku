@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Ideku.Services.Idea;
 using Ideku.Services.Lookup;
 using Ideku.Services.ChangeWorkflow;
+using Ideku.Data.Repositories;
 using Ideku.Data.Repositories.WorkflowManagement;
 using Ideku.ViewModels.ChangeWorkflow;
 using Ideku.Extensions;
@@ -21,6 +22,7 @@ namespace Ideku.Controllers
     public class ChangeWorkflowController : Controller
     {
         private readonly IIdeaService _ideaService;
+        private readonly IIdeaRepository _ideaRepository;
         private readonly ILookupService _lookupService;
         private readonly IChangeWorkflowService _changeWorkflowService;
         private readonly IWorkflowManagementRepository _workflowManagementRepository;
@@ -28,12 +30,14 @@ namespace Ideku.Controllers
 
         public ChangeWorkflowController(
             IIdeaService ideaService,
+            IIdeaRepository ideaRepository,
             ILookupService lookupService,
             IChangeWorkflowService changeWorkflowService,
             IWorkflowManagementRepository workflowManagementRepository,
             ILogger<ChangeWorkflowController> logger)
         {
             _ideaService = ideaService;
+            _ideaRepository = ideaRepository;
             _lookupService = lookupService;
             _changeWorkflowService = changeWorkflowService;
             _workflowManagementRepository = workflowManagementRepository;
@@ -156,7 +160,8 @@ namespace Ideku.Controllers
                         currentStage = idea.CurrentStage,
                         maxStage = idea.MaxStage,
                         currentStatus = idea.CurrentStatus,
-                        submittedDate = idea.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss")
+                        submittedDate = idea.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        isInactive = idea.IsRejected && idea.CurrentStatus == "Inactive"
                     }),
                     pagination = new
                     {
@@ -209,6 +214,18 @@ namespace Ideku.Controllers
             try
             {
                 var username = User.Identity?.Name ?? "Unknown";
+
+                // Validate idea is not inactive
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return Json(new { success = false, message = "Idea not found." });
+                }
+
+                if (idea.IsRejected && idea.CurrentStatus == "Inactive")
+                {
+                    return Json(new { success = false, message = "Cannot change workflow for inactive idea." });
+                }
 
                 // Use service layer for business logic and validation
                 var result = await _changeWorkflowService.UpdateIdeaWorkflowAsync(ideaId, newWorkflowId, username);

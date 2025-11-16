@@ -29,30 +29,36 @@
         </div>
     </div>
 
-    <!-- View Toggle Section -->
-    <div class="view-toggle-section mb-4">
-        <div class="btn-group w-100" role="group" aria-label="View toggle">
-            <input type="radio" class="btn-check" name="viewOptions" id="listView" autocomplete="off" checked>
-            <label class="btn btn-outline-primary" for="listView">
-                <i class="bi bi-list-ul me-2"></i>List View
-            </label>
+    <!-- Inactive Idea Warning Card -->
+    @await Html.PartialAsync("_InactiveIdeaWarning", Model.Idea)
 
-            <input type="radio" class="btn-check" name="viewOptions" id="calendarView" autocomplete="off">
-            <label class="btn btn-outline-primary" for="calendarView">
-                <i class="bi bi-calendar3 me-2"></i>Calendar View
-            </label>
+    <!-- Wrap milestone management section - disable if inactive -->
+    <div class="@(ViewBag.IsInactive == true ? "inactive-section position-relative" : "")">
+
+        <!-- View Toggle Section -->
+        <div class="view-toggle-section mb-4">
+            <div class="btn-group w-100" role="group" aria-label="View toggle">
+                <input type="radio" class="btn-check" name="viewOptions" id="listView" autocomplete="off" checked @(ViewBag.IsInactive == true ? "disabled" : "")>
+                <label class="btn btn-outline-primary" for="listView">
+                    <i class="bi bi-list-ul me-2"></i>List View
+                </label>
+
+                <input type="radio" class="btn-check" name="viewOptions" id="calendarView" autocomplete="off" @(ViewBag.IsInactive == true ? "disabled" : "")>
+                <label class="btn btn-outline-primary" for="calendarView">
+                    <i class="bi bi-calendar3 me-2"></i>Calendar View
+                </label>
+            </div>
         </div>
-    </div>
 
-    <!-- Milestones Content Section -->
-    <div id="milestonesContent">
+        <!-- Milestones Content Section -->
+        <div id="milestonesContent">
         <!-- List View -->
         <div id="listViewContent" class="view-content">
             @* Show "Send to Approval S3" button if: Stage 2, has milestone, not yet approved *@
             @if (Model.Idea.CurrentStage == 2 && Model.Idea.IsMilestoneCreated && Model.Idea.CurrentStatus != "Approved")
             {
                 <div class="mb-3 d-flex justify-content-end" module-access="milestone_send_approval">
-                    <button type="button" class="btn btn-md btn-success" id="sendToS3ApprovalBtn">
+                    <button type="button" class="btn btn-md btn-success" id="sendToS3ApprovalBtn" @(ViewBag.IsInactive == true ? "disabled" : "")>
                         <i class="bi bi-send me-1"></i>Send to Approval S3
                     </button>
                 </div>
@@ -65,9 +71,18 @@
                 <h5 class="card-title mb-0">
                     <i class="bi bi-list-check me-2"></i>Milestones (@Model.Milestones.Count())
                 </h5>
-                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal" module-access="milestone">
-                    <i class="bi bi-plus-circle me-1"></i>Add Milestone
-                </button>
+                @if (ViewBag.IsInactive == true)
+                {
+                    <button type="button" class="btn btn-sm btn-primary" disabled module-access="milestone">
+                        <i class="bi bi-plus-circle me-1"></i>Add Milestone
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal" module-access="milestone">
+                        <i class="bi bi-plus-circle me-1"></i>Add Milestone
+                    </button>
+                }
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -141,13 +156,15 @@
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-primary px-2 py-1"
                                                     title="Edit Milestone"
-                                                    onclick="openEditModal('@milestone.Id', '@milestone.TitleMilestone', '@milestone.Note', '@milestone.StartDate.ToString("yyyy-MM-dd")', '@milestone.EndDate.ToString("yyyy-MM-dd")', '@milestone.Status')">
+                                                    onclick="openEditModal('@milestone.Id', '@milestone.TitleMilestone', '@milestone.Note', '@milestone.StartDate.ToString("yyyy-MM-dd")', '@milestone.EndDate.ToString("yyyy-MM-dd")', '@milestone.Status')"
+                                                    @(ViewBag.IsInactive == true ? "disabled" : "")>
                                                 <i class="bi bi-pencil" style="font-size: 0.9rem;"></i>
                                             </button>
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-danger px-2 py-1"
                                                     title="Delete Milestone"
-                                                    onclick="confirmDelete('@milestone.Id', '@milestone.TitleMilestone')">
+                                                    onclick="confirmDelete('@milestone.Id', '@milestone.TitleMilestone')"
+                                                    @(ViewBag.IsInactive == true ? "disabled" : "")>
                                                 <i class="bi bi-trash" style="font-size: 0.9rem;"></i>
                                             </button>
                                         </div>
@@ -168,9 +185,18 @@
                         <i class="bi bi-flag display-1 text-muted mb-3"></i>
                         <h5 class="text-muted">No Milestones Yet</h5>
                         <p class="text-muted">This idea doesn't have any milestones yet.</p>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal" module-access="milestone">
-                            <i class="bi bi-plus-circle me-1"></i>Create First Milestone
-                        </button>
+                        @if (ViewBag.IsInactive == true)
+                        {
+                            <button type="button" class="btn btn-primary" disabled module-access="milestone">
+                                <i class="bi bi-plus-circle me-1"></i>Create First Milestone
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal" module-access="milestone">
+                                <i class="bi bi-plus-circle me-1"></i>Create First Milestone
+                            </button>
+                        }
                     </div>
                 </div>
             }
@@ -181,6 +207,9 @@
             @await Html.PartialAsync("_MilestoneCalendar", Model.Milestones)
         </div>
     </div>
+
+    </div>
+    <!-- End of inactive-section wrapper -->
 
     @if (!Model.IsEligibleForMilestones)
     {

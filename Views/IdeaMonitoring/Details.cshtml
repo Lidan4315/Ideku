@@ -259,6 +259,12 @@
         </div>
     }
 
+    <!-- Inactive Idea Warning Card -->
+    @await Html.PartialAsync("_InactiveIdeaWarning", Model.Idea)
+
+    <!-- Wrap monitoring section - disable if inactive -->
+    <div class="@(ViewBag.IsInactive == true ? "inactive-section position-relative" : "")">
+
     <!-- Monitoring Content -->
     @if (Model.HasMonitoring)
     {
@@ -670,6 +676,10 @@
             </form>
         </div>
     </div>
+
+    </div>
+    <!-- End of inactive-section wrapper -->
+
 </div>
 
 @section Scripts {
