@@ -144,12 +144,12 @@ namespace Ideku.Services.ChangeWorkflow
                 return (false, "Cannot change workflow for rejected ideas");
             }
 
-            // Business Rule 2: Cannot change workflow if idea is completed (optional - uncomment if needed)
-            // if (idea.CurrentStatus == "Completed")
-            // {
-            //     _logger.LogWarning("Attempt to change workflow for completed idea {IdeaId}", idea.Id);
-            //     return (false, "Cannot change workflow for completed ideas");
-            // }
+            // Business Rule 2: Cannot change workflow if idea is completed
+            if (idea.CurrentStatus == "Completed")
+            {
+                _logger.LogWarning("Attempt to change workflow for completed idea {IdeaId}", idea.Id);
+                return (false, "Cannot change workflow for completed ideas");
+            }
 
             // Business Rule 3: Check if new workflow is compatible with idea's category/division/department
             // This can be added based on business requirements

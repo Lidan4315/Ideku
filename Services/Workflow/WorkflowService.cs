@@ -127,7 +127,7 @@ namespace Ideku.Services.Workflow
                 return baseQuery.Where(idea =>
                     idea.CurrentStatus.StartsWith("Waiting Approval") ||
                     idea.CurrentStatus.StartsWith("Rejected S") ||
-                    idea.CurrentStatus == "Approved")
+                    idea.CurrentStatus == "Completed")
                     .OrderByDescending(idea => idea.SubmittedDate)
                     .ThenByDescending(idea => idea.Id);
             }
@@ -349,8 +349,8 @@ namespace Ideku.Services.Workflow
             // Check if we can advance to next stage (validate against MaxStage)
             if (nextStage > idea.MaxStage)
             {
-                // Already at final stage - mark as approved/completed
-                idea.CurrentStatus = "Approved";
+                // Already at final stage - mark as completed
+                idea.CurrentStatus = "Completed";
                 idea.CompletedDate = DateTime.Now;
                 _logger.LogInformation("Idea {IdeaId} completed approval process - reached final stage {MaxStage}", ideaId, idea.MaxStage);
             }
@@ -358,11 +358,11 @@ namespace Ideku.Services.Workflow
             {
                 // Advance to next stage
                 idea.CurrentStage = nextStage;
-                
+
                 // Set status based on whether this is the final stage or not
                 if (nextStage == idea.MaxStage)
                 {
-                    idea.CurrentStatus = "Approved"; // Final approval
+                    idea.CurrentStatus = "Completed"; // Final approval
                     idea.CompletedDate = DateTime.Now;
                 }
                 else
@@ -410,7 +410,7 @@ namespace Ideku.Services.Workflow
             }
 
             // If idea moved to next stage (not completed), send emails to next stage approvers
-            if (nextStage <= idea.MaxStage && idea.CurrentStatus != "Approved")
+            if (nextStage <= idea.MaxStage && idea.CurrentStatus != "Completed")
             {
                 try
                 {
@@ -490,10 +490,10 @@ namespace Ideku.Services.Workflow
 
                 var previousStage = idea.CurrentStage;
                 var nextStage = idea.CurrentStage + 1;
-                
+
                 if (nextStage > idea.MaxStage)
                 {
-                    idea.CurrentStatus = "Approved";
+                    idea.CurrentStatus = "Completed";
                     idea.CompletedDate = DateTime.Now;
                 }
                 else
@@ -501,7 +501,7 @@ namespace Ideku.Services.Workflow
                     idea.CurrentStage = nextStage;
                     if (nextStage == idea.MaxStage)
                     {
-                        idea.CurrentStatus = "Approved";
+                        idea.CurrentStatus = "Completed";
                         idea.CompletedDate = DateTime.Now;
                     }
                     else
@@ -577,7 +577,7 @@ namespace Ideku.Services.Workflow
                     idea.InitiatorUser.Employee.EMAIL, approvalData.IdeaId);
 
                 // Check if idea just reached Stage 2
-                if (idea.CurrentStage == 2 && idea.CurrentStatus != "Approved")
+                if (idea.CurrentStage == 2 && idea.CurrentStatus != "Completed")
                 {
                     // Send email to Workstream Leaders in the idea's target department
                     var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
@@ -595,7 +595,7 @@ namespace Ideku.Services.Workflow
                     }
                 }
                 // Send notifications to next stage approvers if NOT Stage 2 (Stage 2 requires milestone first)
-                else if (idea.CurrentStage < idea.MaxStage && idea.CurrentStage != 2 && idea.CurrentStatus != "Approved")
+                else if (idea.CurrentStage < idea.MaxStage && idea.CurrentStage != 2 && idea.CurrentStatus != "Completed")
                 {
                     var nextStageApprovers = await GetApproversForNextStageAsync(idea);
 

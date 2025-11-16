@@ -208,9 +208,8 @@
                                             var statusClass = idea.CurrentStatus switch
                                             {
                                                 var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
-                                                "Approved" => "bg-success",
+                                                "Completed" => "bg-success",
                                                 "Rejected" => "bg-danger",
-                                                "Completed" => "bg-primary",
                                                 _ => "bg-secondary"
                                             };
                                         }

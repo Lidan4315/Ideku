@@ -130,9 +130,8 @@
                                             {
                                                 var s when s.StartsWith("Waiting Approval") => "bg-warning text-dark",
                                                 var s when s.StartsWith("Rejected S") => "bg-danger",
-                                                "Approved" => "bg-success",
+                                                "Completed" => "bg-success",
                                                 "Rejected" => "bg-danger",
-                                                "Completed" => "bg-primary",
                                                 _ => "bg-secondary"
                                             };
                                         }
@@ -539,9 +538,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const getStatusClass = (status) => {
                 if (status.startsWith("Waiting Approval")) return "bg-warning text-dark";
                 if (status.startsWith("Rejected S")) return "bg-danger";
-                if (status === "Approved") return "bg-success";
+                if (status === "Completed") return "bg-success";
                 if (status === "Rejected") return "bg-danger";
-                if (status === "Completed") return "bg-primary";
                 return "bg-secondary";
             };
 

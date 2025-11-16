@@ -286,10 +286,10 @@ namespace Ideku.Controllers
                     return Json(new { success = false, message = "Please create at least one milestone before requesting Stage 3 approval." });
                 }
 
-                // Validate: not already approved
-                if (idea.CurrentStatus == "Approved")
+                // Validate: not already completed
+                if (idea.CurrentStatus == "Completed")
                 {
-                    return Json(new { success = false, message = "This idea has already been fully approved." });
+                    return Json(new { success = false, message = "This idea has already been fully completed." });
                 }
 
                 // Submit to next stage approval (S3)
