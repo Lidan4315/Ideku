@@ -87,20 +87,11 @@ namespace Ideku.Data.Seeders
                     },
                     new Module
                     {
-                        ModuleName = "Settings",
-                        ModuleKey = "settings",
-                        ControllerName = "Settings",
-                        ActionName = "Index",
-                        SortOrder = 9,
-                        IsActive = true
-                    },
-                    new Module
-                    {
                         ModuleName = "User Management",
                         ModuleKey = "user_management",
                         ControllerName = "UserManagement",
                         ActionName = "Index",
-                        SortOrder = 10,
+                        SortOrder = 9,
                         IsActive = true
                     },
                     new Module
@@ -109,7 +100,7 @@ namespace Ideku.Data.Seeders
                         ModuleKey = "role_management",
                         ControllerName = "RoleManagement",
                         ActionName = "Index",
-                        SortOrder = 11,
+                        SortOrder = 10,
                         IsActive = true
                     },
                     new Module
@@ -118,7 +109,7 @@ namespace Ideku.Data.Seeders
                         ModuleKey = "workflow_management",
                         ControllerName = "WorkflowManagement",
                         ActionName = "Index",
-                        SortOrder = 12,
+                        SortOrder = 11,
                         IsActive = true
                     },
                     new Module
@@ -127,7 +118,7 @@ namespace Ideku.Data.Seeders
                         ModuleKey = "approver_management",
                         ControllerName = "ApproverManagement",
                         ActionName = "Index",
-                        SortOrder = 13,
+                        SortOrder = 12,
                         IsActive = true
                     },
                     new Module
@@ -136,7 +127,7 @@ namespace Ideku.Data.Seeders
                         ModuleKey = "change_workflow",
                         ControllerName = "ChangeWorkflow",
                         ActionName = "Index",
-                        SortOrder = 14,
+                        SortOrder = 13,
                         IsActive = true
                     },
                     new Module

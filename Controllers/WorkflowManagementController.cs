@@ -38,7 +38,7 @@ namespace Ideku.Controllers
             {
                 Console.WriteLine($"DEBUG: Exception in WorkflowManagement: {ex.Message}");
                 TempData["ErrorMessage"] = $"Error loading workflows: {ex.Message}";
-                return RedirectToAction("Index", "Settings");
+                return RedirectToAction("Index", "Home");
             }
         }
 
