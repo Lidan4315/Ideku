@@ -133,7 +133,9 @@ namespace Ideku.Services.Workflow
             }
             else if (user.Role.RoleName == "Workstream Leader")
             {
-                // Dynamic WL logic: Get stages where WL is assigned as approver
+                // WL uses same dynamic logic as other roles (no special treatment)
+
+                // Step 1: Get all workflow stages where WL role is designated as approver
                 var approverStages = await _workflowManagementService.GetWorkflowStagesByRoleIdAsync(user.RoleId);
                 var approverStagesList = approverStages.ToList();
 
@@ -143,53 +145,45 @@ namespace Ideku.Services.Workflow
                     return baseQuery.Where(idea => false);
                 }
 
-                // Calculate minimum stage per workflow where WL is approver
-                var minStagesByWorkflow = approverStagesList
-                    .GroupBy(s => s.WorkflowId)
-                    .ToDictionary(g => g.Key, g => g.Min(s => s.Stage));
-
-                // Get user's effective location
+                // Step 2: Get user's effective location (considering acting status)
                 var userDivisionId = Helpers.LocationHelper.GetEffectiveDivisionId(user);
                 var userDepartmentId = Helpers.LocationHelper.GetEffectiveDepartmentId(user);
 
+                // Step 3: Build SQL-compatible WHERE clause using Contains
                 // Extract workflow IDs for SQL translation
-                var workflowIds = minStagesByWorkflow.Keys.ToList();
+                var workflowIds = approverStagesList.Select(s => s.WorkflowId).Distinct().ToList();
 
-                // Filter at database level
+                // Filter ideas at database level as much as possible
                 var query = baseQuery.Where(idea =>
+                    // Idea must be waiting for approval
+                    idea.CurrentStatus.StartsWith("Waiting Approval") &&
+
+                    // Workflow must be in user's approver list
                     workflowIds.Contains(idea.WorkflowId) &&
+
+                    // Division must match (if user has division)
                     (string.IsNullOrEmpty(userDivisionId) || idea.ToDivisionId == userDivisionId) &&
+
+                    // Department must match (if user has department)
                     (string.IsNullOrEmpty(userDepartmentId) || idea.ToDepartmentId == userDepartmentId)
                 );
 
-                // Execute database query
+                // Execute database query first
                 var ideas = await query.ToListAsync();
 
-                // Filter in-memory for dynamic history logic
+                // Step 4: Filter in-memory for exact stage matching (CurrentStage + 1)
+                // Same logic as other roles - NO HISTORY, only current responsibility
                 var filteredIdeas = ideas.Where(idea =>
                 {
-                    if (!minStagesByWorkflow.TryGetValue(idea.WorkflowId, out int minStage))
-                        return false;
-
-                    // WL can see:
-                    // 1. Current responsibility: CurrentStage = minStage - 1 AND Waiting Approval
-                    if (idea.CurrentStage == minStage - 1 && idea.CurrentStatus == $"Waiting Approval S{minStage}")
-                        return true;
-
-                    // 2. History: Ideas that have passed their minimum stage
-                    if (idea.CurrentStage >= minStage)
-                        return true;
-
-                    // 3. Rejected ideas at their stage
-                    if (idea.CurrentStatus == $"Rejected S{minStage - 1}")
-                        return true;
-
-                    return false;
+                    // Check if WL is approver for the next stage
+                    return approverStagesList.Any(s =>
+                        s.WorkflowId == idea.WorkflowId &&
+                        s.Stage == idea.CurrentStage + 1);
                 })
                 .OrderByDescending(idea => idea.SubmittedDate)
                 .ThenByDescending(idea => idea.Id);
 
-                // Re-query database with filtered IDs
+                // Re-query from database to get proper IQueryable with EF tracking
                 var filteredIdeaIds = filteredIdeas.Select(idea => idea.Id).ToList();
 
                 if (!filteredIdeaIds.Any())
@@ -197,6 +191,7 @@ namespace Ideku.Services.Workflow
                     return baseQuery.Where(idea => false);
                 }
 
+                // Return EF queryable for proper pagination support
                 return baseQuery
                     .Where(idea => filteredIdeaIds.Contains(idea.Id))
                     .OrderByDescending(idea => idea.SubmittedDate)
