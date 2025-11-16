@@ -335,7 +335,7 @@ namespace Ideku.Migrations
                     WorkflowId = table.Column<int>(type: "int", nullable: false),
                     CurrentStage = table.Column<int>(type: "int", nullable: false),
                     MaxStage = table.Column<int>(type: "int", nullable: false),
-                    CurrentStatus = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    CurrentStatus = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                     IsRejected = table.Column<bool>(type: "bit", nullable: false),
                     RejectedReason = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     IdeaCode = table.Column<string>(type: "nvarchar(11)", maxLength: 11, nullable: false),

@@ -308,8 +308,8 @@ namespace Ideku.Migrations
 
                     b.Property<string>("CurrentStatus")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
                         .HasColumnName("CurrentStatus");
 
                     b.Property<int?>("EventId")

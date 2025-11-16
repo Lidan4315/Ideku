@@ -25,9 +25,9 @@ namespace Ideku.Services.Workflow
 
         public WorkflowService(
             INotificationService notificationService,
-            IUserRepository userRepository, 
-            IIdeaRepository ideaRepository, 
-            IWorkflowRepository workflowRepository, 
+            IUserRepository userRepository,
+            IIdeaRepository ideaRepository,
+            IWorkflowRepository workflowRepository,
             IWorkflowManagementService workflowManagementService,
             IIdeaRelationService ideaRelationService,
             ILogger<WorkflowService> logger)
@@ -360,12 +360,17 @@ namespace Ideku.Services.Workflow
                     idea.CurrentStatus = "Completed"; // Final approval
                     idea.CompletedDate = DateTime.Now;
                 }
+                else if (nextStage == 2)
+                {
+                    // Special case: Stage 2 requires milestone creation before S3 approval
+                    idea.CurrentStatus = "Waiting Milestone Creation";
+                }
                 else
                 {
                     idea.CurrentStatus = $"Waiting Approval S{nextStage + 1}";
                 }
-                
-                _logger.LogInformation("Idea {IdeaId} advanced from stage {FromStage} to stage {ToStage}, max stage is {MaxStage}", 
+
+                _logger.LogInformation("Idea {IdeaId} advanced from stage {FromStage} to stage {ToStage}, max stage is {MaxStage}",
                     ideaId, previousStage, idea.CurrentStage, idea.MaxStage);
             }
             
@@ -498,6 +503,11 @@ namespace Ideku.Services.Workflow
                     {
                         idea.CurrentStatus = "Completed";
                         idea.CompletedDate = DateTime.Now;
+                    }
+                    else if (nextStage == 2)
+                    {
+                        // Special case: Stage 2 requires milestone creation before S3 approval
+                        idea.CurrentStatus = "Waiting Milestone Creation";
                     }
                     else
                     {
@@ -926,27 +936,11 @@ namespace Ideku.Services.Workflow
                     return WorkflowResult.Failure("No approvers found for the next stage.");
                 }
 
-                // Send notification to next stage approvers in background (fire and forget)
-                var approverCount = nextStageApprovers.Count;
                 var nextStage = idea.CurrentStage + 1;
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers);
-                        _logger.LogInformation("Idea {IdeaId} notification emails sent to {ApproverCount} approvers for stage {NextStage}",
-                            ideaId, approverCount, nextStage);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to send notification emails for idea {IdeaId}", ideaId);
-                    }
-                });
+                _logger.LogInformation("Idea {IdeaId} ready for submission to stage {NextStage} with {ApproverCount} approvers",
+                    ideaId, nextStage, nextStageApprovers.Count);
 
-                _logger.LogInformation("Idea {IdeaId} submission request accepted, emails will be sent to {ApproverCount} approvers for stage {NextStage}",
-                    ideaId, approverCount, nextStage);
-
-                return WorkflowResult.Success($"Idea successfully submitted for Stage {nextStage} review. Notification emails will be sent to approver shortly.");
+                return WorkflowResult.Success($"Idea successfully submitted for Stage {nextStage} review. Notification emails will be sent to approvers shortly.");
             }
             catch (Exception ex)
             {
