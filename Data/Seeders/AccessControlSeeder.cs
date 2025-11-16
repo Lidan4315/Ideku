@@ -6,10 +6,10 @@ namespace Ideku.Data.Seeders
 {
     public static class AccessControlSeeder
     {
-        public static async Task SeedAsync(AppDbContext context)
+        public static void Seed(AppDbContext context)
         {
             // 1. Seed Modules
-            if (!await context.Modules.AnyAsync())
+            if (!context.Modules.Any())
             {
                 var modules = new List<Module>
                 {
@@ -159,28 +159,22 @@ namespace Ideku.Data.Seeders
                     }
                 };
 
-                await context.Modules.AddRangeAsync(modules);
-                await context.SaveChangesAsync();
-
-                Console.WriteLine($"✅ Seeded {modules.Count} modules");
-            }
-            else
-            {
-                Console.WriteLine("⏭️  Modules already seeded, skipping...");
+                context.Modules.AddRange(modules);
+                context.SaveChanges();
             }
 
             // 2. Grant all module access to Superuser role
-            var superuserRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Superuser");
+            var superuserRole = context.Roles.FirstOrDefault(r => r.RoleName == "Superuser");
 
             if (superuserRole != null)
             {
-                var existingAccess = await context.RoleAccessModules
+                var existingAccess = context.RoleAccessModules
                     .Where(ram => ram.RoleId == superuserRole.Id)
-                    .CountAsync();
+                    .Count();
 
                 if (existingAccess == 0)
                 {
-                    var allModules = await context.Modules.ToListAsync();
+                    var allModules = context.Modules.ToList();
                     var roleAccessModules = allModules.Select(m => new RoleAccessModule
                     {
                         RoleId = superuserRole.Id,
@@ -190,22 +184,10 @@ namespace Ideku.Data.Seeders
                         ModifiedBy = null // System seed
                     }).ToList();
 
-                    await context.RoleAccessModules.AddRangeAsync(roleAccessModules);
-                    await context.SaveChangesAsync();
-
-                    Console.WriteLine($"✅ Granted access to {roleAccessModules.Count} modules for Superuser role");
-                }
-                else
-                {
-                    Console.WriteLine("⏭️  Superuser module access already granted, skipping...");
+                    context.RoleAccessModules.AddRange(roleAccessModules);
+                    context.SaveChanges();
                 }
             }
-            else
-            {
-                Console.WriteLine("⚠️  Warning: Superuser role not found. Please create Superuser role first.");
-            }
-
-            Console.WriteLine("✅ Access Control seeding completed!");
         }
     }
 }
