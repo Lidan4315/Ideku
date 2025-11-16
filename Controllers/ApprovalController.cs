@@ -303,15 +303,10 @@ namespace Ideku.Controllers
             {
                 canTakeAction = true;
             }
-            else if (user?.Role?.RoleName == "Workstream Leader" &&
-                     ideaForReview.CurrentStage == 0 &&
-                     ideaForReview.CurrentStatus == "Waiting Approval S1")
-            {
-                canTakeAction = true;
-            }
             else if (ideaForReview.CurrentStatus.StartsWith("Waiting Approval"))
             {
-                // For other roles: Check if user is designated approver for the next stage
+                // For all roles (including Workstream Leader): Check if user is designated approver for the next stage
+                // No more hardcoded logic - all roles use dynamic workflow configuration
                 var approversForNextStage = await _workflowService.GetApproversForNextStageAsync(ideaForReview);
                 canTakeAction = approversForNextStage.Any(a => a.Id == user.Id);
             }
