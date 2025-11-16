@@ -54,7 +54,8 @@ namespace Ideku.Controllers
                 page = Math.Max(1, page);
 
                 IQueryable<Idea> ideasQuery = await _ideaService.GetAllIdeasQueryAsync("superuser");
-                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && !i.IsRejected && i.CurrentStatus != "Approved");
+                // Show all ideas including inactive, but exclude deleted and approved
+                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && i.CurrentStatus != "Approved");
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
@@ -145,7 +146,8 @@ namespace Ideku.Controllers
                 page = Math.Max(1, page);
 
                 IQueryable<Idea> ideasQuery = await _ideaService.GetAllIdeasQueryAsync("superuser");
-                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && !i.IsRejected && i.CurrentStatus != "Approved");
+                // Show all ideas including inactive, but exclude deleted and approved
+                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && i.CurrentStatus != "Approved");
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
@@ -202,7 +204,8 @@ namespace Ideku.Controllers
                         maxStage = idea.MaxStage,
                         currentStatus = idea.CurrentStatus,
                         savingCost = idea.SavingCost,
-                        submittedDate = idea.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss")
+                        submittedDate = idea.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        isInactive = idea.IsRejected && idea.CurrentStatus == "Inactive"
                     }),
                     pagination = new
                     {
@@ -296,6 +299,18 @@ namespace Ideku.Controllers
             try
             {
                 var username = User.Identity?.Name ?? "Unknown";
+
+                // Validate idea is not inactive
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return Json(new { success = false, message = "Idea not found." });
+                }
+
+                if (idea.IsRejected && idea.CurrentStatus == "Inactive")
+                {
+                    return Json(new { success = false, message = "Cannot bypass stage for inactive idea." });
+                }
 
                 var result = await _bypassStageService.BypassStageAsync(ideaId, targetStage, reason, username);
 

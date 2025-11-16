@@ -127,6 +127,9 @@ namespace Ideku.Controllers
                     IsEligibleForMilestones = true // Already filtered in service
                 };
 
+                // Set flag for inactive idea to disable UI elements
+                ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
+
                 _logger.LogInformation("[MilestoneDetail] IdeaId={IdeaId}, CurrentStage={Stage}, IsMilestoneCreated={IsMilestoneCreated}, CurrentStatus={Status}",
                     ideaId, idea.CurrentStage, idea.IsMilestoneCreated, idea.CurrentStatus);
 
@@ -156,6 +159,18 @@ namespace Ideku.Controllers
         {
             try
             {
+                // Validate idea is not inactive
+                var idea = await _milestoneService.GetMilestoneEligibleIdeaByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return Json(new { success = false, message = "Idea not found." });
+                }
+
+                if (idea.IsRejected && idea.CurrentStatus == "Inactive")
+                {
+                    return Json(new { success = false, message = "Cannot create milestone for inactive idea." });
+                }
+
                 var result = await _milestoneService.CreateMilestoneAsync(
                     ideaId, title, note, startDate, endDate, status, creatorName, creatorEmployeeId, selectedPICUserIds);
 
@@ -177,6 +192,13 @@ namespace Ideku.Controllers
                 if (!ModelState.IsValid)
                 {
                     return Json(new { success = false, message = "Invalid data provided." });
+                }
+
+                // Validate idea is not inactive
+                var milestone = await _milestoneService.GetMilestoneByIdAsync(request.MilestoneId);
+                if (milestone?.Idea != null && milestone.Idea.IsRejected && milestone.Idea.CurrentStatus == "Inactive")
+                {
+                    return Json(new { success = false, message = "Cannot update milestone for inactive idea." });
                 }
 
                 // Authorization handled by ModuleAuthorize attribute
@@ -211,6 +233,13 @@ namespace Ideku.Controllers
         {
             try
             {
+                // Validate idea is not inactive
+                var milestone = await _milestoneService.GetMilestoneByIdAsync(milestoneId);
+                if (milestone?.Idea != null && milestone.Idea.IsRejected && milestone.Idea.CurrentStatus == "Inactive")
+                {
+                    return Json(new { success = false, message = "Cannot delete milestone for inactive idea." });
+                }
+
                 // Authorization handled by ModuleAuthorize attribute
                 var result = await _milestoneService.DeleteMilestoneAsync(milestoneId);
 
@@ -237,6 +266,12 @@ namespace Ideku.Controllers
                 if (idea == null)
                 {
                     return Json(new { success = false, message = "Idea not found." });
+                }
+
+                // Validate: idea is not inactive
+                if (idea.IsRejected && idea.CurrentStatus == "Inactive")
+                {
+                    return Json(new { success = false, message = "Cannot send inactive idea to Stage 3 approval." });
                 }
 
                 // Validate: must be Stage 2

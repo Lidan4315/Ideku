@@ -291,6 +291,10 @@ namespace Ideku.Controllers
                 var user = await _userRepository.GetByUsernameAsync(User.Identity?.Name ?? "");
                 ViewBag.UserRole = user?.Role?.RoleName ?? "";
 
+                // Set flag for inactive idea to disable UI elements
+                ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
+                ViewBag.ShowReactivateButton = (user?.Role?.RoleName == "Superuser" && ViewBag.IsInactive);
+
                 var viewModel = new IdeaDetailViewModel
                 {
                     Idea = idea,

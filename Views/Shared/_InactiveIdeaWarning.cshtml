@@ -1,0 +1,89 @@
+@model Ideku.Models.Entities.Idea
+
+@if (Model.IsRejected && Model.CurrentStatus == "Inactive")
+{
+    <div class="card shadow-sm mb-4" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+        <div class="card-body text-center py-5">
+            <!-- Warning Icon -->
+            <div class="mb-4">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size: 4rem; color: #ffc107;"></i>
+            </div>
+
+            <!-- Title -->
+            <h4 class="mb-3 fw-bold text-dark">This Idea is Inactive</h4>
+
+            <!-- Reason -->
+            @if (!string.IsNullOrEmpty(Model.RejectedReason))
+            {
+                <p class="text-muted mb-4" style="font-size: 0.95rem;">
+                    <strong>Reason:</strong> @Model.RejectedReason
+                </p>
+            }
+
+            <!-- Reactivate Button (Only for Superuser in IdeaList Detail) -->
+            @if (ViewBag.UserRole == "Superuser" && ViewBag.ShowReactivateButton == true)
+            {
+                <form asp-controller="IdeaList" asp-action="ReactivateIdea" method="post" id="reactivateIdeaForm" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ideaId" value="@Model.Id" />
+                    <button type="button" id="reactivateIdeaBtn" class="btn btn-success px-4 py-2">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Reactivate Idea
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (ViewBag.UserRole == "Superuser" && ViewBag.ShowReactivateButton == true)
+    {
+        @section Scripts {
+            <script>
+                const reactivateForm = document.getElementById('reactivateIdeaForm');
+                const reactivateBtn = document.getElementById('reactivateIdeaBtn');
+
+                if (reactivateBtn && reactivateForm) {
+                    reactivateBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+
+                        Swal.fire({
+                            title: 'Reactivate This Idea?',
+                            html: 'This will:<br>• Reset the 60-day counter<br>• Restore the idea to its previous approval status<br>• Send email notifications to the approvers',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#28a745',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Yes, Reactivate!',
+                            cancelButtonText: 'Cancel'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                reactivateBtn.disabled = true;
+                                reactivateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+                                reactivateForm.submit();
+                            }
+                        });
+                    });
+                }
+            </script>
+        }
+    }
+}
+
+<style>
+    .inactive-section {
+        opacity: 0.6;
+        pointer-events: none;
+        filter: grayscale(30%);
+        user-select: none;
+    }
+
+    .inactive-section::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(128, 128, 128, 0.1);
+        pointer-events: none;
+    }
+</style>
