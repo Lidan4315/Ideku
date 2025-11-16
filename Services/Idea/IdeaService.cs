@@ -380,7 +380,6 @@ namespace Ideku.Services.Idea
             {
                 TotalIdeas = activeIdeas.Count(),
                 PendingApproval = activeIdeas.Count(i => i.CurrentStatus.Contains("Waiting Approval")),
-                Approved = activeIdeas.Count(i => i.CurrentStatus == "Approved"),
                 Completed = activeIdeas.Count(i => i.CurrentStatus == "Completed"),
                 Rejected = activeIdeas.Count(i => i.CurrentStatus == "Rejected"),
                 TotalSavingCost = activeIdeas.Sum(i => i.SavingCost),
@@ -1872,7 +1871,7 @@ namespace Ideku.Services.Idea
                     }
                     else if (idea.CurrentStage >= idea.MaxStage)
                     {
-                        previousStatus = "Approved"; // Edge case
+                        previousStatus = "Completed"; // Edge case
                     }
                     else
                     {

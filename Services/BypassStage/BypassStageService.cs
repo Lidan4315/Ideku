@@ -80,13 +80,13 @@ namespace Ideku.Services.BypassStage
 
                 if (targetStage >= idea.MaxStage)
                 {
-                    idea.CurrentStatus = "Approved";
+                    idea.CurrentStatus = "Completed";
                     idea.CompletedDate = DateTime.Now;
                 }
                 else
                 {
                     idea.CurrentStatus = $"Waiting Approval S{targetStage + 1}";
-                    // Clear CompletedDate if bypassing backward from a completed/approved stage
+                    // Clear CompletedDate if bypassing backward from a completed stage
                     if (targetStage < previousStage && idea.CompletedDate != null)
                     {
                         idea.CompletedDate = null;
@@ -140,10 +140,10 @@ namespace Ideku.Services.BypassStage
             }
 
             // Cannot bypass already completed ideas
-            if (idea.CurrentStatus == "Approved")
+            if (idea.CurrentStatus == "Completed")
             {
                 _logger.LogWarning("Attempt to bypass completed idea {IdeaId}", idea.Id);
-                return (false, "Idea is already approved");
+                return (false, "Idea is already completed");
             }
 
             // Target stage must be valid
@@ -188,7 +188,7 @@ namespace Ideku.Services.BypassStage
                     _logger.LogInformation("Bypass notification sent to initiator for idea {IdeaId}", idea.Id);
 
                     // Notify next stage approvers if not completed
-                    if (idea.CurrentStatus != "Approved")
+                    if (idea.CurrentStatus != "Completed")
                     {
                         // Get approvers for the next stage (CurrentStage + 1)
                         // Because if CurrentStage = 1, the status is "Waiting Approval S2" which needs approvers at WorkflowStage.Stage = 2

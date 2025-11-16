@@ -55,7 +55,7 @@ namespace Ideku.Controllers
 
                 IQueryable<Idea> ideasQuery = await _ideaService.GetAllIdeasQueryAsync("superuser");
                 // Show all ideas including inactive, but exclude deleted and approved
-                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && i.CurrentStatus != "Approved");
+                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && i.CurrentStatus != "Completed");
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
@@ -147,7 +147,7 @@ namespace Ideku.Controllers
 
                 IQueryable<Idea> ideasQuery = await _ideaService.GetAllIdeasQueryAsync("superuser");
                 // Show all ideas including inactive, but exclude deleted and approved
-                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && i.CurrentStatus != "Approved");
+                ideasQuery = ideasQuery.Where(i => !i.IsDeleted && i.CurrentStatus != "Completed");
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
