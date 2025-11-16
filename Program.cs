@@ -96,6 +96,7 @@ builder.Services.AddScoped<Ideku.Services.FileAttachment.IFileAttachmentService,
 
 // Register Background Services
 builder.Services.AddHostedService<Ideku.Services.BackgroundServices.ActingRoleReversionService>();
+builder.Services.AddHostedService<Ideku.Services.BackgroundServices.IdeaInactiveMonitorService>();
 
 // Register Repositories
 builder.Services.AddScoped<IIdeaRepository, IdeaRepository>();

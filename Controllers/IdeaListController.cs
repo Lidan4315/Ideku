@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,6 +29,7 @@ namespace Ideku.Controllers
         private readonly IIdeaRelationService _ideaRelationService;
         private readonly IIdeaImplementatorService _implementatorService;
         private readonly ILogger<IdeaListController> _logger;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public IdeaListController(
             IIdeaService ideaService,
@@ -35,7 +37,8 @@ namespace Ideku.Controllers
             ILookupService lookupService,
             IIdeaRelationService ideaRelationService,
             IIdeaImplementatorService implementatorService,
-            ILogger<IdeaListController> logger)
+            ILogger<IdeaListController> logger,
+            IServiceScopeFactory serviceScopeFactory)
         {
             _ideaService = ideaService;
             _userRepository = userRepository;
@@ -43,6 +46,7 @@ namespace Ideku.Controllers
             _ideaRelationService = ideaRelationService;
             _implementatorService = implementatorService;
             _logger = logger;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         // GET: /IdeaList or /IdeaList/Index
@@ -282,6 +286,10 @@ namespace Ideku.Controllers
 
                 // Get available users for dropdown (server-side)
                 var availableUsers = await _implementatorService.GetAvailableUsersForAssignmentAsync(id);
+
+                // Get user role for view (untuk show/hide reactivate button)
+                var user = await _userRepository.GetByUsernameAsync(User.Identity?.Name ?? "");
+                ViewBag.UserRole = user?.Role?.RoleName ?? "";
 
                 var viewModel = new IdeaDetailViewModel
                 {
@@ -673,6 +681,75 @@ namespace Ideku.Controllers
             sheet.Column(2).Width = Math.Max(sheet.Column(2).Width, 40);  // Idea Title
             sheet.Column(3).Width = Math.Max(sheet.Column(3).Width, 20);  // Initiator
             sheet.Column(9).Width = Math.Max(sheet.Column(9).Width, 15);  // Saving Cost
+        }
+
+        /// <summary>
+        /// Reactivate inactive idea (Superuser only)
+        /// POST: /IdeaList/ReactivateIdea
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReactivateIdea(long ideaId)
+        {
+            try
+            {
+                // Check if user is superuser
+                var username = User.Identity?.Name ?? "";
+                var user = await _userRepository.GetByUsernameAsync(username);
+
+                if (user?.Role?.RoleName != "Superuser")
+                {
+                    TempData["ErrorMessage"] = "Only Superuser can reactivate inactive ideas.";
+                    return RedirectToAction("Detail", new { id = ideaId });
+                }
+
+                // Call service to reactivate
+                var result = await _ideaService.ReactivateIdeaAsync(ideaId, username);
+
+                if (result.Success)
+                {
+                    // Send email notifications in background (non-blocking)
+                    SendReactivationEmailInBackground(ideaId);
+
+                    TempData["SuccessMessage"] = result.Message;
+                    _logger.LogInformation("Idea {IdeaId} reactivated by {Username}", ideaId, username);
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.Message;
+                    _logger.LogWarning("Failed to reactivate idea {IdeaId}: {Message}", ideaId, result.Message);
+                }
+
+                return RedirectToAction("Detail", new { id = ideaId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating idea {IdeaId}", ideaId);
+                TempData["ErrorMessage"] = $"Error: {ex.Message}";
+                return RedirectToAction("Detail", new { id = ideaId });
+            }
+        }
+
+        private void SendReactivationEmailInBackground(long ideaId)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Starting background reactivation email process for idea {IdeaId}", ideaId);
+
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var ideaService = scope.ServiceProvider.GetRequiredService<IIdeaService>();
+
+                    await ideaService.SendReactivationEmailAsync(ideaId);
+
+                    _logger.LogInformation("Background reactivation email sent successfully for idea {IdeaId}", ideaId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send background reactivation email for idea {IdeaId}", ideaId);
+                }
+            });
         }
 
     }
