@@ -85,18 +85,41 @@ namespace Ideku.Services.ChangeWorkflow
 
                 // Store old workflow for logging
                 var oldWorkflowId = idea.WorkflowId;
+                var oldMaxStage = idea.MaxStage;
+                var oldCurrentStage = idea.CurrentStage;
+
+                // Get max stage from new workflow
+                var newMaxStage = await _workflowManagementRepository.GetMaxStageForWorkflowAsync(newWorkflowId);
+
+                // Handle CurrentStage adjustment if it exceeds new MaxStage
+                var currentStageAdjusted = false;
+                var adjustmentMessage = "";
+
+                if (idea.CurrentStage >= newMaxStage)
+                {
+                    var newCurrentStage = newMaxStage - 1;
+                    idea.CurrentStage = newCurrentStage;
+                    currentStageAdjusted = true;
+                    adjustmentMessage = $" WARNING: CurrentStage adjusted from {oldCurrentStage} to {newCurrentStage} because it exceeded the new workflow's MaxStage ({newMaxStage}).";
+
+                    _logger.LogWarning(
+                        "CurrentStage adjusted for idea {IdeaCode} (ID: {IdeaId}) from stage {OldStage} to {NewStage} due to workflow change to {WorkflowName} (MaxStage: {MaxStage})",
+                        idea.IdeaCode, ideaId, oldCurrentStage, newCurrentStage, workflow.WorkflowName, newMaxStage);
+                }
 
                 // Perform update
                 idea.WorkflowId = newWorkflowId;
+                idea.MaxStage = newMaxStage;
                 idea.UpdatedDate = DateTime.Now;
 
                 await _ideaRepository.UpdateAsync(idea);
 
                 _logger.LogInformation(
-                    "Workflow updated successfully for idea {IdeaCode} (ID: {IdeaId}) from workflow ID {OldWorkflow} to {NewWorkflow} ({WorkflowName}) by {User}",
-                    idea.IdeaCode, ideaId, oldWorkflowId, newWorkflowId, workflow.WorkflowName, updatedBy);
+                    "Workflow updated successfully for idea {IdeaCode} (ID: {IdeaId}) from workflow ID {OldWorkflow} (MaxStage: {OldMaxStage}, CurrentStage: {OldCurrentStage}) to {NewWorkflow} ({WorkflowName}, MaxStage: {NewMaxStage}, CurrentStage: {NewCurrentStage}) by {User}",
+                    idea.IdeaCode, ideaId, oldWorkflowId, oldMaxStage, oldCurrentStage, newWorkflowId, workflow.WorkflowName, newMaxStage, idea.CurrentStage, updatedBy);
 
-                return (true, $"Workflow successfully changed to '{workflow.WorkflowName}'", workflow.WorkflowName);
+                var successMessage = $"Workflow successfully changed to '{workflow.WorkflowName}' (MaxStage: {oldMaxStage} → {newMaxStage}).{adjustmentMessage}";
+                return (true, successMessage, workflow.WorkflowName);
             }
             catch (Exception ex)
             {

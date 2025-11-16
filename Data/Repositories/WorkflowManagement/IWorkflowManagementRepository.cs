@@ -26,6 +26,7 @@ namespace Ideku.Data.Repositories.WorkflowManagement
         Task<IEnumerable<User>> GetApproversForWorkflowStageAsync(int workflowId, int targetStage, string? targetDivisionId, string? targetDepartmentId);
         Task<WorkflowStage?> GetWorkflowStageAsync(int workflowId, int stage);
         Task<IEnumerable<(int WorkflowId, int Stage)>> GetWorkflowStagesByRoleIdAsync(int roleId);
+        Task<int> GetMaxStageForWorkflowAsync(int workflowId);
 
         // Helper Methods for Dropdowns
         Task<IEnumerable<Models.Entities.Approver>> GetAllApproversAsync();

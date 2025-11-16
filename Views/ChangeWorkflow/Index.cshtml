@@ -943,52 +943,6 @@
         });
     }
 
-    // Show success message
-    function showSuccess(message) {
-        const alertHtml = `
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-
-        const container = document.querySelector('.container-fluid');
-        if (container) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = alertHtml;
-            const pageHeader = container.querySelector('.page-header');
-            container.insertBefore(tempDiv.firstElementChild, pageHeader.nextSibling);
-
-            setTimeout(() => {
-                const alert = container.querySelector('.alert-success');
-                if (alert) alert.remove();
-            }, 5000);
-        }
-    }
-
-    // Show error message
-    function showError(message) {
-        const alertHtml = `
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-
-        const container = document.querySelector('.container-fluid');
-        if (container) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = alertHtml;
-            const pageHeader = container.querySelector('.page-header');
-            container.insertBefore(tempDiv.firstElementChild, pageHeader.nextSibling);
-
-            setTimeout(() => {
-                const alert = container.querySelector('.alert-danger');
-                if (alert) alert.remove();
-            }, 5000);
-        }
-    }
-
     // Helper functions
     function getCategoryClass(categoryName) {
         switch (categoryName) {
