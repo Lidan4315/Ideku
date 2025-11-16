@@ -92,7 +92,7 @@ namespace Ideku.Controllers
             {
                 _logger.LogError(ex, "Error loading user management index");
                 TempData["ErrorMessage"] = "Error loading users. Please try again.";
-                return RedirectToAction("Index", "Settings");
+                return RedirectToAction("Index", "Home");
             }
         }
 

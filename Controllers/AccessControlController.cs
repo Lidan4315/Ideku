@@ -47,7 +47,7 @@ namespace Ideku.Controllers
             {
                 _logger.LogError(ex, "Error loading access control index");
                 TempData["ErrorMessage"] = "Error loading access control. Please try again.";
-                return RedirectToAction("Index", "Settings");
+                return RedirectToAction("Index", "Home");
             }
         }
 

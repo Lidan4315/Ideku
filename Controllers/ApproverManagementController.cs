@@ -43,7 +43,7 @@ namespace Ideku.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Error loading approvers: {ex.Message}";
-                return RedirectToAction("Index", "Settings");
+                return RedirectToAction("Index", "Home");
             }
         }
 
