@@ -284,5 +284,14 @@ namespace Ideku.Data.Repositories.WorkflowManagement
 
             return stages.Select(s => (s.WorkflowId, s.Stage));
         }
+
+        public async Task<int> GetMaxStageForWorkflowAsync(int workflowId)
+        {
+            var maxStage = await _context.WorkflowStages
+                .Where(ws => ws.WorkflowId == workflowId)
+                .MaxAsync(ws => (int?)ws.Stage);
+
+            return maxStage ?? 0;
+        }
     }
 }

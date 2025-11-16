@@ -56,52 +56,16 @@ namespace Ideku.Controllers
         {
             try
             {
-                // Validate and normalize pagination parameters (same as UserManagement)
+                // Validate and normalize pagination parameters
                 pageSize = PaginationHelper.ValidatePageSize(pageSize);
                 page = Math.Max(1, page);
 
-                // Get all ideas using IdeaService (reuse existing service)
-                // Use "superuser" to get all ideas without role filtering
+                // Get all ideas using IdeaService (use "superuser" to get all ideas without role filtering)
                 IQueryable<Idea> ideasQuery = await _ideaService.GetAllIdeasQueryAsync("superuser");
 
-                // Filter out deleted ideas
-                ideasQuery = ideasQuery.Where(i => !i.IsDeleted);
-
-                // Apply progressive filters (same pattern as UserManagement)
-                if (!string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    ideasQuery = ideasQuery.Where(i =>
-                        i.IdeaCode.Contains(searchTerm) ||
-                        i.IdeaName.Contains(searchTerm));
-                }
-
-                if (!string.IsNullOrWhiteSpace(selectedDivision))
-                {
-                    ideasQuery = ideasQuery.Where(i => i.ToDivisionId == selectedDivision);
-                }
-
-                if (!string.IsNullOrWhiteSpace(selectedDepartment))
-                {
-                    ideasQuery = ideasQuery.Where(i => i.ToDepartmentId == selectedDepartment);
-                }
-
-                if (selectedCategory.HasValue)
-                {
-                    ideasQuery = ideasQuery.Where(i => i.CategoryId == selectedCategory.Value);
-                }
-
-                if (selectedWorkflow.HasValue)
-                {
-                    ideasQuery = ideasQuery.Where(i => i.WorkflowId == selectedWorkflow.Value);
-                }
-
-                if (!string.IsNullOrWhiteSpace(selectedStatus))
-                {
-                    ideasQuery = ideasQuery.Where(i => i.CurrentStatus == selectedStatus);
-                }
-
-                // Apply ordering after all filters
-                ideasQuery = ideasQuery.OrderByDescending(i => i.SubmittedDate);
+                // Apply filters using helper method
+                ideasQuery = ApplyIdeasFilters(ideasQuery, searchTerm, selectedDivision, selectedDepartment,
+                    selectedCategory, selectedWorkflow, selectedStatus);
 
                 // Apply pagination - this executes the database queries
                 var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
@@ -159,48 +123,16 @@ namespace Ideku.Controllers
         {
             try
             {
+                // Validate and normalize pagination parameters
                 pageSize = PaginationHelper.ValidatePageSize(pageSize);
                 page = Math.Max(1, page);
 
-                // Get all ideas using IdeaService (reuse existing service)
+                // Get all ideas using IdeaService (use "superuser" to get all ideas without role filtering)
                 IQueryable<Idea> ideasQuery = await _ideaService.GetAllIdeasQueryAsync("superuser");
-                ideasQuery = ideasQuery.Where(i => !i.IsDeleted);
 
-                // Apply progressive filters
-                if (!string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    ideasQuery = ideasQuery.Where(i =>
-                        i.IdeaCode.Contains(searchTerm) ||
-                        i.IdeaName.Contains(searchTerm));
-                }
-
-                if (!string.IsNullOrWhiteSpace(selectedDivision))
-                {
-                    ideasQuery = ideasQuery.Where(i => i.ToDivisionId == selectedDivision);
-                }
-
-                if (!string.IsNullOrWhiteSpace(selectedDepartment))
-                {
-                    ideasQuery = ideasQuery.Where(i => i.ToDepartmentId == selectedDepartment);
-                }
-
-                if (selectedCategory.HasValue)
-                {
-                    ideasQuery = ideasQuery.Where(i => i.CategoryId == selectedCategory.Value);
-                }
-
-                if (selectedWorkflow.HasValue)
-                {
-                    ideasQuery = ideasQuery.Where(i => i.WorkflowId == selectedWorkflow.Value);
-                }
-
-                if (!string.IsNullOrWhiteSpace(selectedStatus))
-                {
-                    ideasQuery = ideasQuery.Where(i => i.CurrentStatus == selectedStatus);
-                }
-
-                // Apply ordering after all filters
-                ideasQuery = ideasQuery.OrderByDescending(i => i.SubmittedDate);
+                // Apply filters using helper method
+                ideasQuery = ApplyIdeasFilters(ideasQuery, searchTerm, selectedDivision, selectedDepartment,
+                    selectedCategory, selectedWorkflow, selectedStatus);
 
                 var pagedResult = await ideasQuery.ToPagedResultAsync(page, pageSize);
 
@@ -218,6 +150,7 @@ namespace Ideku.Controllers
                         departmentName = idea.TargetDepartment?.NameDepartment,
                         categoryName = idea.Category?.CategoryName,
                         eventName = idea.Event?.EventName,
+                        savingCost = idea.SavingCost,
                         workflowId = idea.WorkflowId,
                         workflowName = idea.Workflow?.WorkflowName,
                         currentStage = idea.CurrentStage,
@@ -269,27 +202,6 @@ namespace Ideku.Controllers
             }
         }
 
-        /// GET: Get available workflows for dropdown in change modal
-        [HttpGet]
-        public async Task<JsonResult> GetAvailableWorkflows()
-        {
-            try
-            {
-                var workflows = await _workflowManagementRepository.GetAllWorkflowsAsync();
-                var workflowList = workflows
-                    .Where(w => w.IsActive)
-                    .Select(w => new { id = w.Id, name = w.WorkflowName })
-                    .ToList();
-
-                return Json(new { success = true, workflows = workflowList });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading workflows");
-                return Json(new { success = false, message = "Error loading workflows" });
-            }
-        }
-
         /// POST: Update workflow for an idea
         [HttpPost]
         public async Task<IActionResult> UpdateWorkflow(long ideaId, int newWorkflowId)
@@ -314,5 +226,62 @@ namespace Ideku.Controllers
                 return Json(new { success = false, message = "An unexpected error occurred while updating workflow." });
             }
         }
+
+        #region Private Helper Methods
+
+        /// <summary>
+        /// Apply filters to ideas query
+        /// Extracted to avoid code duplication between Index and FilterIdeas
+        /// </summary>
+        private IQueryable<Idea> ApplyIdeasFilters(
+            IQueryable<Idea> query,
+            string? searchTerm,
+            string? selectedDivision,
+            string? selectedDepartment,
+            int? selectedCategory,
+            int? selectedWorkflow,
+            string? selectedStatus)
+        {
+            // Filter out deleted ideas
+            query = query.Where(i => !i.IsDeleted);
+
+            // Apply progressive filters
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(i =>
+                    i.IdeaCode.Contains(searchTerm) ||
+                    i.IdeaName.Contains(searchTerm));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDivision))
+            {
+                query = query.Where(i => i.ToDivisionId == selectedDivision);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDepartment))
+            {
+                query = query.Where(i => i.ToDepartmentId == selectedDepartment);
+            }
+
+            if (selectedCategory.HasValue)
+            {
+                query = query.Where(i => i.CategoryId == selectedCategory.Value);
+            }
+
+            if (selectedWorkflow.HasValue)
+            {
+                query = query.Where(i => i.WorkflowId == selectedWorkflow.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedStatus))
+            {
+                query = query.Where(i => i.CurrentStatus == selectedStatus);
+            }
+
+            // Apply ordering after all filters
+            return query.OrderByDescending(i => i.SubmittedDate);
+        }
+
+        #endregion
     }
 }
