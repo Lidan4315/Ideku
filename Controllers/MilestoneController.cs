@@ -2,6 +2,8 @@ using Ideku.Services.Milestone;
 using Ideku.Services.Lookup;
 using Ideku.Services.Idea;
 using Ideku.Services.Workflow;
+using Ideku.Services.Notification;
+using Ideku.Data.Repositories;
 using Ideku.ViewModels.Milestone;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +24,7 @@ namespace Ideku.Controllers
         private readonly ILookupService _lookupService;
         private readonly IIdeaService _ideaService;
         private readonly IWorkflowService _workflowService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<MilestoneController> _logger;
 
         public MilestoneController(
@@ -29,12 +32,14 @@ namespace Ideku.Controllers
             ILookupService lookupService,
             IIdeaService ideaService,
             IWorkflowService workflowService,
+            IServiceScopeFactory serviceScopeFactory,
             ILogger<MilestoneController> logger)
         {
             _milestoneService = milestoneService;
             _lookupService = lookupService;
             _ideaService = ideaService;
             _workflowService = workflowService;
+            _serviceScopeFactory = serviceScopeFactory;
             _logger = logger;
         }
 
@@ -297,6 +302,9 @@ namespace Ideku.Controllers
 
                 if (result.IsSuccess)
                 {
+                    // Send email notifications in background (non-blocking)
+                    SendSubmissionEmailInBackground(ideaId);
+
                     _logger.LogInformation("Idea {IdeaId} sent to Stage 3 approval by {Username}", ideaId, User.Identity!.Name);
                     return Json(new { success = true, message = result.SuccessMessage ?? "Idea has been successfully sent to Stage 3 approvers for review." });
                 }
@@ -626,6 +634,49 @@ namespace Ideku.Controllers
             sheet.Column(3).Width = Math.Max(sheet.Column(3).Width, 20);  // Initiator
             sheet.Column(4).Width = Math.Max(sheet.Column(4).Width, 30);  // Implementor
             sheet.Column(10).Width = Math.Max(sheet.Column(10).Width, 15); // Saving Cost
+        }
+
+        // Background email sending - Fire and forget pattern (like ApprovalController)
+        private void SendSubmissionEmailInBackground(long ideaId)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Starting background submission email process for idea {IdeaId}", ideaId);
+
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
+                    var ideaRepository = scope.ServiceProvider.GetRequiredService<IIdeaRepository>();
+
+                    // Get idea with fresh DbContext
+                    var idea = await ideaRepository.GetByIdAsync(ideaId);
+                    if (idea == null)
+                    {
+                        _logger.LogError("Idea {IdeaId} not found in background email task", ideaId);
+                        return;
+                    }
+
+                    // Get approvers with fresh DbContext
+                    var approvers = await workflowService.GetApproversForNextStageAsync(idea);
+                    if (!approvers.Any())
+                    {
+                        _logger.LogWarning("No approvers found for idea {IdeaId} in background email task", ideaId);
+                        return;
+                    }
+
+                    // Send email notifications
+                    var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+                    await notificationService.NotifyIdeaSubmitted(idea, approvers);
+
+                    _logger.LogInformation("Background submission email sent successfully for idea {IdeaId} to {ApproverCount} approvers",
+                        ideaId, approvers.Count);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send background submission email for idea {IdeaId}", ideaId);
+                }
+            });
         }
     }
 

@@ -271,7 +271,7 @@
                         <div class="tag-selection-container">
                             <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                                 <!-- Add User Button -->
-                                @if (Model.AvailableUsers != null && Model.AvailableUsers.Any())
+                                @if (Model.AllUsers != null && Model.AllUsers.Any())
                                 {
                                     <div class="dropdown position-relative">
                                         <button type="button" class="btn dropdown-toggle tag-add-btn"
@@ -291,7 +291,7 @@
                                             </li>
 
                                             <!-- User List -->
-                                            @foreach (var user in Model.AvailableUsers)
+                                            @foreach (var user in Model.AllUsers)
                                             {
                                                 <li class="edit-implementator-item" data-search-text="@user.Text.ToLower()">
                                                     <div class="dropdown-item-table" data-user-id="@user.Value" data-user-name="@user.Text">
@@ -398,18 +398,19 @@ $(document).ready(function() {
         var hasError = false;
         var errorMessage = '';
 
-
-        // Validate implementators
-        if (implementators.length === 0) {
-            hasError = true;
-            errorMessage = 'Please select at least one implementator.';
-        }
-
-        // Check Leader constraint
+        // Check minimum team composition: 1 Leader + 1 Member
         var leaders = implementators.filter(impl => impl.role === 'Leader');
-        if (leaders.length > 1) {
+        var members = implementators.filter(impl => impl.role === 'Member');
+
+        if (leaders.length === 0) {
+            hasError = true;
+            errorMessage = 'Please assign a Leader to the team.';
+        } else if (leaders.length > 1) {
             hasError = true;
             errorMessage = 'Only one Leader can be assigned per idea.';
+        } else if (members.length === 0) {
+            hasError = true;
+            errorMessage = 'Please assign at least one Member to the team.';
         }
 
 
@@ -843,13 +844,31 @@ function initializeEditTeamModal() {
             return;
         }
 
-        // Validate Leader constraint
+        // Validate minimum team composition: 1 Leader + 1 Member
         const leaders = selectedEditImplementators.filter(impl => impl.role === 'Leader');
-        if (leaders.length > 1) {
+        const members = selectedEditImplementators.filter(impl => impl.role === 'Member');
+
+        if (leaders.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Please assign a Leader to the team.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        } else if (leaders.length > 1) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Validation Error!',
                 text: 'Only one Leader can be assigned per idea.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        } else if (members.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error!',
+                text: 'Please assign at least one Member to the team.',
                 confirmButtonColor: '#dc2626'
             });
             return;
@@ -990,30 +1009,15 @@ function updateEditImplementatorTagsDisplay() {
             </button>
         `;
 
-        // Add remove functionality with confirmation
+        // Add remove functionality
         const removeBtn = tag.querySelector('.tag-remove-btn');
         removeBtn.addEventListener('click', function() {
             const indexToRemove = parseInt(this.dataset.index);
-            const memberToRemove = selectedEditImplementators[indexToRemove];
-
-            Swal.fire({
-                title: 'Remove Member?',
-                html: `Are you sure you want to remove <strong>${memberToRemove.userName}</strong> (${memberToRemove.role}) from the team?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="bi bi-trash me-2"></i>Yes, Remove',
-                cancelButtonText: '<i class="bi bi-x-circle me-2"></i>Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    selectedEditImplementators.splice(indexToRemove, 1);
-                    updateEditImplementatorTagsDisplay();
-                    updateEditImplementatorDropdownOptions();
-                    updateEditImplementatorHiddenInput();
-                    updateEditImplementatorInfoPanel();
-                }
-            });
+            selectedEditImplementators.splice(indexToRemove, 1);
+            updateEditImplementatorTagsDisplay();
+            updateEditImplementatorDropdownOptions();
+            updateEditImplementatorHiddenInput();
+            updateEditImplementatorInfoPanel();
         });
 
         tagsContainer.appendChild(tag);

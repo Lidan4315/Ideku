@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251107005141_InitialMigrate")]
+    [Migration("20251116171201_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -311,8 +311,8 @@ namespace Ideku.Migrations
 
                     b.Property<string>("CurrentStatus")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
                         .HasColumnName("CurrentStatus");
 
                     b.Property<int?>("EventId")

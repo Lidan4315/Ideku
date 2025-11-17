@@ -88,7 +88,7 @@ namespace Ideku.Models.Entities
 
         [Required]
         [Column("CurrentStatus")]
-        [StringLength(20)]
+        [StringLength(30)]
         public string CurrentStatus { get; set; } = string.Empty;
 
         [Column("IsRejected")]

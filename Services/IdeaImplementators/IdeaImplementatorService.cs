@@ -10,17 +10,20 @@ namespace Ideku.Services.IdeaImplementators
     {
         private readonly IIdeaImplementatorRepository _implementatorRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IIdeaRepository _ideaRepository;
         private readonly AppDbContext _context;
         private readonly ILogger<IdeaImplementatorService> _logger;
 
         public IdeaImplementatorService(
             IIdeaImplementatorRepository implementatorRepository,
             IUserRepository userRepository,
+            IIdeaRepository ideaRepository,
             AppDbContext context,
             ILogger<IdeaImplementatorService> logger)
         {
             _implementatorRepository = implementatorRepository;
             _userRepository = userRepository;
+            _ideaRepository = ideaRepository;
             _context = context;
             _logger = logger;
         }
@@ -46,6 +49,21 @@ namespace Ideku.Services.IdeaImplementators
                 };
 
                 await _implementatorRepository.CreateAsync(assignment);
+
+                // Check if this is the first implementator assigned and update status if needed
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea != null && idea.CurrentStage == 1 && idea.CurrentStatus == "Waiting Team Assignment")
+                {
+                    // Check if this is indeed the first implementator
+                    var implementatorCount = await _context.IdeaImplementators.CountAsync(ii => ii.IdeaId == ideaId);
+                    if (implementatorCount == 1) // Just assigned the first one
+                    {
+                        idea.CurrentStatus = "Waiting Approval S2";
+                        idea.UpdatedDate = DateTime.Now;
+                        await _ideaRepository.UpdateAsync(idea);
+                        _logger.LogInformation("Idea {IdeaId} status changed to 'Waiting Approval S2' after first team assignment", ideaId);
+                    }
+                }
 
                 _logger.LogInformation("User {UserId} assigned as {Role} to Idea {IdeaId}", userId, role, ideaId);
                 return (true, $"User successfully assigned as {role}");
@@ -141,6 +159,40 @@ namespace Ideku.Services.IdeaImplementators
             }
         }
 
+        public async Task<IEnumerable<object>> GetAllUsersAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Getting all users");
+
+                // Get all users without filtering
+                var allUsers = await _context.Users
+                    .Include(u => u.Employee)
+                    .Include(u => u.Role)
+                    .Select(u => new
+                    {
+                        id = u.Id,
+                        name = u.Name,
+                        employeeId = u.EmployeeId,
+                        division = u.Employee != null ? u.Employee.DIVISION : "Unknown",
+                        department = u.Employee != null ? u.Employee.DEPARTEMENT : "Unknown",
+                        role = u.Role != null ? u.Role.RoleName : "Unknown",
+                        displayText = $"{u.Name} ({u.EmployeeId})"
+                    })
+                    .OrderBy(u => u.name)
+                    .ToListAsync();
+
+                _logger.LogInformation("Found {Count} total users", allUsers.Count);
+
+                return allUsers.Cast<object>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all users");
+                return Enumerable.Empty<object>();
+            }
+        }
+
         public async Task<(bool IsValid, string Message)> ValidateAssignmentAsync(long ideaId, long userId, string role)
         {
             try
@@ -206,6 +258,22 @@ namespace Ideku.Services.IdeaImplementators
             }
         }
 
+        public Task<(bool IsValid, string Message)> ValidateTeamCompositionAsync(int leaderCount, int memberCount)
+        {
+            // Minimum requirement: 1 Leader + 1 Member
+            if (leaderCount < 1)
+            {
+                return Task.FromResult((false, "Please assign a Leader to the team."));
+            }
+
+            if (memberCount < 1)
+            {
+                return Task.FromResult((false, "Please assign at least one Member to the team."));
+            }
+
+            return Task.FromResult((true, "Team composition is valid."));
+        }
+
         public async Task<(bool Success, string Message)> AssignMultipleImplementatorsAsync(
             string username,
             long ideaId,
@@ -229,17 +297,26 @@ namespace Ideku.Services.IdeaImplementators
                 var newLeaders = implementators.Where(i => i.Role == "Leader").ToList();
                 var newMembers = implementators.Where(i => i.Role == "Member").ToList();
 
-                // Validation 1: Check leader limit (max 1 leader total)
+                // Calculate total after assignment
                 var totalLeaders = currentLeaderCount + newLeaders.Count;
+                var totalMembers = currentMemberCount + newMembers.Count;
+
+                // Validation 1: Check minimum team composition (1 Leader + 1 Member)
+                var compositionValidation = await ValidateTeamCompositionAsync(totalLeaders, totalMembers);
+                if (!compositionValidation.IsValid)
+                {
+                    return (false, compositionValidation.Message);
+                }
+
+                // Validation 2: Check leader limit (max 1 leader total)
                 if (totalLeaders > 1)
                 {
                     return (false, "Only one Leader can be assigned per idea.");
                 }
 
-                // Validation 2: Check member limit for Workstream Leader (max 5 members)
+                // Validation 3: Check member limit for Workstream Leader (max 5 members)
                 if (user.Role.RoleName == "Workstream Leader")
                 {
-                    var totalMembers = currentMemberCount + newMembers.Count;
                     if (totalMembers > 5)
                     {
                         return (false, "Maximum limit of 5 members has been reached.");
@@ -295,17 +372,26 @@ namespace Ideku.Services.IdeaImplementators
                 var newLeaders = implementatorsToAdd.Where(i => i.Role == "Leader").ToList();
                 var newMembers = implementatorsToAdd.Where(i => i.Role == "Member").ToList();
 
-                // Validation 1: Check leader limit (max 1 leader total after update)
+                // Calculate total after update
                 var totalLeaders = currentLeaderCount + newLeaders.Count;
+                var totalMembers = currentMemberCount + newMembers.Count;
+
+                // Validation 1: Check minimum team composition (1 Leader + 1 Member)
+                var compositionValidation = await ValidateTeamCompositionAsync(totalLeaders, totalMembers);
+                if (!compositionValidation.IsValid)
+                {
+                    return (false, compositionValidation.Message);
+                }
+
+                // Validation 2: Check leader limit (max 1 leader total after update)
                 if (totalLeaders > 1)
                 {
                     return (false, "Only one Leader can be assigned per idea.");
                 }
 
-                // Validation 2: Check member limit for Workstream Leader (max 5 members after update)
+                // Validation 3: Check member limit for Workstream Leader (max 5 members after update)
                 if (user.Role.RoleName == "Workstream Leader")
                 {
-                    var totalMembers = currentMemberCount + newMembers.Count;
                     if (totalMembers > 5)
                     {
                         return (false, "Maximum limit of 5 members has been reached.");

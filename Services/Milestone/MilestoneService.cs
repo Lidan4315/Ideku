@@ -141,12 +141,31 @@ namespace Ideku.Services.Milestone
                     await _milestoneRepository.AddMilestonePICsAsync(pics);
                 }
 
-                // Set IsMilestoneCreated flag on the idea
+                // Set IsMilestoneCreated flag and update status on the idea
                 var idea = await _ideaRepository.GetByIdAsync(ideaId);
-                if (idea != null && !idea.IsMilestoneCreated)
+                if (idea != null)
                 {
-                    idea.IsMilestoneCreated = true;
-                    await _ideaRepository.UpdateAsync(idea);
+                    bool needsUpdate = false;
+
+                    // Set milestone created flag if not already set
+                    if (!idea.IsMilestoneCreated)
+                    {
+                        idea.IsMilestoneCreated = true;
+                        needsUpdate = true;
+                    }
+
+                    // Change status from "Waiting Milestone Creation" to "Waiting Approval S3"
+                    if (idea.CurrentStage == 2 && idea.CurrentStatus == "Waiting Milestone Creation")
+                    {
+                        idea.CurrentStatus = "Waiting Approval S3";
+                        idea.UpdatedDate = DateTime.Now;
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate)
+                    {
+                        await _ideaRepository.UpdateAsync(idea);
+                    }
                 }
 
                 return (true, "Milestone created successfully.", createdMilestone);
