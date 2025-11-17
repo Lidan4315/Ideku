@@ -301,43 +301,145 @@ body.modern-page {
 }
 
 /* =============================================================================
-   RESPONSIVE DESIGN
+   MOBILE NAVBAR - HIDDEN ON DESKTOP, VISIBLE ON MOBILE
+   ============================================================================= */
+.mobile-navbar {
+    display: none; /* Hidden by default (desktop) */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(90deg, #5c1f25 0%, #9c1c31 100%);
+    color: white;
+    z-index: 1001;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.hamburger-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.hamburger-btn:hover {
+    transform: scale(1.1);
+}
+
+.mobile-navbar-brand {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mobile-logo {
+    max-height: 35px;
+    filter: brightness(1.2);
+}
+
+.mobile-user-menu {
+    position: relative;
+}
+
+.mobile-user-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.mobile-user-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Sidebar Overlay - Hidden by default */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    display: none; /* Hidden on desktop */
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* =============================================================================
+   RESPONSIVE DESIGN - MOBILE ONLY
    ============================================================================= */
 @media (max-width: 768px) {
+    /* Show mobile navbar */
+    .mobile-navbar {
+        display: flex;
+    }
+
+    /* Show overlay element */
+    .sidebar-overlay {
+        display: block;
+    }
+
+    /* Adjust page container for mobile navbar */
+    .page-container {
+        padding-top: 60px;
+    }
+
+    /* Sidebar - hidden by default, slide in when open */
     .sidebar {
         width: 280px;
         transform: translateX(-100%);
+        top: 0;
+        z-index: 1000;
     }
-    
+
     .sidebar.open {
         transform: translateX(0);
     }
-    
+
+    /* Adjust sidebar header to match mobile navbar height */
+    .sidebar-header {
+        min-height: 60px;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .main-content {
         margin-left: 0;
     }
-    
+
     .content-wrapper {
         padding: 1rem;
     }
-    
-    /* Mobile overlay */
-    .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-    
-    .sidebar-overlay.active {
-        opacity: 1;
-        visibility: visible;
+
+    /* Hide sidebar footer on mobile when closed */
+    .sidebar:not(.open) .sidebar-footer {
+        display: none;
     }
 }
 
