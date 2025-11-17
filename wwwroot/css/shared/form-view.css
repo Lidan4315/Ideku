@@ -1,0 +1,32 @@
+/* =============================================================================
+   FORM VIEW STYLES
+   Readonly/view-only form display styles for detail pages
+   ============================================================================= */
+
+.form-group-view {
+    margin-bottom: 1rem;
+}
+
+.form-group-view label {
+    display: block;
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-group-view p,
+.form-group-view .form-control-plaintext {
+    background-color: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin: 0;
+    font-size: 1rem;
+    color: #1f2937;
+}
+
+.form-control-plaintext {
+    white-space: pre-wrap;
+    min-height: 100px;
+}
