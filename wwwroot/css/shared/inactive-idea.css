@@ -1,0 +1,36 @@
+/* =============================================================================
+   INACTIVE IDEA WARNING STYLES
+   Shared styles for inactive idea warning component
+   ============================================================================= */
+
+.inactive-idea-card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+.inactive-warning-icon {
+    font-size: 4rem;
+    color: #ffc107;
+}
+
+.inactive-reason-text {
+    font-size: 0.95rem;
+}
+
+.inactive-section {
+    opacity: 0.6;
+    pointer-events: none;
+    filter: grayscale(30%);
+    user-select: none;
+}
+
+.inactive-section::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(128, 128, 128, 0.1);
+    pointer-events: none;
+}

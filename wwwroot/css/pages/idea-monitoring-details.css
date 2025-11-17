@@ -1,0 +1,209 @@
+/* =============================================================================
+   IDEA MONITORING DETAILS PAGE STYLES
+   Specific styles for IdeaMonitoring/Details.cshtml
+   ============================================================================= */
+
+.monitoring-card {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s ease;
+}
+
+.monitoring-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.cost-display {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #198754;
+}
+
+.cost-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.period-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-weight: 600;
+}
+
+.empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.btn-edit {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border: none;
+    color: white;
+}
+
+.btn-edit:hover {
+    opacity: 0.9;
+    color: white;
+}
+
+.validation-badge {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.monitoring-grid {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+}
+
+.monitoring-header {
+    display: flex;
+    background: #2c3e50;
+    color: white;
+}
+
+.label-column {
+    width: 200px;
+    background: #2c3e50;
+    padding: 0;
+}
+
+.label-cell {
+    padding: 1.5rem 1rem;
+    font-weight: 600;
+    color: white;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.label-cell:last-child {
+    border-bottom: none;
+}
+
+.month-columns {
+    display: flex;
+    flex: 1;
+}
+
+.month-column {
+    flex: 1;
+    text-align: center;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.month-header {
+    background: #34495e;
+    padding: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+}
+
+.month-value {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    background: white;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.month-value:last-child {
+    border-bottom: none;
+}
+
+.total-column {
+    width: 150px;
+    text-align: center;
+    border-left: 2px solid #dee2e6;
+    background: #f8f9fa;
+}
+
+.total-header {
+    background: #495057;
+    padding: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+}
+
+.total-value {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.total-value:last-child {
+    border-bottom: none;
+}
+
+.value-plan {
+    color: #0d6efd;
+}
+
+.value-actual {
+    color: #0dcaf0;
+}
+
+.value-validated {
+    color: #198754;
+}
+
+/* Inline input styling */
+.value-display {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.value-input {
+    width: 100%;
+    max-width: 150px;
+    text-align: center;
+    border: 2px solid;
+    border-radius: 4px;
+    padding: 0.5rem;
+    font-weight: 600;
+    background: white;
+    font-size: 1rem;
+}
+
+.value-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.value-input.plan {
+    border-color: #0d6efd;
+}
+
+.value-input.actual {
+    border-color: #0dcaf0;
+}
+
+.value-input.validated {
+    border-color: #198754;
+}
+
+.edit-mode {
+    display: none;
+}
+
+.editing .view-mode {
+    display: none;
+}
+
+.editing .edit-mode {
+    display: block;
+}

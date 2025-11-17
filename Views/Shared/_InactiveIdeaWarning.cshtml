@@ -2,11 +2,11 @@
 
 @if (Model.IsRejected && Model.CurrentStatus == "Inactive")
 {
-    <div class="card shadow-sm mb-4" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+    <div class="card shadow-sm mb-4 inactive-idea-card">
         <div class="card-body text-center py-5">
             <!-- Warning Icon -->
             <div class="mb-4">
-                <i class="bi bi-exclamation-triangle-fill" style="font-size: 4rem; color: #ffc107;"></i>
+                <i class="bi bi-exclamation-triangle-fill inactive-warning-icon"></i>
             </div>
 
             <!-- Title -->
@@ -15,7 +15,7 @@
             <!-- Reason -->
             @if (!string.IsNullOrEmpty(Model.RejectedReason))
             {
-                <p class="text-muted mb-4" style="font-size: 0.95rem;">
+                <p class="text-muted mb-4 inactive-reason-text">
                     <strong>Reason:</strong> @Model.RejectedReason
                 </p>
             }
@@ -67,23 +67,3 @@
         }
     }
 }
-
-<style>
-    .inactive-section {
-        opacity: 0.6;
-        pointer-events: none;
-        filter: grayscale(30%);
-        user-select: none;
-    }
-
-    .inactive-section::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(128, 128, 128, 0.1);
-        pointer-events: none;
-    }
-</style>
