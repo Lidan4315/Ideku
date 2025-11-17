@@ -15,8 +15,14 @@ using Ideku.Services.ApprovalToken;
 using Ideku.Models;
 using Ideku.Models.Entities;
 using WebOptimizer;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure globalization to use en-US culture (USD currency format)
+var cultureInfo = new CultureInfo("en-US");
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
