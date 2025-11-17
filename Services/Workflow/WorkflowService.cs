@@ -360,6 +360,11 @@ namespace Ideku.Services.Workflow
                     idea.CurrentStatus = "Completed"; // Final approval
                     idea.CompletedDate = DateTime.Now;
                 }
+                else if (nextStage == 1)
+                {
+                    // Special case: Stage 1 requires team assignment before S2 approval
+                    idea.CurrentStatus = "Waiting Team Assignment";
+                }
                 else if (nextStage == 2)
                 {
                     // Special case: Stage 2 requires milestone creation before S3 approval
@@ -504,6 +509,11 @@ namespace Ideku.Services.Workflow
                         idea.CurrentStatus = "Completed";
                         idea.CompletedDate = DateTime.Now;
                     }
+                    else if (nextStage == 1)
+                    {
+                        // Special case: Stage 1 requires team assignment before S2 approval
+                        idea.CurrentStatus = "Waiting Team Assignment";
+                    }
                     else if (nextStage == 2)
                     {
                         // Special case: Stage 2 requires milestone creation before S3 approval
@@ -599,8 +609,9 @@ namespace Ideku.Services.Workflow
                             idea.ToDepartmentId, approvalData.IdeaId);
                     }
                 }
-                // Send notifications to next stage approvers if NOT Stage 2 (Stage 2 requires milestone first)
-                else if (idea.CurrentStage < idea.MaxStage && idea.CurrentStage != 2 && idea.CurrentStatus != "Completed")
+                // Send notifications to next stage approvers if NOT Stage 1 or Stage 2
+                // Stage 1 requires team assignment first, Stage 2 requires milestone first
+                else if (idea.CurrentStage < idea.MaxStage && idea.CurrentStage != 1 && idea.CurrentStage != 2 && idea.CurrentStatus != "Completed")
                 {
                     var nextStageApprovers = await GetApproversForNextStageAsync(idea);
 

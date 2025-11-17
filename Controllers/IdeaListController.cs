@@ -3,6 +3,8 @@ using Ideku.Services.Idea;
 using Ideku.Services.IdeaRelation;
 using Ideku.Services.Lookup;
 using Ideku.Services.IdeaImplementators;
+using Ideku.Services.Workflow;
+using Ideku.Services.Notification;
 using Ideku.ViewModels.IdeaList;
 using Ideku.Extensions;
 using Ideku.Helpers;
@@ -284,8 +286,11 @@ namespace Ideku.Controllers
                 // Get implementators for the idea
                 var implementators = await _implementatorService.GetImplementatorsByIdeaIdAsync(id);
 
-                // Get available users for dropdown (server-side)
+                // Get available users for dropdown (server-side) - for Add Implementator modal
                 var availableUsers = await _implementatorService.GetAvailableUsersForAssignmentAsync(id);
+
+                // Get ALL users for Edit Team modal (including already assigned)
+                var allUsers = await _implementatorService.GetAllUsersAsync();
 
                 // Get user role for view (untuk show/hide reactivate button)
                 var user = await _userRepository.GetByUsernameAsync(User.Identity?.Name ?? "");
@@ -300,6 +305,11 @@ namespace Ideku.Controllers
                     Idea = idea,
                     Implementators = implementators.ToList(),
                     AvailableUsers = availableUsers.Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                    {
+                        Value = GetUserProperty(u, "id")?.ToString(),
+                        Text = GetUserProperty(u, "displayText")?.ToString()
+                    }).ToList(),
+                    AllUsers = allUsers.Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
                     {
                         Value = GetUserProperty(u, "id")?.ToString(),
                         Text = GetUserProperty(u, "displayText")?.ToString()
@@ -384,6 +394,9 @@ namespace Ideku.Controllers
 
                 if (result.Success)
                 {
+                    // Send email notifications in background (non-blocking)
+                    SendTeamAssignmentEmailInBackground(request.IdeaId);
+
                     _logger.LogInformation("Successfully assigned {Count} implementators to idea {IdeaId} by {Username}",
                         implementators.Count, request.IdeaId, User.Identity!.Name);
                 }
@@ -440,6 +453,50 @@ namespace Ideku.Controllers
             var type = user.GetType();
             var property = type.GetProperty(propertyName);
             return property?.GetValue(user);
+        }
+
+        // Send email notification in background after team assignment
+        private void SendTeamAssignmentEmailInBackground(long ideaId)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Starting background team assignment email process for idea {IdeaId}", ideaId);
+
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
+                    var ideaRepository = scope.ServiceProvider.GetRequiredService<IIdeaRepository>();
+
+                    var idea = await ideaRepository.GetByIdAsync(ideaId);
+                    if (idea == null)
+                    {
+                        _logger.LogError("Idea {IdeaId} not found in background email task", ideaId);
+                        return;
+                    }
+
+                    // Only send email if status is "Waiting Approval S2" (first team assignment)
+                    if (idea.CurrentStage == 1 && idea.CurrentStatus == "Waiting Approval S2")
+                    {
+                        var approvers = await workflowService.GetApproversForNextStageAsync(idea);
+                        if (!approvers.Any())
+                        {
+                            _logger.LogWarning("No approvers found for idea {IdeaId} in background email task", ideaId);
+                            return;
+                        }
+
+                        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+                        await notificationService.NotifyIdeaSubmitted(idea, approvers);
+
+                        _logger.LogInformation("Background team assignment email sent successfully for idea {IdeaId} to {ApproverCount} approvers",
+                            ideaId, approvers.Count);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send background team assignment email for idea {IdeaId}", ideaId);
+                }
+            });
         }
 
         // Export IdeaList to Excel

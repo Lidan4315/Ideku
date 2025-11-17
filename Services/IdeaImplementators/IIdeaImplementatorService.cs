@@ -34,6 +34,12 @@ namespace Ideku.Services.IdeaImplementators
         Task<IEnumerable<object>> GetAvailableUsersForAssignmentAsync(long ideaId);
 
         /// <summary>
+        /// Get all users (including those already assigned) for Edit Team modal
+        /// </summary>
+        /// <returns>List of all users for dropdown</returns>
+        Task<IEnumerable<object>> GetAllUsersAsync();
+
+        /// <summary>
         /// Validate if user can be assigned with specific role
         /// </summary>
         /// <param name="ideaId">Idea ID</param>
@@ -41,6 +47,14 @@ namespace Ideku.Services.IdeaImplementators
         /// <param name="role">Role to assign</param>
         /// <returns>Validation result with message</returns>
         Task<(bool IsValid, string Message)> ValidateAssignmentAsync(long ideaId, long userId, string role);
+
+        /// <summary>
+        /// Validate team composition meets minimum requirements
+        /// </summary>
+        /// <param name="leaderCount">Number of leaders</param>
+        /// <param name="memberCount">Number of members</param>
+        /// <returns>Validation result with message</returns>
+        Task<(bool IsValid, string Message)> ValidateTeamCompositionAsync(int leaderCount, int memberCount);
 
         /// <summary>
         /// Assign multiple implementators to an idea in a single transaction
