@@ -34,5 +34,9 @@ namespace Ideku.Services.IdeaMonitoring
         /// Upload monitoring supporting documents (attachments) for an idea
         /// Files will be named with "M" prefix: {ideaCode}_M{counter}.ext
         Task<(bool Success, string Message)> UploadMonitoringAttachmentsAsync(long ideaId, List<IFormFile> files, string username);
+
+        /// Add a new KPI monitoring based on existing monthly cost saving monitoring duration
+        /// The new KPI will automatically use the same MonthFrom and MonthTo as the existing monitoring
+        Task<(bool Success, string Message)> AddKpiMonitoringAsync(long ideaId, string kpiName, string measurementUnit, string username);
     }
 }

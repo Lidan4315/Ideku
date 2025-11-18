@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ideku.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251116171201_InitialMigrate")]
+    [Migration("20251118002513_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -505,9 +505,18 @@ namespace Ideku.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("CreatedAt");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DeletedAt");
+
                     b.Property<long>("IdeaId")
                         .HasColumnType("bigint")
                         .HasColumnName("IdeaId");
+
+                    b.Property<string>("MeasurementUnit")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("MeasurementUnit");
 
                     b.Property<string>("MonitoringName")
                         .HasMaxLength(200)

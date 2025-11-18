@@ -531,5 +531,44 @@ namespace Ideku.Controllers
             }
         }
 
+        // POST: IdeaMonitoring/AddKpi
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddKpi(AddKpiViewModel model)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                return Json(new { success = false, message = "Validation failed", errors });
+            }
+
+            // Validate idea is not inactive
+            var idea = await _ideaRepository.GetByIdAsync(model.IdeaId);
+            if (idea != null && idea.IsRejected && idea.CurrentStatus == "Inactive")
+            {
+                return Json(new { success = false, message = "Cannot add KPI for inactive idea." });
+            }
+
+            var result = await _monitoringService.AddKpiMonitoringAsync(
+                model.IdeaId,
+                model.KpiName,
+                model.MeasurementUnit,
+                username);
+
+            if (result.Success)
+            {
+                _logger.LogInformation("KPI '{KpiName}' added for Idea {IdeaId} by user {Username}",
+                    model.KpiName, model.IdeaId, username);
+            }
+
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
     }
 }

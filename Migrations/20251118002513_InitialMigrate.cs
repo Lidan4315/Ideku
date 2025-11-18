@@ -459,13 +459,15 @@ namespace Ideku.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     IdeaId = table.Column<long>(type: "bigint", nullable: false),
                     MonitoringName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    MeasurementUnit = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     MonthFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
                     MonthTo = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CostSavePlan = table.Column<long>(type: "bigint", nullable: true),
                     CostSaveActual = table.Column<long>(type: "bigint", nullable: true),
                     CostSaveActualValidated = table.Column<long>(type: "bigint", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {

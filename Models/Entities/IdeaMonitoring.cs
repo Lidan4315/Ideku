@@ -18,6 +18,10 @@ namespace Ideku.Models.Entities
         [StringLength(200)]
         public string? MonitoringName { get; set; }
 
+        [Column("MeasurementUnit")]
+        [StringLength(20)]
+        public string? MeasurementUnit { get; set; }
+
         [Required]
         [Column("MonthFrom")]
         public DateTime MonthFrom { get; set; }
@@ -40,6 +44,9 @@ namespace Ideku.Models.Entities
 
         [Column("UpdatedAt")]
         public DateTime? UpdatedAt { get; set; }
+
+        [Column("DeletedAt")]
+        public DateTime? DeletedAt { get; set; }
 
         // Navigation Properties
         [ForeignKey("IdeaId")]
