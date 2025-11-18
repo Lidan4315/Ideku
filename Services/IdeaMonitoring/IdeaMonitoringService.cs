@@ -72,7 +72,8 @@ namespace Ideku.Services.IdeaMonitoring
                     var monitoring = new Models.Entities.IdeaMonitoring
                     {
                         IdeaId = ideaId,
-                        MonitoringName = $"Cost Saving - {currentMonth:MMM yyyy}",
+                        MonitoringName = "Cost Saving",
+                        MeasurementUnit = "USD",
                         MonthFrom = monthStart,
                         MonthTo = monthEnd,
                         CostSavePlan = null,
@@ -329,7 +330,8 @@ namespace Ideku.Services.IdeaMonitoring
                     var monitoring = new Models.Entities.IdeaMonitoring
                     {
                         IdeaId = ideaId,
-                        MonitoringName = $"Cost Saving - {currentMonth:MMM yyyy}",
+                        MonitoringName = "Cost Saving",
+                        MeasurementUnit = "USD",
                         MonthFrom = monthStart,
                         MonthTo = monthEnd,
                         CostSavePlan = null,
@@ -410,6 +412,80 @@ namespace Ideku.Services.IdeaMonitoring
             {
                 _logger.LogError(ex, "Error uploading monitoring attachments for Idea {IdeaId}", ideaId);
                 return (false, $"Error uploading files: {ex.Message}");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> AddKpiMonitoringAsync(
+            long ideaId,
+            string kpiName,
+            string measurementUnit,
+            string username)
+        {
+            try
+            {
+                // Validate idea exists
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return (false, "Idea not found");
+                }
+
+                // Check if user has permission
+                if (!await CanEditCostSavingsAsync(ideaId, username))
+                {
+                    return (false, "You don't have permission to add KPI for this idea");
+                }
+
+                // Get existing monitoring records to determine duration
+                var existingMonitorings = await _monitoringRepository.GetByIdeaIdAsync(ideaId);
+                if (!existingMonitorings.Any())
+                {
+                    return (false, "No existing monitoring found. Please create monthly cost saving monitoring first");
+                }
+
+                // Get the date range from existing monitoring
+                var orderedMonitorings = existingMonitorings.OrderBy(m => m.MonthFrom).ToList();
+
+                // Check if a KPI with the same name already exists
+                var kpiExists = orderedMonitorings.Any(m =>
+                    !string.IsNullOrEmpty(m.MonitoringName) &&
+                    m.MonitoringName.Equals(kpiName, StringComparison.OrdinalIgnoreCase));
+
+                if (kpiExists)
+                {
+                    return (false, "A KPI with this name already exists");
+                }
+
+                // Create new KPI monitoring records for each existing month
+                var createdCount = 0;
+                foreach (var existingMonitoring in orderedMonitorings)
+                {
+                    var kpiMonitoring = new Models.Entities.IdeaMonitoring
+                    {
+                        IdeaId = ideaId,
+                        MonitoringName = kpiName,
+                        MeasurementUnit = measurementUnit,
+                        MonthFrom = existingMonitoring.MonthFrom,
+                        MonthTo = existingMonitoring.MonthTo,
+                        CostSavePlan = null,
+                        CostSaveActual = null,
+                        CostSaveActualValidated = null,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    await _monitoringRepository.CreateAsync(kpiMonitoring);
+                    createdCount++;
+                }
+
+                _logger.LogInformation("KPI '{KpiName}' with {Count} monthly records created for Idea {IdeaId} by user {Username}",
+                    kpiName, createdCount, ideaId, username);
+
+                return (true, $"KPI '{kpiName}' with {createdCount} monthly records created successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding KPI monitoring for Idea {IdeaId}", ideaId);
+                return (false, $"Error adding KPI: {ex.Message}");
             }
         }
     }

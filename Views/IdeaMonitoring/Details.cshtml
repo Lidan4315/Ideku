@@ -53,12 +53,24 @@
     <!-- Monitoring Content -->
     @if (Model.HasMonitoring)
     {
-        var orderedMonitorings = Model.Monitorings.OrderBy(m => m.MonthFrom).ToList();
+        // Group monitorings by KPI (based on MonitoringName)
+        var allMonitorings = Model.Monitorings.OrderBy(m => m.MonthFrom).ToList();
+
+        // Separate Cost Saving (displayed as "Monthly Cost Saving") and other KPIs
+        var costSavingMonitorings = allMonitorings.Where(m => m.MonitoringName != null && m.MonitoringName == "Cost Saving").ToList();
+        var kpiGroups = allMonitorings
+            .Where(m => m.MonitoringName != null && m.MonitoringName != "Cost Saving")
+            .GroupBy(m => m.MonitoringName)
+            .OrderBy(g => g.Key)
+            .ToList();
 
         <!-- Action Buttons Row -->
         <div class="d-flex flex-wrap gap-2 mb-4 justify-content-end">
             @if (Model.CanEditCostSavings)
             {
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addKpiModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add New KPI
+                </button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#extendDurationModal">
                     <i class="bi bi-calendar-plus me-2"></i>Extend Duration
                 </button>
@@ -77,7 +89,14 @@
             }
         </div>
 
-        <div class="monitoring-grid">
+        <!-- Monthly Cost Saving Table -->
+        @if (costSavingMonitorings.Any())
+        {
+            var orderedMonitorings = costSavingMonitorings;
+            <h4 class="mb-3">
+                Monthly Cost Saving (USD)
+            </h4>
+            <div class="monitoring-grid mb-5">
             <div class="monitoring-header">
                 <div class="label-column"></div>
                 <div class="month-columns">
@@ -194,6 +213,136 @@
                 </div>
             </div>
         </div>
+        }
+
+        <!-- Other KPI Tables -->
+        @foreach (var kpiGroup in kpiGroups)
+        {
+            var kpiMonitorings = kpiGroup.OrderBy(m => m.MonthFrom).ToList();
+            var kpiName = kpiGroup.Key ?? "Unknown KPI";
+            var measurementUnit = kpiMonitorings.FirstOrDefault()?.MeasurementUnit ?? "";
+
+            <h4 class="mb-3 mt-4">
+                @kpiName @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
+            </h4>
+            <div class="monitoring-grid mb-5">
+            <div class="monitoring-header">
+                <div class="label-column"></div>
+                <div class="month-columns">
+                    @foreach (var monitoring in kpiMonitorings)
+                    {
+                        <div class="month-column">
+                            <div class="month-header">
+                                @monitoring.MonthFrom.ToString("MMMM-yyyy").ToUpper()
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="total-column">
+                    <div class="total-header">TOTAL</div>
+                </div>
+            </div>
+
+            <div style="display: flex;">
+                <div class="label-column">
+                    <div class="label-cell">
+                        <i class="bi bi-clipboard-data me-2"></i>PLAN @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
+                    </div>
+                    <div class="label-cell">
+                        <i class="bi bi-graph-up me-2"></i>ACTUAL @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
+                    </div>
+                    <div class="label-cell">
+                        <i class="bi bi-patch-check me-2"></i>ACTUAL VALIDATED @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
+                    </div>
+                </div>
+
+                <div class="month-columns">
+                    @foreach (var monitoring in kpiMonitorings)
+                    {
+                        <div class="month-column" data-monitoring-id="@monitoring.Id">
+                            <!-- Plan -->
+                            <div class="month-value">
+                                <!-- View Mode -->
+                                <div class="view-mode">
+                                    <span class="value-display value-plan">@(monitoring.CostSavePlan?.ToString("N0") ?? "0") @measurementUnit</span>
+                                </div>
+                                <!-- Edit Mode -->
+                                @if (Model.CanEditCostSavings)
+                                {
+                                    <div class="edit-mode">
+                                        <input type="number"
+                                               class="value-input plan"
+                                               data-monitoring-id="@monitoring.Id"
+                                               data-field="plan"
+                                               data-original="@(monitoring.CostSavePlan ?? 0)"
+                                               value="@(monitoring.CostSavePlan ?? 0)"
+                                               min="0"
+                                               placeholder="0" />
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Actual -->
+                            <div class="month-value">
+                                <!-- View Mode -->
+                                <div class="view-mode">
+                                    <span class="value-display value-actual">@(monitoring.CostSaveActual?.ToString("N0") ?? "0") @measurementUnit</span>
+                                </div>
+                                <!-- Edit Mode -->
+                                @if (Model.CanEditCostSavings)
+                                {
+                                    <div class="edit-mode">
+                                        <input type="number"
+                                               class="value-input actual"
+                                               data-monitoring-id="@monitoring.Id"
+                                               data-field="actual"
+                                               data-original="@(monitoring.CostSaveActual ?? 0)"
+                                               value="@(monitoring.CostSaveActual ?? 0)"
+                                               min="0"
+                                               placeholder="0" />
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Validated -->
+                            <div class="month-value">
+                                <!-- View Mode -->
+                                <div class="view-mode">
+                                    <span class="value-display value-validated">@(monitoring.CostSaveActualValidated.HasValue ? monitoring.CostSaveActualValidated.Value.ToString("N0") + " " + measurementUnit : "Not Validated Yet")</span>
+                                </div>
+                                <!-- Edit Mode -->
+                                @if (Model.CanValidateCostSavings)
+                                {
+                                    <div class="edit-mode">
+                                        <input type="number"
+                                               class="value-input validated"
+                                               data-monitoring-id="@monitoring.Id"
+                                               data-field="validated"
+                                               data-original="@(monitoring.CostSaveActualValidated ?? 0)"
+                                               value="@(monitoring.CostSaveActualValidated ?? 0)"
+                                               min="0"
+                                               placeholder="0" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="total-column">
+                    <div class="total-value value-plan">
+                        @kpiMonitorings.Sum(m => m.CostSavePlan ?? 0).ToString("N0") @measurementUnit
+                    </div>
+                    <div class="total-value value-actual">
+                        @kpiMonitorings.Sum(m => m.CostSaveActual ?? 0).ToString("N0") @measurementUnit
+                    </div>
+                    <div class="total-value value-validated">
+                        @kpiMonitorings.Sum(m => m.CostSaveActualValidated ?? 0).ToString("N0") @measurementUnit
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
     }
     else
     {
@@ -301,6 +450,50 @@
                     </button>
                     <button type="submit" class="btn btn-primary" id="uploadAttachmentBtn">
                         <i class="bi bi-upload me-2"></i>Upload Files
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add New KPI Modal -->
+<div class="modal fade" id="addKpiModal" tabindex="-1" aria-labelledby="addKpiModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addKpiModalLabel">
+                    <i class="bi bi-plus-circle me-2"></i>Add New KPI
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addKpiForm">
+                <div class="modal-body">
+                    <input type="hidden" name="IdeaId" value="@Model.Idea.Id" />
+
+                    <div class="mb-3">
+                        <label for="kpiName" class="form-label">KPI Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="kpiName" name="KpiName"
+                               maxlength="200" placeholder="e.g., Cable Usage, Energy Consumption" required />
+                        <small class="form-text text-muted">Enter a unique name for this KPI</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="measurementUnit" class="form-label">Measurement Unit <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="measurementUnit" name="MeasurementUnit"
+                               maxlength="20" placeholder="e.g., cm, kg, kWh, hours" required />
+                        <small class="form-text text-muted">Enter the unit of measurement (max 20 characters)</small>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        The new KPI will automatically use the same monthly duration as your existing monitoring records.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Add KPI
                     </button>
                 </div>
             </form>
@@ -620,6 +813,35 @@ $(document).ready(function() {
                 }
             }
         }
+    });
+
+    // Add KPI Form Submit
+    $('#addKpiForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData);
+
+        $.ajax({
+            url: '@Url.Action("AddKpi", "IdeaMonitoring")',
+            type: 'POST',
+            data: {
+                ...data,
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#addKpiModal').modal('hide');
+                    alert(response.message);
+                    location.reload();
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function(xhr) {
+                alert('Error adding KPI. Please try again.');
+            }
+        });
     });
 
     // Extend Duration Form Submit
