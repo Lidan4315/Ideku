@@ -29,6 +29,7 @@ namespace Ideku.Data.Repositories
                 .Include(i => i.TargetDepartment)
                 .Include(i => i.Category)
                 .Include(i => i.Event)
+                .Include(i => i.IdeaImplementators) // Include team members for status checks
                 .Where(i => !i.IsDeleted) // Exclude soft deleted records
                 .FirstOrDefaultAsync(i => i.Id == id);
         }

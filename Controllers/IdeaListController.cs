@@ -475,7 +475,8 @@ namespace Ideku.Controllers
                         return;
                     }
 
-                    // Only send email if status is "Waiting Approval S2" (first team assignment)
+                    // Send email if status is "Waiting Approval S2" at Stage 1
+                    // This covers: team assigned at S0 then approved to S1, OR team assigned directly at S1
                     if (idea.CurrentStage == 1 && idea.CurrentStatus == "Waiting Approval S2")
                     {
                         var approvers = await workflowService.GetApproversForNextStageAsync(idea);
@@ -490,6 +491,11 @@ namespace Ideku.Controllers
 
                         _logger.LogInformation("Background team assignment email sent successfully for idea {IdeaId} to {ApproverCount} approvers",
                             ideaId, approvers.Count);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("No email sent for idea {IdeaId} - Stage: {Stage}, Status: {Status}",
+                            ideaId, idea.CurrentStage, idea.CurrentStatus);
                     }
                 }
                 catch (Exception ex)
