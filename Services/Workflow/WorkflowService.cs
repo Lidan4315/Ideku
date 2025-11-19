@@ -363,7 +363,22 @@ namespace Ideku.Services.Workflow
                 else if (nextStage == 1)
                 {
                     // Special case: Stage 1 requires team assignment before S2 approval
-                    idea.CurrentStatus = "Waiting Team Assignment";
+                    // BUT check if team is already assigned (e.g., assigned during S0)
+                    var hasLeader = idea.IdeaImplementators.Any(ii => ii.Role == "Leader");
+                    var hasMember = idea.IdeaImplementators.Any(ii => ii.Role == "Member");
+
+                    if (hasLeader && hasMember)
+                    {
+                        // Team already assigned - ready for S2 approval
+                        idea.CurrentStatus = "Waiting Approval S2";
+                        _logger.LogInformation("Idea {IdeaId} advanced to S1 with team already assigned - status set to 'Waiting Approval S2'", ideaId);
+                    }
+                    else
+                    {
+                        // Team not yet assigned - need team assignment
+                        idea.CurrentStatus = "Waiting Team Assignment";
+                        _logger.LogInformation("Idea {IdeaId} advanced to S1 without team - status set to 'Waiting Team Assignment'", ideaId);
+                    }
                 }
                 else if (nextStage == 2)
                 {
@@ -415,22 +430,40 @@ namespace Ideku.Services.Workflow
             }
 
             // If idea moved to next stage (not completed), send emails to next stage approvers
+            // BUT skip if waiting for team assignment or milestone creation
             if (nextStage <= idea.MaxStage && idea.CurrentStatus != "Completed")
             {
-                try
+                // Skip email if waiting for team assignment or milestone creation
+                // UNLESS it's Stage 1 and team is already assigned (status = "Waiting Approval S2")
+                bool shouldSendEmail = true;
+
+                if (idea.CurrentStatus == "Waiting Team Assignment" || idea.CurrentStatus == "Waiting Milestone Creation")
                 {
-                    var nextStageApprovers = await GetApproversForNextStageAsync(idea);
-                    
-                    if (nextStageApprovers.Any())
+                    shouldSendEmail = false;
+                }
+
+                if (shouldSendEmail)
+                {
+                    try
                     {
-                        await _notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers);
-                        _logger.LogInformation("Next stage approval emails sent for Idea {IdeaId} to {ApproverCount} approvers", 
-                            ideaId, nextStageApprovers.Count);
+                        var nextStageApprovers = await GetApproversForNextStageAsync(idea);
+
+                        if (nextStageApprovers.Any())
+                        {
+                            await _notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers);
+                            _logger.LogInformation("Next stage approval emails sent for Idea {IdeaId} to {ApproverCount} approvers",
+                                ideaId, nextStageApprovers.Count);
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send next stage approval emails for Idea {IdeaId}", ideaId);
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    _logger.LogError(ex, "Failed to send next stage approval emails for Idea {IdeaId}", ideaId);
+                    _logger.LogInformation("Skipping next stage email for Idea {IdeaId} - Status: {Status} (waiting for prerequisites)",
+                        ideaId, idea.CurrentStatus);
                 }
             }
 
@@ -512,7 +545,22 @@ namespace Ideku.Services.Workflow
                     else if (nextStage == 1)
                     {
                         // Special case: Stage 1 requires team assignment before S2 approval
-                        idea.CurrentStatus = "Waiting Team Assignment";
+                        // BUT check if team is already assigned (e.g., assigned during S0)
+                        var hasLeader = idea.IdeaImplementators.Any(ii => ii.Role == "Leader");
+                        var hasMember = idea.IdeaImplementators.Any(ii => ii.Role == "Member");
+
+                        if (hasLeader && hasMember)
+                        {
+                            // Team already assigned - ready for S2 approval
+                            idea.CurrentStatus = "Waiting Approval S2";
+                            _logger.LogInformation("Idea {IdeaId} advanced to S1 with team already assigned - status set to 'Waiting Approval S2'", approvalData.IdeaId);
+                        }
+                        else
+                        {
+                            // Team not yet assigned - need team assignment
+                            idea.CurrentStatus = "Waiting Team Assignment";
+                            _logger.LogInformation("Idea {IdeaId} advanced to S1 without team - status set to 'Waiting Team Assignment'", approvalData.IdeaId);
+                        }
                     }
                     else if (nextStage == 2)
                     {
@@ -609,8 +657,21 @@ namespace Ideku.Services.Workflow
                             idea.ToDepartmentId, approvalData.IdeaId);
                     }
                 }
+                // Check if idea is at Stage 1 with team already assigned (ready for S2)
+                else if (idea.CurrentStage == 1 && idea.CurrentStatus == "Waiting Approval S2")
+                {
+                    // Team is already assigned - send email to S2 approvers
+                    var nextStageApprovers = await GetApproversForNextStageAsync(idea);
+
+                    if (nextStageApprovers.Any())
+                    {
+                        await _notificationService.NotifyIdeaSubmitted(idea, nextStageApprovers);
+                        _logger.LogInformation("Next stage approval emails sent for Idea {IdeaId} to {ApproverCount} S2 approvers (team pre-assigned)",
+                            approvalData.IdeaId, nextStageApprovers.Count);
+                    }
+                }
                 // Send notifications to next stage approvers if NOT Stage 1 or Stage 2
-                // Stage 1 requires team assignment first, Stage 2 requires milestone first
+                // Stage 1 requires team assignment first (unless already assigned), Stage 2 requires milestone first
                 else if (idea.CurrentStage < idea.MaxStage && idea.CurrentStage != 1 && idea.CurrentStage != 2 && idea.CurrentStatus != "Completed")
                 {
                     var nextStageApprovers = await GetApproversForNextStageAsync(idea);
