@@ -421,11 +421,11 @@
                         return;
                     }
                     
-                    if (!numericValue || parseFloat(numericValue) <= 0 || isNaN(parseFloat(numericValue))) {
+                    if (!numericValue || parseFloat(numericValue) < 0 || isNaN(parseFloat(numericValue))) {
                         Swal.fire({
                             icon: 'warning',
                             title: 'Warning!',
-                            text: 'Validated saving cost must be greater than 0'
+                            text: 'Validated saving cost must be 0 or greater'
                         });
                         return;
                     }
