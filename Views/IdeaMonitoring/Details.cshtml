@@ -11,19 +11,22 @@
 <div class="container-fluid">
     @Html.AntiForgeryToken()
 
-    <!-- Header -->
-    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="page-title text-gradient">
-                <i class="bi bi-graph-up-arrow me-2"></i>Cost Saving Monitoring
-            </h2>
-            <p class="text-muted mb-0">@Model.Idea.IdeaCode - @Model.Idea.IdeaName</p>
-        </div>
-        <div>
-            <a href="@Url.Action("Index", "IdeaMonitoring")" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Back to List
-            </a>
-        </div>
+    <!-- Page Header -->
+    <div class="page-header-modern mb-4">
+        <h1 class="page-title text-gradient mb-3">
+            Monthly Saving Monitoring
+        </h1>
+
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item">
+                    <a href="@Url.Action("Index", "IdeaMonitoring")">Monitoring</a>
+                </li>
+                <li class="breadcrumb-item">Details</li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Idea.IdeaCode</li>
+            </ol>
+        </nav>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -68,23 +71,23 @@
         <div class="d-flex flex-wrap gap-2 mb-4 justify-content-end">
             @if (Model.CanEditCostSavings)
             {
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addKpiModal">
-                    <i class="bi bi-plus-circle me-2"></i>Add New KPI
+                <button type="button" class="btn btn-outline-primary btn-sm btn-min-width-lg" data-bs-toggle="modal" data-bs-target="#addKpiModal">
+                    <i class="bi bi-plus-circle me-md-2"></i><span class="d-none d-md-inline">Add New KPI</span>
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#extendDurationModal">
-                    <i class="bi bi-calendar-plus me-2"></i>Extend Duration
+                <button type="button" class="btn btn-outline-gray btn-sm btn-min-width-lg" data-bs-toggle="modal" data-bs-target="#extendDurationModal">
+                    <i class="bi bi-calendar-plus me-md-2"></i><span class="d-none d-md-inline">Extend Duration</span>
                 </button>
             }
             @if (Model.CanEditCostSavings || Model.CanValidateCostSavings)
             {
-                <button type="button" class="btn btn-outline-primary btn-sm" id="editBtn">
-                    <i class="bi bi-pencil me-2"></i>Edit
+                <button type="button" class="btn btn-primary btn-sm btn-min-width-md" id="editBtn">
+                    <i class="bi bi-pencil me-md-2"></i><span class="d-none d-md-inline">Edit</span>
                 </button>
-                <button type="button" class="btn btn-success btn-sm" id="saveBtn" style="display: none;">
-                    <i class="bi bi-check-lg me-2"></i>Save
+                <button type="button" class="btn btn-success btn-sm btn-min-width-md" id="saveBtn" style="display: none;">
+                    <i class="bi bi-check-lg me-md-2"></i><span class="d-none d-md-inline">Save</span>
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="cancelBtn" style="display: none;">
-                    <i class="bi bi-x-lg me-2"></i>Cancel
+                <button type="button" class="btn btn-light btn-sm btn-min-width-md" id="cancelBtn" style="display: none;">
+                    <i class="bi bi-x-lg me-md-2"></i><span class="d-none d-md-inline">Cancel</span>
                 </button>
             }
         </div>
@@ -96,7 +99,8 @@
             <h4 class="mb-3">
                 Monthly Cost Saving (USD)
             </h4>
-            <div class="monitoring-grid mb-5">
+            <div class="monitoring-table-wrapper mb-5">
+            <div class="monitoring-grid">
             <div class="monitoring-header">
                 <div class="label-column"></div>
                 <div class="month-columns">
@@ -117,13 +121,13 @@
             <div style="display: flex;">
                 <div class="label-column">
                     <div class="label-cell">
-                        <i class="bi bi-clipboard-data me-2"></i>PLAN (($))
+                        Plan
                     </div>
                     <div class="label-cell">
-                        <i class="bi bi-graph-up me-2"></i>ACTUAL (($))
+                        Actual
                     </div>
                     <div class="label-cell">
-                        <i class="bi bi-patch-check me-2"></i>ACTUAL VALIDATED (($))
+                        Actual Validated
                     </div>
                 </div>
 
@@ -213,6 +217,7 @@
                 </div>
             </div>
         </div>
+        </div>
         }
 
         <!-- Other KPI Tables -->
@@ -225,7 +230,8 @@
             <h4 class="mb-3 mt-4">
                 @kpiName @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
             </h4>
-            <div class="monitoring-grid mb-5">
+            <div class="monitoring-table-wrapper mb-5">
+            <div class="monitoring-grid">
             <div class="monitoring-header">
                 <div class="label-column"></div>
                 <div class="month-columns">
@@ -246,13 +252,13 @@
             <div style="display: flex;">
                 <div class="label-column">
                     <div class="label-cell">
-                        <i class="bi bi-clipboard-data me-2"></i>PLAN @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
+                        Plan
                     </div>
                     <div class="label-cell">
-                        <i class="bi bi-graph-up me-2"></i>ACTUAL @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
+                        Actual
                     </div>
                     <div class="label-cell">
-                        <i class="bi bi-patch-check me-2"></i>ACTUAL VALIDATED @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
+                        Actual Validated
                     </div>
                 </div>
 
@@ -342,6 +348,7 @@
                 </div>
             </div>
         </div>
+        </div>
         }
     }
     else
@@ -383,8 +390,8 @@
             @if (Model.CanEditCostSavings)
             {
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadAttachmentModal">
-                    <i class="bi bi-upload me-2"></i>Upload Documents
-                </button>
+                    <i class="bi bi-upload me-md-2"></i><span class="d-none d-md-inline">Upload</span>
+               </button>
             }
         </div>
         <div class="card-body">
@@ -398,8 +405,8 @@
 
 <!-- Upload Attachment Modal -->
 <div class="modal fade" id="uploadAttachmentModal" tabindex="-1" aria-labelledby="uploadAttachmentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
             <div class="modal-header app-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="modal-icon">
@@ -503,32 +510,35 @@
 
 <!-- Extend Duration Modal -->
 <div class="modal fade" id="extendDurationModal" tabindex="-1" aria-labelledby="extendDurationModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="extendDurationModalLabel">
-                    <i class="bi bi-calendar-plus me-2"></i>Extend Monitoring Duration
-                </h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-calendar-plus"></i>
+                    </div>
+                    <h5 class="modal-title mb-0" id="extendDurationModalLabel">Extend Monitoring Duration</h5>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="extendDurationForm">
-                <div class="modal-body">
+                <div class="modal-body app-modal-body">
                     <input type="hidden" name="IdeaId" value="@Model.Idea.Id" />
 
                     <div class="mb-3">
-                        <label for="additionalMonths" class="form-label">Additional Months</label>
+                        <label for="additionalMonths" class="form-label">Additional Months <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="additionalMonths" name="AdditionalMonths"
                                min="1" max="12" value="3" required />
-                        <small class="form-text text-muted">How many additional months to add (1-12 months)</small>
-                    </div>
-
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        This will add new monthly monitoring records starting from the next month after the current monitoring period.
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            This will add new monthly monitoring records starting from the next month after the current monitoring period.
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-circle me-2"></i>Extend Duration
                     </button>
