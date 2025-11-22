@@ -3,96 +3,6 @@
    Specific styles for Approval/Review.cshtml
    ============================================================================= */
 
-/* Modal Styles */
-.modal-xl {
-    max-width: 70vw;
-}
-
-#attachment-preview img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-}
-
-#attachment-preview iframe {
-    width: 100%;
-    height: 70vh;
-    border: none;
-}
-
-.file-preview-error {
-    text-align: center;
-    padding: 3rem;
-    color: #6c757d;
-}
-
-.file-preview-error i {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    color: #dc3545;
-}
-
-/* Related Divisions Button + Tags Styles */
-.related-divisions-container {
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    padding: 1.25rem;
-    background-color: transparent;
-}
-
-/* Additional Files Container - Same style as Related Divisions */
-.additional-files-container {
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    padding: 1.25rem;
-    background-color: transparent;
-}
-
-.add-division-btn {
-    border: 1px solid #6b7280;
-    background-color: #ffffff;
-    color: #374151;
-    font-weight: 500;
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.add-division-btn:hover {
-    border-color: #4b5563;
-    background-color: #f3f4f6;
-    color: #1f2937;
-}
-
-.add-division-btn:focus {
-    box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25);
-    outline: none;
-}
-
-.add-file-btn {
-    border: 1px solid #6b7280;
-    background-color: #ffffff;
-    color: #374151;
-    font-weight: 500;
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.add-file-btn:hover {
-    border-color: #4b5563;
-    background-color: #f3f4f6;
-    color: #1f2937;
-}
-
-.add-file-btn:focus {
-    box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25);
-    outline: none;
-}
-
 /* Division Tags - Outline Style like Button */
 .division-tag {
     display: inline-flex;
@@ -188,14 +98,6 @@
     to { opacity: 1; }
 }
 
-/* Empty state */
-.empty-divisions-state {
-    text-align: center;
-    color: #6b7280;
-    font-style: italic;
-    padding: 1rem;
-}
-
 /* Action Buttons Styling - Approve, Feedback, Reject */
 #approveBtn, #feedbackBtn, #rejectBtn {
     font-size: 0.9rem;
@@ -251,55 +153,8 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
-    .modal-xl {
-        max-width: 95vw;
-        margin: 0.5rem;
-    }
-
-    .modal-dialog {
-        margin: 0.5rem;
-    }
-
-    .modal-content {
-        border-radius: 0.5rem;
-    }
-
-    #attachment-preview iframe {
-        width: 100% !important;
-        height: 60vh !important;
-        min-height: 350px !important;
-    }
-
-    #attachment-preview img {
-        max-width: 100% !important;
-        height: auto !important;
-        max-height: 60vh !important;
-    }
-
-    .attachment-item {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .attachment-actions {
-        align-self: flex-end;
-    }
-
-    .filename {
-        max-width: 100%;
-    }
-
-    .related-divisions-container {
-        padding: 0.75rem;
-    }
-
     .division-tag {
         font-size: 0.8rem;
         padding: 0.25rem 0.5rem;
-    }
-
-    .add-division-btn {
-        width: 100%;
-        margin-bottom: 0.5rem;
     }
 }

@@ -169,7 +169,7 @@
 
                                 <!-- Browse Files Button -->
                                 <div class="file-upload-header">
-                                    <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    <button type="button" class="btn btn-outline-gray" onclick="document.getElementById('fileInput').click()">
                                         <i class="bi bi-folder2-open me-2"></i><span class="d-none d-md-inline">Browse Files</span><span class="d-inline d-md-none">Browse</span>
                                     </button>
                                     <small class="form-text text-muted ms-2 d-none d-md-inline">Select one or multiple files. Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG (Max 10 MB total)</small>
@@ -213,9 +213,7 @@
 
     <script>
         $(document).ready(function() {
-            // ============================================================================
             // CONSTANTS & CONFIGURATION
-            // ============================================================================
             const DEBOUNCE_DELAY = 500; // milliseconds
             const CUSTOM_VALIDATED_FIELDS = ['ideaNameInput', 'badgeNumberInput'];
             const FILE_CONFIG = {
@@ -224,9 +222,7 @@
                 maxTotalSize: 10 * 1024 * 1024    // 10MB
             };
 
-            // ============================================================================
             // UTILITY FUNCTIONS
-            // ============================================================================
 
             // Generic debounce function
             function debounce(callback, delay) {
@@ -260,10 +256,7 @@
                 }
             }
 
-            // ============================================================================
             // BADGE NUMBER VALIDATION
-            // ============================================================================
-
             const badgeNumberInput = $('#badgeNumberInput');
             const employeeInfoContainer = $('#employeeInfoContainer');
 
@@ -305,10 +298,7 @@
                 validateBadgeNumber($(this).val().trim());
             });
 
-            // ============================================================================
             // IDEA NAME VALIDATION
-            // ============================================================================
-
             const ideaNameInput = $('#ideaNameInput');
             const ideaNameValidation = $('#ideaNameValidation');
 
@@ -355,10 +345,7 @@
                 }
             });
 
-            // ============================================================================
             // SAVING COST FORMATTING
-            // ============================================================================
-
             const savingCostInput = $('#savingCostInput');
 
             // Format number with thousand separator
@@ -382,10 +369,7 @@
                 $(this).valid();
             });
 
-            // ============================================================================
             // DIVISION-DEPARTMENT CASCADE
-            // ============================================================================
-
             const divisionSelect = $('#divisionSelect');
             const departmentSelect = $('#departmentSelect');
 
@@ -417,10 +401,7 @@
                 }
             });
 
-            // ============================================================================
             // FILE UPLOAD HANDLER
-            // ============================================================================
-
             let selectedFiles = [];
             let fileCounter = 0;
 
@@ -580,9 +561,7 @@
             // Expose removeFile globally
             window.removeFile = removeFile;
 
-            // ============================================================================
             // REAL-TIME VALIDATION FEEDBACK
-            // ============================================================================
 
             // Cache custom validated fields as jQuery objects for performance
             const customValidatedElements = $('#' + CUSTOM_VALIDATED_FIELDS.join(', #'));
@@ -617,9 +596,7 @@
                 }
             });
 
-            // ============================================================================
             // FORM SUBMISSION VALIDATION HELPERS
-            // ============================================================================
 
             function showValidationErrors() {
                 // Only process fields with validation errors (much faster)
@@ -651,10 +628,7 @@
                 }
             }
 
-            // ============================================================================
             // FORM SUBMISSION
-            // ============================================================================
-
             $('#createIdeaForm').submit(function(e) {
                 e.preventDefault();
 
