@@ -6,27 +6,26 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/shared/tab-navigation.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/milestone-detail.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/ideas-list.css" asp-append-version="true" />
 }
 
 <div class="container-fluid">
-    <!-- Breadcrumb -->
-    @* <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="@Url.Action("Index")">Milestone Management</a></li>
-            <li class="breadcrumb-item active" aria-current="page">@Model.Idea.IdeaCode</li>
-        </ol>
-    </nav> *@
-
     <!-- Page Header -->
-    <div class="page-header mb-4">
-        <div class="row align-items-center">
-            <div class="col">
-                <h2 class="page-title text-gradient">
-                    <i class="bi bi-flag me-2"></i>Milestones for @Model.Idea.IdeaCode
-                </h2>
-                <p class="text-muted">@Model.Idea.IdeaName</p>
-            </div>
-        </div>
+    <div class="page-header-modern mb-4">
+        <h1 class="page-title text-gradient mb-3">
+            Milestone Details
+        </h1>
+
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item">
+                    <a href="@Url.Action("Index", "Milestone")">Milestone</a>
+                </li>
+                <li class="breadcrumb-item">Details</li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Idea.IdeaCode</li>
+            </ol>
+        </nav>
     </div>
 
     <!-- Inactive Idea Warning Card -->
@@ -69,23 +68,23 @@
                 <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
-                    <i class="bi bi-list-check me-2"></i>Milestones (@Model.Milestones.Count())
+                    <i class="bi bi-list-task me-2"></i>Milestones (@Model.Milestones.Count())
                 </h5>
                 @if (ViewBag.IsInactive == true)
                 {
                     <button type="button" class="btn btn-sm btn-primary" disabled module-access="milestone">
-                        <i class="bi bi-plus-circle me-1"></i>Add Milestone
+                        <i class="bi bi-plus-circle me-md-1"></i><span class="d-none d-md-inline">Add Milestone</span>
                     </button>
                 }
                 else
                 {
                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMilestoneModal" module-access="milestone">
-                        <i class="bi bi-plus-circle me-1"></i>Add Milestone
+                        <i class="bi bi-plus-circle me-md-1"></i><span class="d-none d-md-inline">Add Milestone</span>
                     </button>
                 }
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive-custom">
                     <table class="table mb-0">
                         <thead class="table-light">
                             <tr>
@@ -182,7 +181,7 @@
                 <!-- No Milestones -->
                 <div class="card">
                     <div class="card-body text-center py-5">
-                        <i class="bi bi-flag display-1 text-muted mb-3"></i>
+                        <i class="bi bi-calendar2-week display-1 text-muted mb-3"></i>
                         <h5 class="text-muted">No Milestones Yet</h5>
                         <p class="text-muted">This idea doesn't have any milestones yet.</p>
                         @if (ViewBag.IsInactive == true)
@@ -230,11 +229,10 @@
             <div class="modal-header app-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="modal-icon">
-                        <i class="bi bi-flag"></i>
+                        <i class="bi bi-calendar2-week"></i>
                     </div>
                     <div>
                         <h5 class="modal-title mb-0" id="addMilestoneModalLabel">Add New Milestone</h5>
-                        <small class="text-muted">Create a milestone for @Model.Idea.IdeaCode</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -248,9 +246,9 @@
                         <div class="form-text">Maximum 50 characters</div>
                     </div>
 
-                    <!-- Description -->
+                    <!-- Note -->
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
+                        <label class="form-label">Note</label>
                         <textarea class="form-control" name="note" rows="3" placeholder="Describe the milestone objectives and deliverables (optional)"></textarea>
                     </div>
 
@@ -266,19 +264,6 @@
                         </div>
                     </div>
 
-                    <!-- Status -->
-                    <div class="mb-3">
-                        <label class="form-label">Status <span class="text-danger">*</span></label>
-                        <select class="form-select" name="status" required>
-                            <option value="">Select Status</option>
-                            <option value="Planning">Planning</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="On Hold">On Hold</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
-                    </div>
-
                     <!-- Person In Charge (PIC) -->
                     <div class="mb-3">
                         <label class="form-label">Person In Charge (PIC) <span class="text-danger">*</span></label>
@@ -286,7 +271,7 @@
                         <!-- Hidden input to store selected PIC IDs -->
                         <input type="hidden" name="selectedPICUserIds" id="selectedPICInput" required />
 
-                        <!-- Button + Tags Interface - Same as Related Division -->
+                        <!-- Button + Tags Interface -->
                         <div class="tag-selection-container">
                             <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                                 <!-- Add PIC Button -->
@@ -297,7 +282,7 @@
                                                 id="addPICBtn" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="bi bi-person me-2"></i>Select PIC
                                         </button>
-                                        <ul class="dropdown-menu" aria-labelledby="addPICBtn" id="picDropdown">
+                                        <ul class="dropdown-menu" aria-labelledby="addPICBtn" id="picDropdown" style="min-width: 400px; max-height: 300px; overflow-y: auto;">
                                             @foreach (var user in Model.AvailablePICUsers)
                                             {
                                                 <li>
@@ -306,12 +291,7 @@
                                                        data-pic-name="@user.Name"
                                                        data-pic-emp-id="@user.Employee?.EMP_ID"
                                                        data-pic-role="@user.Role">
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="me-3">
-                                                                <div class="fw-semibold">@user.Name</div>
-                                                                <small class="text-muted">@user.Employee?.EMP_ID - @user.Role</small>
-                                                            </div>
-                                                        </div>
+                                                        @user.Name
                                                     </a>
                                                 </li>
                                             }
@@ -346,6 +326,19 @@
                             Select from assigned implementators only. PIC must be someone already working on this idea.
                         </div>
                     </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label class="form-label">Status <span class="text-danger">*</span></label>
+                        <select class="form-select" name="status" required>
+                            <option value="">Select Status</option>
+                            <option value="Planning">Planning</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="On Hold">On Hold</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer app-modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -373,7 +366,6 @@
                     </div>
                     <div>
                         <h5 class="modal-title mb-0" id="editMilestoneModalLabel">Edit Milestone</h5>
-                        <small class="text-muted">Update milestone for @Model.Idea.IdeaCode</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -390,9 +382,9 @@
                         <div class="form-text">Maximum 50 characters</div>
                     </div>
 
-                    <!-- Description -->
+                    <!-- Note -->
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
+                        <label class="form-label">Note</label>
                         <textarea class="form-control" id="editNote" name="note" rows="3" placeholder="Describe the milestone objectives and deliverables (optional)"></textarea>
                     </div>
 
@@ -409,19 +401,6 @@
                             <label class="form-label">End Date <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="editEndDate" name="endDate" required>
                         </div>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="mb-3">
-                        <label class="form-label">Status <span class="text-danger">*</span></label>
-                        <select class="form-select" id="editStatus" name="status" required>
-                            <option value="">Select Status</option>
-                            <option value="Planning">Planning</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="On Hold">On Hold</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
                     </div>
 
                     <!-- Person In Charge (PIC) -->
@@ -442,7 +421,7 @@
                                                 id="addEditPICBtn" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="bi bi-person me-2"></i>Select PIC
                                         </button>
-                                        <ul class="dropdown-menu" aria-labelledby="addEditPICBtn" id="editPICDropdown">
+                                        <ul class="dropdown-menu" aria-labelledby="addEditPICBtn" id="editPICDropdown" style="min-width: 400px; max-height: 300px; overflow-y: auto;">
                                             @foreach (var user in Model.AvailablePICUsers)
                                             {
                                                 <li>
@@ -451,12 +430,7 @@
                                                        data-pic-name="@user.Name"
                                                        data-pic-emp-id="@user.Employee?.EMP_ID"
                                                        data-pic-role="@user.Role">
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="me-3">
-                                                                <div class="fw-semibold">@user.Name</div>
-                                                                <small class="text-muted">@user.Employee?.EMP_ID - @user.Role</small>
-                                                            </div>
-                                                        </div>
+                                                        @user.Name
                                                     </a>
                                                 </li>
                                             }
@@ -483,6 +457,19 @@
                             <i class="bi bi-info-circle me-1"></i>
                             Select from assigned implementators only. PIC must be someone already working on this idea.
                         </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label class="form-label">Status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="editStatus" name="status" required>
+                            <option value="">Select Status</option>
+                            <option value="Planning">Planning</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="On Hold">On Hold</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer app-modal-footer">

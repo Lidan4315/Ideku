@@ -12,17 +12,20 @@
    ============================================================================= */
 
 /* Dropdown item styling */
-.pic-option {
+.pic-option,
+.edit-pic-option {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #f1f3f4;
     transition: all 0.2s ease;
 }
 
-.pic-option:hover {
+.pic-option:hover,
+.edit-pic-option:hover {
     background-color: #f8f9fa;
 }
 
-.pic-option.selected {
+.pic-option.selected,
+.edit-pic-option.selected {
     background-color: #e3f2fd;
     color: #1976d2;
 }
@@ -260,13 +263,30 @@ input[readonly]:focus {
 @media (max-width: 768px) {
     /* Note: Tab navigation responsive styles are in shared/tab-navigation.css */
 
+    .calendar-grid {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .calendar-header {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+
     .calendar-cell {
         min-height: 80px;
-        padding: 0.25rem;
+        padding: 0.15rem;
+        font-size: 0.75rem;
+    }
+
+    .calendar-date {
+        font-size: 0.7rem;
+        margin-bottom: 0.25rem;
     }
 
     .milestone-item {
-        font-size: 0.6rem;
-        padding: 0.125rem 0.25rem;
+        font-size: 0.55rem;
+        padding: 0.1rem 0.2rem;
+        margin-bottom: 0.1rem;
     }
 }
