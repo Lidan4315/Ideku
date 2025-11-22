@@ -63,32 +63,41 @@
 
 .monitoring-grid {
     background: white;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .monitoring-header {
     display: flex;
-    background: #2c3e50;
-    color: white;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e5e7eb;
 }
 
 .label-column {
     width: 200px;
-    background: #2c3e50;
+    background: #f8f9fa;
     padding: 0;
 }
 
 .label-cell {
-    padding: 1.5rem 1rem;
+    padding: 1rem 1rem;
     font-weight: 600;
-    color: white;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    height: 60px;
 }
 
 .label-cell:last-child {
     border-bottom: none;
+}
+
+.label-cell i {
+    color: #6b7280;
 }
 
 .month-columns {
@@ -99,24 +108,29 @@
 .month-column {
     flex: 1;
     text-align: center;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid #e5e7eb;
 }
 
 .month-header {
-    background: #34495e;
+    background: #f8f9fa;
     padding: 1rem;
     font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.875rem;
-    letter-spacing: 0.5px;
+    color: #374151;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
 }
 
 .month-value {
-    padding: 1.5rem 1rem;
-    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
     background: white;
-    font-weight: 600;
-    font-size: 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
 }
 
 .month-value:last-child {
@@ -126,23 +140,29 @@
 .total-column {
     width: 150px;
     text-align: center;
-    border-left: 2px solid #dee2e6;
-    background: #f8f9fa;
+    border-left: 2px solid #e5e7eb;
+    background: #fafafa;
 }
 
 .total-header {
-    background: #495057;
+    background: #f8f9fa;
     padding: 1rem;
     font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.875rem;
+    color: #374151;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
 }
 
 .total-value {
-    padding: 1.5rem 1rem;
-    border-bottom: 1px solid #dee2e6;
-    font-weight: 700;
-    font-size: 1.1rem;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
 }
 
 .total-value:last-child {
@@ -150,15 +170,18 @@
 }
 
 .value-plan {
-    color: #0d6efd;
+    color: #3b82f6;
+    font-weight: 600;
 }
 
 .value-actual {
-    color: #0dcaf0;
+    color: #f59e0b;
+    font-weight: 600;
 }
 
 .value-validated {
-    color: #198754;
+    color: #10b981;
+    font-weight: 600;
 }
 
 /* Inline input styling */
@@ -206,4 +229,75 @@
 
 .editing .edit-mode {
     display: block;
+}
+
+/* =============================================================================
+   RESPONSIVE BUTTON STYLES
+   ============================================================================= */
+
+/* Apply min-width only on medium screens and up (desktop/tablet) */
+@media (min-width: 768px) {
+    .btn-min-width-lg {
+        min-width: 180px;
+    }
+
+    .btn-min-width-md {
+        min-width: 120px;
+    }
+}
+
+/* =============================================================================
+   RESPONSIVE STYLES
+   ============================================================================= */
+
+@media (max-width: 768px) {
+    /* Make monitoring tables scrollable horizontally on mobile */
+    .monitoring-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Remove overflow hidden from grid to allow scrolling */
+    .monitoring-grid {
+        overflow: visible;
+        min-width: max-content;
+    }
+
+    /* Fix column widths to prevent wrapping */
+    .label-column {
+        min-width: 150px;
+        width: 150px;
+    }
+
+    .month-column {
+        min-width: 120px;
+        flex: 0 0 120px;
+    }
+
+    .total-column {
+        min-width: 120px;
+        width: 120px;
+    }
+
+    /* Reduce font sizes for mobile */
+    .month-header {
+        font-size: 0.75rem;
+        padding: 0.75rem 0.5rem;
+    }
+
+    .month-value {
+        font-size: 0.875rem;
+        padding: 1rem 0.5rem;
+    }
+
+    .label-cell {
+        font-size: 0.875rem;
+        padding: 1rem 0.75rem;
+    }
+
+    .total-header,
+    .total-value {
+        font-size: 0.875rem;
+        padding: 1rem 0.5rem;
+    }
 }

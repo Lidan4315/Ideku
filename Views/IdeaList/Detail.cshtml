@@ -9,18 +9,21 @@
 }
 
 <div class="container-fluid">
-    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="page-title text-gradient">
-                <i class="bi bi-lightbulb me-2"></i>Idea Details
-            </h2>
-            <p class="text-muted mb-0">View idea details and manage implementators.</p>
-        </div>
-        <div>
-            <a href="@Url.Action("Index", "IdeaList")" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Back to Ideas List
-            </a>
-        </div>
+    <div class="page-header-modern mb-4">
+        <h1 class="page-title text-gradient mb-3">
+            Idea Detail
+        </h1>
+
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item">
+                    <a href="@Url.Action("Index", "IdeaList")">Idea List</a>
+                </li>
+                <li class="breadcrumb-item">Details</li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Idea.IdeaCode</li>
+            </ol>
+        </nav>
     </div>
 
     <!-- Inactive Idea Warning Card -->
@@ -35,7 +38,7 @@
             <!-- Attachments Section -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h5 class="m-0 font-weight-bold text-primary">
+                    <h5 class="m-0 font-weight-bold text-gradient">
                         <i class="bi bi-paperclip me-2"></i>Attachments
                     </h5>
                 </div>
@@ -49,7 +52,7 @@
             <!-- Implementators Management Section -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="m-0 font-weight-bold text-primary">
+                    <h5 class="m-0 font-weight-bold text-gradient">
                         <i class="bi bi-people me-2"></i>Team Assembly
                     </h5>
                     <div class="d-flex gap-2">
@@ -70,57 +73,50 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Leader Section -->
-                    <div class="form-group-view mb-4">
-                        <label>
-                            <i class="bi bi-star-fill text-warning me-2"></i>Leader
-                        </label>
-                        @{
-                            var leader = Model.Implementators.FirstOrDefault(i => i.Role == "Leader");
-                        }
-                        @if (leader != null)
-                        {
-                            <p>@leader.User?.Name</p>
-                        }
-                        else
-                        {
-                            <p class="text-muted">
-                                <i class="bi bi-info-circle me-2"></i>No leader assigned yet.
-                            </p>
-                        }
-                    </div>
-
-                    <!-- Members Section -->
                     @{
+                        var leader = Model.Implementators.FirstOrDefault(i => i.Role == "Leader");
                         var members = Model.Implementators.Where(i => i.Role == "Member").ToList();
+                        var hasTeam = leader != null || members.Any();
                     }
-                    @if (members.Any())
-                    {
-                        <!-- Members Label (only once) -->
-                        <div class="form-group-view">
-                            <label>
-                                <i class="bi bi-people-fill text-primary me-2"></i>Members
-                            </label>
-                        </div>
 
-                        <!-- Individual Member Fields -->
-                        @foreach (var member in members)
-                        {
-                            <div class="form-group-view mb-3">
-                                <p>@member.User?.Name</p>
-                            </div>
-                        }
+                    @if (!hasTeam)
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-people" style="font-size: 2rem; opacity: 0.5;"></i>
+                            <p class="mt-2 mb-0">No team assigned yet</p>
+                        </div>
                     }
                     else
                     {
-                        <div class="form-group-view">
-                            <label>
-                                <i class="bi bi-people-fill text-primary me-2"></i>Members
-                            </label>
-                            <p class="text-muted">
-                                <i class="bi bi-info-circle me-2"></i>No members assigned yet.
-                            </p>
-                        </div>
+                        <!-- Leader Section -->
+                        @if (leader != null)
+                        {
+                            <div class="form-group-view mb-4">
+                                <label>
+                                    <i class="bi bi-star-fill text-warning me-2"></i>Leader
+                                </label>
+                                <p>@leader.User?.Name</p>
+                            </div>
+                        }
+
+                        <!-- Members Section -->
+                        @if (members.Any())
+                        {
+                            <!-- Members Label (only once) -->
+                            <div class="form-group-view">
+                                <label>
+                                    <i class="bi bi-people-fill text-primary me-2"></i>Members
+                                </label>
+                            </div>
+
+                            <!-- Individual Member Fields -->
+                            @foreach (var member in members)
+                            {
+                                <div class="form-group-view mb-3">
+                                    <p>@member.User?.Name</p>
+                                </div>
+                            }
+                        }
                     }
                 </div>
             </div>
