@@ -13,6 +13,10 @@
     font-weight: 500;
     border: 2px solid #e9ecef;
     transition: all 0.3s ease;
+    flex: 1 1 0 ;
+    min-width: 0;
+    max-width: none;
+    width: auto;
 }
 
 .view-toggle-section .btn:hover {

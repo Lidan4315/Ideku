@@ -6,19 +6,19 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="page-header mb-4">
-                <h2 class="page-title text-gradient">
-                    <i class="bi bi-plus-circle-fill me-2"></i>Submit New Idea
-                </h2>
-                <p class="text-muted mb-0">Share your innovative ideas to improve our organization</p>
+            <!-- Page Header -->
+            <div class="page-header-modern mb-4">
+                <h1 class="page-title text-gradient mb-0">
+                    Submit New Idea
+                </h1>
             </div>
 
             <form id="createIdeaForm" asp-action="Create" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 
                 <!-- Hidden Fields -->
-                <input asp-for="InitiatorUserId" type="hidden" />
-                <input asp-for="EmployeeId" type="hidden" />
+                <input asp-for="InitiatorUserId" type="hidden"/>
+                <input asp-for="EmployeeId" type="hidden"/>
 
                 <!-- Initiator Profile Section -->
                 <div class="card mb-4">

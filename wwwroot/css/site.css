@@ -616,6 +616,35 @@ body.modern-page {
     background-clip: text;
 }
 
+/* Modern Page Header (Breadcrumb Style) */
+.page-header-modern {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 1.5rem;
+}
+
+/* Breadcrumb Custom Styling */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.breadcrumb-item a {
+    color: #0d6efd;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: #0a58ca;
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active,
+.breadcrumb-item {
+    color: #6c757d;
+}
+
 /* =============================================================================
    UTILITY CLASSES
    ============================================================================= */
