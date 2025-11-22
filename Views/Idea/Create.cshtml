@@ -6,19 +6,19 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="page-header mb-4">
-                <h2 class="page-title text-gradient">
-                    <i class="bi bi-plus-circle-fill me-2"></i>Submit New Idea
-                </h2>
-                <p class="text-muted mb-0">Share your innovative ideas to improve our organization</p>
+            <!-- Page Header -->
+            <div class="page-header-modern mb-4">
+                <h1 class="page-title text-gradient mb-0">
+                    Submit New Idea
+                </h1>
             </div>
 
             <form id="createIdeaForm" asp-action="Create" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 
                 <!-- Hidden Fields -->
-                <input asp-for="InitiatorUserId" type="hidden" />
-                <input asp-for="EmployeeId" type="hidden" />
+                <input asp-for="InitiatorUserId" type="hidden"/>
+                <input asp-for="EmployeeId" type="hidden"/>
 
                 <!-- Initiator Profile Section -->
                 <div class="card mb-4">
@@ -162,19 +162,24 @@
                         <!-- Attachments -->
                         <div class="mb-4">
                             <label class="form-label">Attachments <span class="text-muted">(Optional)</span></label>
-                            
+
                             <!-- File Upload Container with Dashed Border -->
                             <div class="file-upload-container">
                                 <input type="file" id="fileInput" class="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" multiple />
-                                
-                                <!-- Add File Button -->
+
+                                <!-- Browse Files Button -->
                                 <div class="file-upload-header">
-                                    <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
-                                        <i class="bi bi-plus-circle me-2"></i>Add File(s)
+                                    <button type="button" class="btn btn-outline-gray" onclick="document.getElementById('fileInput').click()">
+                                        <i class="bi bi-folder2-open me-2"></i><span class="d-none d-md-inline">Browse Files</span><span class="d-inline d-md-none">Browse</span>
                                     </button>
-                                    <small class="form-text text-muted ms-3">Select one or multiple files. Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG (Max 10 MB total)</small>
+                                    <small class="form-text text-muted ms-2 d-none d-md-inline">Select one or multiple files. Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG (Max 10 MB total)</small>
                                 </div>
-                                
+
+                                <!-- Mobile File Info (shown below button on mobile) -->
+                                <small class="form-text text-muted d-block d-md-none mt-2">
+                                    Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG (Max 10 MB total)
+                                </small>
+
                                 <!-- Selected Files List -->
                                 <div id="filesList" class="files-list-container">
                                     <div class="text-muted text-center" id="noFilesMessage">
@@ -183,7 +188,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Hidden inputs for files -->
                             <div id="hiddenFileInputs"></div>
 
@@ -192,9 +197,6 @@
 
                         <!-- Action Buttons -->
                         <div class="text-end">
-                            <button type="button" class="btn btn-secondary-custom me-2" onclick="window.history.back();">
-                                <i class="bi bi-x-circle me-2"></i>Cancel
-                            </button>
                             <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <i class="bi bi-check-circle me-2"></i>Submit Idea
                             </button>
@@ -211,9 +213,7 @@
 
     <script>
         $(document).ready(function() {
-            // ============================================================================
             // CONSTANTS & CONFIGURATION
-            // ============================================================================
             const DEBOUNCE_DELAY = 500; // milliseconds
             const CUSTOM_VALIDATED_FIELDS = ['ideaNameInput', 'badgeNumberInput'];
             const FILE_CONFIG = {
@@ -222,9 +222,7 @@
                 maxTotalSize: 10 * 1024 * 1024    // 10MB
             };
 
-            // ============================================================================
             // UTILITY FUNCTIONS
-            // ============================================================================
 
             // Generic debounce function
             function debounce(callback, delay) {
@@ -258,10 +256,7 @@
                 }
             }
 
-            // ============================================================================
             // BADGE NUMBER VALIDATION
-            // ============================================================================
-
             const badgeNumberInput = $('#badgeNumberInput');
             const employeeInfoContainer = $('#employeeInfoContainer');
 
@@ -303,10 +298,7 @@
                 validateBadgeNumber($(this).val().trim());
             });
 
-            // ============================================================================
             // IDEA NAME VALIDATION
-            // ============================================================================
-
             const ideaNameInput = $('#ideaNameInput');
             const ideaNameValidation = $('#ideaNameValidation');
 
@@ -353,10 +345,7 @@
                 }
             });
 
-            // ============================================================================
             // SAVING COST FORMATTING
-            // ============================================================================
-
             const savingCostInput = $('#savingCostInput');
 
             // Format number with thousand separator
@@ -380,10 +369,7 @@
                 $(this).valid();
             });
 
-            // ============================================================================
             // DIVISION-DEPARTMENT CASCADE
-            // ============================================================================
-
             const divisionSelect = $('#divisionSelect');
             const departmentSelect = $('#departmentSelect');
 
@@ -415,10 +401,7 @@
                 }
             });
 
-            // ============================================================================
             // FILE UPLOAD HANDLER
-            // ============================================================================
-
             let selectedFiles = [];
             let fileCounter = 0;
 
@@ -578,9 +561,7 @@
             // Expose removeFile globally
             window.removeFile = removeFile;
 
-            // ============================================================================
             // REAL-TIME VALIDATION FEEDBACK
-            // ============================================================================
 
             // Cache custom validated fields as jQuery objects for performance
             const customValidatedElements = $('#' + CUSTOM_VALIDATED_FIELDS.join(', #'));
@@ -615,9 +596,7 @@
                 }
             });
 
-            // ============================================================================
             // FORM SUBMISSION VALIDATION HELPERS
-            // ============================================================================
 
             function showValidationErrors() {
                 // Only process fields with validation errors (much faster)
@@ -649,10 +628,7 @@
                 }
             }
 
-            // ============================================================================
             // FORM SUBMISSION
-            // ============================================================================
-
             $('#createIdeaForm').submit(function(e) {
                 e.preventDefault();
 
