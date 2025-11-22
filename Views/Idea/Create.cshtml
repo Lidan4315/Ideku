@@ -162,19 +162,24 @@
                         <!-- Attachments -->
                         <div class="mb-4">
                             <label class="form-label">Attachments <span class="text-muted">(Optional)</span></label>
-                            
+
                             <!-- File Upload Container with Dashed Border -->
                             <div class="file-upload-container">
                                 <input type="file" id="fileInput" class="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" multiple />
-                                
-                                <!-- Add File Button -->
+
+                                <!-- Browse Files Button -->
                                 <div class="file-upload-header">
                                     <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
-                                        <i class="bi bi-plus-circle me-2"></i>Add File(s)
+                                        <i class="bi bi-folder2-open me-2"></i><span class="d-none d-md-inline">Browse Files</span><span class="d-inline d-md-none">Browse</span>
                                     </button>
-                                    <small class="form-text text-muted ms-3">Select one or multiple files. Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG (Max 10 MB total)</small>
+                                    <small class="form-text text-muted ms-2 d-none d-md-inline">Select one or multiple files. Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG (Max 10 MB total)</small>
                                 </div>
-                                
+
+                                <!-- Mobile File Info (shown below button on mobile) -->
+                                <small class="form-text text-muted d-block d-md-none mt-2">
+                                    Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG (Max 10 MB total)
+                                </small>
+
                                 <!-- Selected Files List -->
                                 <div id="filesList" class="files-list-container">
                                     <div class="text-muted text-center" id="noFilesMessage">
@@ -183,7 +188,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Hidden inputs for files -->
                             <div id="hiddenFileInputs"></div>
 
@@ -192,9 +197,6 @@
 
                         <!-- Action Buttons -->
                         <div class="text-end">
-                            <button type="button" class="btn btn-secondary-custom me-2" onclick="window.history.back();">
-                                <i class="bi bi-x-circle me-2"></i>Cancel
-                            </button>
                             <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <i class="bi bi-check-circle me-2"></i>Submit Idea
                             </button>

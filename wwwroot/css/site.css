@@ -441,6 +441,11 @@ body.modern-page {
     .sidebar:not(.open) .sidebar-footer {
         display: none;
     }
+
+    /* Page Header */
+    .page-header {
+        padding: 1.5rem;
+    }
 }
 
 /* =============================================================================
@@ -609,13 +614,6 @@ body.modern-page {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-}
-
-/* Responsive Page Header */
-@media (max-width: 768px) {
-    .page-header {
-        padding: 1.5rem;
-    }
 }
 
 /* =============================================================================
