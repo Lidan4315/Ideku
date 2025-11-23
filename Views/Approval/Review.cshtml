@@ -108,12 +108,12 @@
                                     <button type="button" class="btn btn-outline-gray" onclick="document.getElementById('approvalFileInput').click()">
                                         <i class="bi bi-folder2-open me-2"></i><span class="d-none d-md-inline">Browse Files</span><span class="d-inline d-md-none">Browse</span>
                                     </button>
-                                    <small class="form-text text-muted ms-2 d-none d-md-inline">Select one or multiple files. Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG (Max 10 MB total)</small>
+                                    <small class="form-text text-muted ms-2 d-none d-md-inline">Select one or multiple files. Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG</small>
                                 </div>
 
                                 <!-- Mobile File Info (shown below button on mobile) -->
                                 <small class="form-text text-muted d-block d-md-none mt-2">
-                                    Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG (Max 10 MB total)
+                                    Accepted: PDF, DOC, DOCX, XLSX, JPG, PNG
                                 </small>
 
                                 <!-- Selected Files List -->
@@ -397,11 +397,8 @@
                             method: 'POST',
                             body: formData
                         }).then(response => {
-                            // Reset button state
-                            approveBtn.disabled = false;
-                            approveBtn.innerHTML = originalBtnContent;
-                            
                             if (response.redirected) {
+                                // Redirect happened - approval successful
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Success!',
@@ -411,12 +408,27 @@
                                 }).then(() => {
                                     window.location.href = response.url;
                                 });
+                            } else {
+                                // Check if JSON response (error case)
+                                return response.json().then(data => {
+                                    // Reset button state
+                                    approveBtn.disabled = false;
+                                    approveBtn.innerHTML = originalBtnContent;
+
+                                    if (data.success === false) {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error!',
+                                            text: data.message || 'An error occurred while processing approval.'
+                                        });
+                                    }
+                                });
                             }
                         }).catch(error => {
                             // Reset button state on error
                             approveBtn.disabled = false;
                             approveBtn.innerHTML = originalBtnContent;
-                            
+
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
@@ -756,19 +768,8 @@
         fileInput.addEventListener('change', function() {
             const file = this.files[0];
             if (!file) return;
-            
-            // Check file size (max 10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'File Too Large',
-                    text: 'File size must be less than 10MB',
-                    confirmButtonText: 'OK'
-                });
-                return;
-            }
-            
-            // Add file to array
+
+            // Add file to array (server will validate size)
             const fileObj = {
                 id: approvalFileCounter++,
                 file: file,

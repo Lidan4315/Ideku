@@ -9,6 +9,7 @@ using Ideku.Services.Lookup;
 using Ideku.Services.UserManagement;
 using Ideku.Services.Workflow;
 using Ideku.Services.Notification;
+using Ideku.Services.FileUpload;
 using Ideku.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -28,6 +29,7 @@ namespace Ideku.Services.Idea
         private readonly IWorkflowService _workflowService;
         private readonly AppDbContext _context;
         private readonly INotificationService _notificationService;
+        private readonly IFileUploadService _fileUploadService;
         private readonly ILogger<IdeaService> _logger;
 
         public IdeaService(
@@ -42,6 +44,7 @@ namespace Ideku.Services.Idea
             IWorkflowService workflowService,
             AppDbContext context,
             INotificationService notificationService,
+            IFileUploadService fileUploadService,
             ILogger<IdeaService> logger)
         {
             _ideaRepository = ideaRepository;
@@ -55,6 +58,7 @@ namespace Ideku.Services.Idea
             _workflowService = workflowService;
             _context = context;
             _notificationService = notificationService;
+            _fileUploadService = fileUploadService;
             _logger = logger;
         }
 
@@ -92,7 +96,7 @@ namespace Ideku.Services.Idea
             try
             {
                 // VALIDATE FILES FIRST - before creating idea in database
-                var fileValidation = Helpers.FileUploadHelper.ValidateFiles(files);
+                var fileValidation = _fileUploadService.ValidateFiles(files);
                 if (!fileValidation.IsValid)
                 {
                     return (false, fileValidation.ErrorMessage, null);
@@ -177,8 +181,8 @@ namespace Ideku.Services.Idea
                 var ideaCode = _ideaRepository.GenerateIdeaCodeFromId(createdIdea.Id);
 
                 // Handle file uploads with proper naming now that we have idea code
-                var existingFilesCount = Helpers.FileUploadHelper.GetExistingFilesCount(ideaCode, _webHostEnvironment.WebRootPath);
-                var attachmentPaths = await Helpers.FileUploadHelper.HandleFileUploadsAsync(
+                var existingFilesCount = _fileUploadService.GetExistingFilesCount(ideaCode, _webHostEnvironment.WebRootPath);
+                var attachmentPaths = await _fileUploadService.HandleFileUploadsAsync(
                     files,
                     ideaCode,
                     _webHostEnvironment.WebRootPath,

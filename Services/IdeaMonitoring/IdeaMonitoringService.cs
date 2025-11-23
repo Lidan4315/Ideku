@@ -1,5 +1,6 @@
 using Ideku.Data.Repositories;
 using Ideku.Models.Entities;
+using Ideku.Services.FileUpload;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ideku.Services.IdeaMonitoring
@@ -10,6 +11,7 @@ namespace Ideku.Services.IdeaMonitoring
         private readonly IIdeaRepository _ideaRepository;
         private readonly IUserRepository _userRepository;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IFileUploadService _fileUploadService;
         private readonly ILogger<IdeaMonitoringService> _logger;
 
         public IdeaMonitoringService(
@@ -17,12 +19,14 @@ namespace Ideku.Services.IdeaMonitoring
             IIdeaRepository ideaRepository,
             IUserRepository userRepository,
             IWebHostEnvironment webHostEnvironment,
+            IFileUploadService fileUploadService,
             ILogger<IdeaMonitoringService> logger)
         {
             _monitoringRepository = monitoringRepository;
             _ideaRepository = ideaRepository;
             _userRepository = userRepository;
             _webHostEnvironment = webHostEnvironment;
+            _fileUploadService = fileUploadService;
             _logger = logger;
         }
 
@@ -373,18 +377,19 @@ namespace Ideku.Services.IdeaMonitoring
                     return (false, "You do not have permission to upload attachments for this idea");
                 }
 
-                // Validate files
-                var fileValidation = Helpers.FileUploadHelper.ValidateFiles(files);
+                // Calculate existing files size and count for validation
+                var existingSize = _fileUploadService.CalculateExistingFilesSize(idea.AttachmentFiles, _webHostEnvironment.WebRootPath);
+                var existingFilesCount = _fileUploadService.GetExistingFilesCount(idea.IdeaCode, _webHostEnvironment.WebRootPath);
+
+                // Validate files (including existing files size)
+                var fileValidation = _fileUploadService.ValidateFiles(files, existingSize);
                 if (!fileValidation.IsValid)
                 {
                     return (false, fileValidation.ErrorMessage);
                 }
 
-                // Get existing files count for sequential numbering
-                var existingFilesCount = Helpers.FileUploadHelper.GetExistingFilesCount(idea.IdeaCode, _webHostEnvironment.WebRootPath);
-
-                // Upload files using FileUploadHelper (with null stage for monitoring files = "M" prefix)
-                var uploadedFilePaths = await Helpers.FileUploadHelper.HandleFileUploadsAsync(
+                // Upload files using FileUploadService (with null stage for monitoring files = "M" prefix)
+                var uploadedFilePaths = await _fileUploadService.HandleFileUploadsAsync(
                     files,
                     idea.IdeaCode,
                     _webHostEnvironment.WebRootPath,

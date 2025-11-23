@@ -365,53 +365,68 @@ namespace Ideku.Controllers
 
             if (ModelState.IsValid)
             {
-                // Get current user for approval process
-                var user = await _userRepository.GetByUsernameAsync(username);
-                if (user == null)
+                try
                 {
-                    TempData["ErrorMessage"] = "User not found. Please try again.";
-                    return RedirectToAction(nameof(Review), new { id });
-                }
+                    // Get current user for approval process
+                    var user = await _userRepository.GetByUsernameAsync(username);
+                    if (user == null)
+                    {
+                        TempData["ErrorMessage"] = "User not found. Please try again.";
+                        return RedirectToAction(nameof(Review), new { id });
+                    }
 
-                // Get idea untuk check current stage
-                var ideaForApproval = await _workflowService.GetIdeaForReview(id, username);
-                if (ideaForApproval == null)
-                {
-                    TempData["ErrorMessage"] = "Idea not found or access denied.";
-                    return RedirectToAction(nameof(Index));
-                }
+                    // Get idea untuk check current stage
+                    var ideaForApproval = await _workflowService.GetIdeaForReview(id, username);
+                    if (ideaForApproval == null)
+                    {
+                        TempData["ErrorMessage"] = "Idea not found or access denied.";
+                        return RedirectToAction(nameof(Index));
+                    }
 
-                // Create approval data DTO
-                var approvalData = new ApprovalProcessDto
-                {
-                    IdeaId = id,
-                    ValidatedSavingCost = viewModel.ValidatedSavingCost.Value,
-                    ApprovalComments = viewModel.ApprovalComments,
-                    RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
-                    ApprovedBy = user.Id
-                };
+                    // Create approval data DTO
+                    var approvalData = new ApprovalProcessDto
+                    {
+                        IdeaId = id,
+                        ValidatedSavingCost = viewModel.ValidatedSavingCost.Value,
+                        ApprovalComments = viewModel.ApprovalComments,
+                        RelatedDivisions = viewModel.SelectedRelatedDivisions ?? new List<string>(),
+                        ApprovedBy = user.Id
+                    };
 
-                // Process approval files first
-                if (viewModel.ApprovalFiles?.Any() == true)
-                {
-                    await _workflowService.SaveApprovalFilesAsync(id, viewModel.ApprovalFiles, ideaForApproval.CurrentStage + 1);
-                }
+                    // Process approval files first (with validation)
+                    if (viewModel.ApprovalFiles?.Any() == true)
+                    {
+                        await _workflowService.SaveApprovalFilesAsync(id, viewModel.ApprovalFiles, ideaForApproval.CurrentStage + 1);
+                    }
 
-                // Process approval database operations
-                var result = await _workflowService.ProcessApprovalDatabaseAsync(approvalData);
-                
-                if (result.IsSuccess)
-                {
-                    // Send email notifications in background (non-blocking)
-                    SendApprovalEmailInBackground(approvalData);
-                    
-                    TempData["SuccessMessage"] = result.SuccessMessage;
-                    return RedirectToAction(nameof(Index));
+                    // Process approval database operations
+                    var result = await _workflowService.ProcessApprovalDatabaseAsync(approvalData);
+
+                    if (result.IsSuccess)
+                    {
+                        // Send email notifications in background (non-blocking)
+                        SendApprovalEmailInBackground(approvalData);
+
+                        TempData["SuccessMessage"] = result.SuccessMessage;
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = result.ErrorMessage;
+                        return RedirectToAction(nameof(Review), new { id });
+                    }
                 }
-                else
+                catch (InvalidOperationException ex)
                 {
-                    TempData["ErrorMessage"] = result.ErrorMessage;
-                    return RedirectToAction(nameof(Review), new { id });
+                    // Handle file validation errors (file size, type, etc.)
+                    _logger.LogWarning(ex, "File validation failed for idea {IdeaId} approval", id);
+                    return Json(new { success = false, message = ex.Message });
+                }
+                catch (Exception ex)
+                {
+                    // Handle unexpected errors
+                    _logger.LogError(ex, "Error processing approval for idea {IdeaId}", id);
+                    return Json(new { success = false, message = "An error occurred while processing the approval. Please try again." });
                 }
             }
 
