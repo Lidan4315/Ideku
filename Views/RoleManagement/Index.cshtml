@@ -8,30 +8,22 @@
 }
 
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <!-- Page Header dengan Back Button dan Title -->
-            <div class="page-header mb-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="d-flex align-items-center mb-2">
-                            <!-- Page Title -->
-                            <h2 class="page-title text-gradient mb-0">
-                                <i class="bi bi-person-badge me-2"></i>Role Management
-                            </h2>
-                        </div>
-                        <p class="text-muted mb-0">Manage system roles and permissions</p>
-                    </div>
-                    <div>
-                        <!-- Add Role Button yang trigger modal -->
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
-                            <i class="bi bi-plus-circle me-2"></i>Add Role
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <!-- Page Header -->
+    <div class="page-header-modern mb-4">
+        <h1 class="page-title text-gradient mb-0">
+            Role Management
+        </h1>
+    </div>
 
-            <!-- Main Content Card -->
+    <!-- Action Buttons -->
+    <div class="mb-4 text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+            <i class="bi bi-plus-circle"></i>
+            <span class="d-none d-md-inline ms-2">Add Role</span>
+        </button>
+    </div>
+
+    <!-- Main Content Card -->
             <div class="card">
                 <div class="card-body">
                     @if (Model.Roles.Any())
