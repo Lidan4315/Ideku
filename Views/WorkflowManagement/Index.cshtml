@@ -9,28 +9,22 @@
 }
 
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <!-- Header Section -->
-            <div class="page-header mb-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="d-flex align-items-center mb-2">
-                            <h2 class="page-title text-gradient mb-0">
-                                Workflow Management
-                            </h2>
-                        </div>
-                        <p class="text-muted">Manage workflow configurations and approval stages</p>
-                    </div>
-                    <div>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkflowModal">
-                            <i class="bi bi-plus-circle me-1"></i>Add New Workflow
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <!-- Page Header -->
+    <div class="page-header-modern mb-4">
+        <h1 class="page-title text-gradient mb-0">
+            Workflow Management
+        </h1>
+    </div>
 
-            <!-- Alert Messages -->
+    <!-- Action Buttons -->
+    <div class="mb-4 text-end">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkflowModal">
+            <i class="bi bi-plus-circle"></i>
+            <span class="d-none d-md-inline ms-2">Add Workflow</span>
+        </button>
+    </div>
+
+    <!-- Alert Messages -->
             @if (TempData["SuccessMessage"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show" role="alert">

@@ -112,7 +112,7 @@
                     </li>
                     <li module-access="monitoring">
                         <a asp-controller="IdeaMonitoring" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaMonitoring" ? "active" : "")">
-                            <i class="bi bi-graph-up-arrow"></i>
+                            <i class="bi bi-display"></i>
                             <span>Monitoring</span>
                         </a>
                     </li>
@@ -122,7 +122,7 @@
                 {
                     <li class="nav-section">
                         <a href="#" class="nav-section-toggle" data-bs-toggle="collapse" data-bs-target="#settingsCollapse" aria-expanded="false" aria-controls="settingsCollapse">
-                            <i class="bi bi-sliders"></i>
+                            <i class="bi bi-gear"></i>
                             <span>Settings</span>
                             <i class="bi bi-chevron-right toggle-icon"></i>
                         </a>
@@ -130,13 +130,13 @@
                             <ul class="nav-section-items">
                                 <li module-access="user_management">
                                     <a asp-controller="UserManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "UserManagement" ? "active" : "")">
-                                        <i class="bi bi-people-fill"></i>
+                                        <i class="bi bi-person-fill-gear"></i>
                                         <span>User Management</span>
                                     </a>
                                 </li>
                                 <li module-access="role_management">
                                     <a asp-controller="RoleManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "RoleManagement" ? "active" : "")">
-                                        <i class="bi bi-shield-fill-check"></i>
+                                        <i class="bi bi-briefcase-fill"></i>
                                         <span>Role Management</span>
                                     </a>
                                 </li>
@@ -166,7 +166,7 @@
                                 </li>
                                 <li module-access="access_control">
                                     <a asp-controller="AccessControl" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "AccessControl" ? "active" : "")">
-                                        <i class="bi bi-key-fill"></i>
+                                        <i class="bi bi-shield-lock-fill"></i>
                                         <span>Access Control</span>
                                     </a>
                                 </li>

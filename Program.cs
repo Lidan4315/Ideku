@@ -79,11 +79,16 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection("EmailSettings"));
 
+// Configure File Upload Settings
+builder.Services.Configure<Ideku.Configuration.FileUploadSettings>(
+    builder.Configuration.GetSection("FileUploadSettings"));
+
 // Register Services
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddScoped<IApprovalTokenService, ApprovalTokenService>();
+builder.Services.AddScoped<Ideku.Services.FileUpload.IFileUploadService, Ideku.Services.FileUpload.FileUploadService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IApproverService, ApproverService>();

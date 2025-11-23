@@ -4,6 +4,7 @@ using Ideku.Models.Entities;
 using Ideku.Services.Notification;
 using Ideku.Services.WorkflowManagement;
 using Ideku.Services.IdeaRelation;
+using Ideku.Services.FileUpload;
 using Ideku.ViewModels.DTOs;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ namespace Ideku.Services.Workflow
         private readonly IWorkflowRepository _workflowRepository;
         private readonly IWorkflowManagementService _workflowManagementService;
         private readonly IIdeaRelationService _ideaRelationService;
+        private readonly IFileUploadService _fileUploadService;
         private readonly ILogger<WorkflowService> _logger;
 
         public WorkflowService(
@@ -30,6 +32,7 @@ namespace Ideku.Services.Workflow
             IWorkflowRepository workflowRepository,
             IWorkflowManagementService workflowManagementService,
             IIdeaRelationService ideaRelationService,
+            IFileUploadService fileUploadService,
             ILogger<WorkflowService> logger)
         {
             _notificationService = notificationService;
@@ -38,6 +41,7 @@ namespace Ideku.Services.Workflow
             _workflowRepository = workflowRepository;
             _workflowManagementService = workflowManagementService;
             _ideaRelationService = ideaRelationService;
+            _fileUploadService = fileUploadService;
             _logger = logger;
         }
 
@@ -589,12 +593,6 @@ namespace Ideku.Services.Workflow
 
                 await _workflowRepository.CreateAsync(workflowHistory);
 
-                // Rename files to match new stage
-                if (nextStage <= idea.MaxStage && previousStage != nextStage)
-                {
-                    await RenameFilesToNewStageAsync(approvalData.IdeaId, previousStage, nextStage);
-                }
-
                 await _ideaRepository.UpdateAsync(idea);
 
                 if (approvalData.RelatedDivisions?.Any() == true)
@@ -815,147 +813,47 @@ namespace Ideku.Services.Workflow
             var idea = await _ideaRepository.GetByIdAsync(ideaId);
             if (idea == null) return;
 
-            // Validate files before uploading
-            var fileValidation = Helpers.FileUploadHelper.ValidateFiles(files);
+            // Calculate existing files size and count
+            var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var existingSize = _fileUploadService.CalculateExistingFilesSize(idea.AttachmentFiles, webRootPath);
+            var existingFilesCount = _fileUploadService.GetExistingFilesCount(idea.IdeaCode, webRootPath);
+
+            // Validate files before uploading (including existing files size)
+            var fileValidation = _fileUploadService.ValidateFiles(files, existingSize);
             if (!fileValidation.IsValid)
             {
                 throw new InvalidOperationException(fileValidation.ErrorMessage);
             }
 
-            var newFilePaths = await HandleFileUploadsAsync(files, idea.IdeaCode, stage, true);
-            
+            // Upload using FileUploadService
+            var newFilePaths = await _fileUploadService.HandleFileUploadsAsync(
+                files,
+                idea.IdeaCode,
+                webRootPath,
+                stage: stage,
+                existingFilesCount: existingFilesCount
+            );
+
             if (newFilePaths.Any())
             {
-                var existingFiles = string.IsNullOrEmpty(idea.AttachmentFiles) 
-                    ? new List<string>() 
+                var existingFiles = string.IsNullOrEmpty(idea.AttachmentFiles)
+                    ? new List<string>()
                     : idea.AttachmentFiles.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
 
                 existingFiles.AddRange(newFilePaths);
                 idea.AttachmentFiles = string.Join(";", existingFiles);
-                
+
                 await _ideaRepository.UpdateAsync(idea);
-                
-                _logger.LogInformation("Added {FileCount} approval files to idea {IdeaId} for stage {Stage}", 
+
+                _logger.LogInformation("Added {FileCount} approval files to idea {IdeaId} for stage {Stage}",
                     newFilePaths.Count, ideaId, stage);
             }
         }
 
-
-        private async Task<List<string>> HandleFileUploadsAsync(List<IFormFile> files, string ideaCode, int stage, bool isApprovalFile = false)
-        {
-            var filePaths = new List<string>();
-            if (files == null || !files.Any()) return filePaths;
-
-            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "ideas");
-            if (!Directory.Exists(uploadsPath))
-            {
-                Directory.CreateDirectory(uploadsPath);
-            }
-
-            // Get existing files count for sequential numbering (ALL files from this idea)
-            var ideaPattern = $"{ideaCode}_";
-            var existingFiles = Directory.GetFiles(uploadsPath)
-                .Where(f => Path.GetFileName(f).StartsWith(ideaPattern))
-                .ToList();
-
-            int fileCounter = existingFiles.Count + 1;
-
-            foreach (var file in files)
-            {
-                if (file.Length > 0)
-                {
-                    var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
-                    var fileName = $"{ideaCode}_S{stage}_{fileCounter:D3}{fileExtension}";
-                    var filePath = Path.Combine(uploadsPath, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    filePaths.Add($"uploads/ideas/{fileName}");
-                    fileCounter++;
-
-                    _logger.LogInformation("Uploaded {FileType} file {FileName} for idea {IdeaCode} at stage S{Stage}", 
-                        isApprovalFile ? "approval" : "initiator", fileName, ideaCode, stage);
-                }
-            }
-
-            return filePaths;
-        }
-
-        public async Task RenameFilesToNewStageAsync(long ideaId, int fromStage, int toStage)
-        {
-            var idea = await _ideaRepository.GetByIdAsync(ideaId);
-            if (idea == null || string.IsNullOrEmpty(idea.AttachmentFiles)) return;
-
-            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "ideas");
-            var filePaths = idea.AttachmentFiles.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
-            var updatedPaths = new List<string>();
-            var renameOperations = new List<(string oldPath, string newPath)>();
-
-            try
-            {
-                foreach (var filePath in filePaths)
-                {
-                    var fileName = Path.GetFileName(filePath);
-                    
-                    if (fileName.Contains($"_S{fromStage}_"))
-                    {
-                        var newFileName = fileName.Replace($"_S{fromStage}_", $"_S{toStage}_");
-                        var oldFullPath = Path.Combine(uploadsPath, fileName);
-                        var newFullPath = Path.Combine(uploadsPath, newFileName);
-                        
-                        if (File.Exists(oldFullPath))
-                        {
-                            renameOperations.Add((oldFullPath, newFullPath));
-                            updatedPaths.Add($"uploads/ideas/{newFileName}");
-                        }
-                        else
-                        {
-                            updatedPaths.Add(filePath);
-                        }
-                    }
-                    else
-                    {
-                        updatedPaths.Add(filePath);
-                    }
-                }
-
-                foreach (var (oldPath, newPath) in renameOperations)
-                {
-                    File.Move(oldPath, newPath);
-                    _logger.LogInformation("Renamed file from {OldPath} to {NewPath} for idea {IdeaId}", 
-                        Path.GetFileName(oldPath), Path.GetFileName(newPath), ideaId);
-                }
-
-                idea.AttachmentFiles = string.Join(";", updatedPaths);
-                await _ideaRepository.UpdateAsync(idea);
-
-                _logger.LogInformation("Successfully renamed {Count} files from S{FromStage} to S{ToStage} for idea {IdeaId}", 
-                    renameOperations.Count, fromStage, toStage, ideaId);
-            }
-            catch (Exception ex)
-            {
-                foreach (var (oldPath, newPath) in renameOperations.Where(op => File.Exists(op.newPath)))
-                {
-                    try
-                    {
-                        if (File.Exists(oldPath)) File.Delete(oldPath);
-                        File.Move(newPath, oldPath);
-                    }
-                    catch
-                    {
-                        _logger.LogError("Failed to rollback file rename: {NewPath} -> {OldPath}", newPath, oldPath);
-                    }
-                }
-
-                _logger.LogError(ex, "Failed to rename files from S{FromStage} to S{ToStage} for idea {IdeaId}", 
-                    fromStage, toStage, ideaId);
-                throw;
-            }
-        }
+        // REMOVED: RenameFilesToNewStageAsync method
+        // Reason: File names should preserve audit trail and indicate when they were uploaded
+        // Stage prefix (S0, S1, etc.) represents "upload time", not "current idea stage"
+        // Renaming files destroys this important audit information
 
         public async Task<List<User>> GetApproversForNextStageAsync(Models.Entities.Idea idea)
         {
