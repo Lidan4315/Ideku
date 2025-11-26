@@ -18,7 +18,7 @@ namespace Ideku.Data.Repositories
         public async Task<IEnumerable<Approver>> GetAllAsync()
         {
             return await _context.Approvers
-                .OrderBy(a => a.ApproverName)
+                .OrderBy(a => a.Id)
                 .ToListAsync();
         }
 

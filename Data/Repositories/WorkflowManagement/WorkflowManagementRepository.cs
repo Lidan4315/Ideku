@@ -20,7 +20,7 @@ namespace Ideku.Data.Repositories.WorkflowManagement
                 .Include(w => w.WorkflowStages)
                     .ThenInclude(ws => ws.Approver)
                 .Include(w => w.WorkflowConditions)
-                .OrderByDescending(w => w.CreatedAt)
+                .OrderBy(w => w.Id)
                 .ToListAsync();
         }
 
