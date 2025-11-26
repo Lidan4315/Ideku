@@ -502,6 +502,64 @@ body.modern-page {
     transform: translateY(-1px);
 }
 
+/* Custom Danger Button - For Delete Actions */
+.btn-danger-custom {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: white;
+}
+
+.btn-danger-custom:hover {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    color: white;
+}
+
+.btn-danger-custom:focus {
+    box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.25);
+    outline: none;
+}
+
+.btn-danger-custom:active {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(0);
+}
+
+/* Outline Danger Button */
+.btn-outline-danger-custom {
+    border: 1px solid #dc2626;
+    color: #dc2626;
+    background-color: transparent;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-danger-custom:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-outline-danger-custom:focus {
+    box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.25);
+    outline: none;
+}
+
+.btn-outline-danger-custom:active {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: white;
+    transform: translateY(0);
+}
+
 .btn-outline-gray {
     border: 1px solid #6b7280;
     background-color: #ffffff;
@@ -1239,4 +1297,17 @@ body.modern-page {
 .clickable-row:hover {
     background-color: #f8f9fa;
 }
+
+/* =============================================================================
+   IDEA ACTION BUTTONS (Edit & Delete)
+   ============================================================================= */
+
+/* On desktop/tablet: Set minimum width for consistent button sizes */
+@media (min-width: 768px) {
+    .idea-action-btn {
+        min-width: 108px;
+    }
+}
+
+/* On mobile: No min-width constraint (icon only, should be compact) */
 

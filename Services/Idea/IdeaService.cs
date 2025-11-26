@@ -1815,6 +1815,141 @@ namespace Ideku.Services.Idea
 
         #endregion
 
+        #region Edit & Delete
+
+        /// <summary>
+        /// Update existing idea with new data
+        /// </summary>
+        public async Task<(bool Success, string Message)> UpdateIdeaAsync(EditIdeaViewModel model, List<IFormFile>? newFiles)
+        {
+            try
+            {
+                // Get existing idea
+                var idea = await _ideaRepository.GetByIdAsync(model.Id);
+                if (idea == null)
+                {
+                    return (false, "Idea not found.");
+                }
+
+                // Check if idea is already deleted
+                if (idea.IsDeleted)
+                {
+                    return (false, "Cannot edit deleted idea.");
+                }
+
+                // VALIDATE FILES FIRST if new files are uploaded
+                if (newFiles != null && newFiles.Any())
+                {
+                    var fileValidation = _fileUploadService.ValidateFiles(newFiles);
+                    if (!fileValidation.IsValid)
+                    {
+                        return (false, fileValidation.ErrorMessage);
+                    }
+                }
+
+                // Validate Idea Name uniqueness (exclude current idea)
+                var ideaNameExists = await _ideaRepository.IsIdeaNameExistsAsync(model.IdeaName, model.Id);
+                if (ideaNameExists)
+                {
+                    return (false, "An idea with this name already exists. Please use a different name.");
+                }
+
+                // Update idea properties
+                idea.ToDivisionId = model.ToDivisionId;
+                idea.ToDepartmentId = model.ToDepartmentId;
+                idea.CategoryId = model.CategoryId;
+                idea.EventId = model.EventId;
+                idea.IdeaName = model.IdeaName;
+                idea.IdeaIssueBackground = model.IdeaDescription;
+                idea.IdeaSolution = model.Solution;
+                idea.SavingCost = model.SavingCost ?? 0;
+                idea.UpdatedDate = DateTime.Now;
+
+                // Handle new file uploads if any
+                if (newFiles != null && newFiles.Any())
+                {
+                    var existingFilesCount = _fileUploadService.GetExistingFilesCount(idea.IdeaCode, _webHostEnvironment.WebRootPath);
+                    var newAttachmentPaths = await _fileUploadService.HandleFileUploadsAsync(
+                        newFiles,
+                        idea.IdeaCode,
+                        _webHostEnvironment.WebRootPath,
+                        stage: idea.CurrentStage,
+                        existingFilesCount: existingFilesCount
+                    );
+
+                    // Append new files to existing attachments
+                    var existingFiles = string.IsNullOrEmpty(idea.AttachmentFiles)
+                        ? new List<string>()
+                        : idea.AttachmentFiles.Split(';').ToList();
+
+                    existingFiles.AddRange(newAttachmentPaths);
+                    idea.AttachmentFiles = string.Join(";", existingFiles);
+                }
+
+                // Save changes
+                await _ideaRepository.UpdateAsync(idea);
+
+                return (true, $"Idea '{model.IdeaName}' has been successfully updated!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating idea {IdeaId}", model.Id);
+                return (false, $"Error updating idea: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Soft delete idea by setting IsDeleted to true
+        /// </summary>
+        public async Task<(bool Success, string Message)> SoftDeleteIdeaAsync(long ideaId, string username)
+        {
+            try
+            {
+                // Get the idea
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    return (false, "Idea not found.");
+                }
+
+                // Check if already deleted
+                if (idea.IsDeleted)
+                {
+                    return (false, "Idea is already deleted.");
+                }
+
+                // Get current user for authorization check
+                var user = await _userRepository.GetByUsernameAsync(username);
+                if (user == null)
+                {
+                    return (false, "User not found.");
+                }
+
+                // Authorization: Only allow initiator or Superuser to delete
+                if (idea.InitiatorUserId != user.Id && user.Role.RoleName != "Superuser")
+                {
+                    return (false, "You are not authorized to delete this idea.");
+                }
+
+                // Perform soft delete
+                var deleteResult = await _ideaRepository.SoftDeleteAsync(ideaId);
+                if (!deleteResult)
+                {
+                    return (false, "Failed to delete idea.");
+                }
+
+                _logger.LogInformation("Idea {IdeaCode} soft deleted by user {Username}", idea.IdeaCode, username);
+                return (true, $"Idea '{idea.IdeaCode}' has been successfully deleted.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting idea {IdeaId}", ideaId);
+                return (false, $"Error deleting idea: {ex.Message}");
+            }
+        }
+
+        #endregion
+
         #region Inactive Management
 
         /// <summary>

@@ -30,6 +30,9 @@
     @await Html.PartialAsync("_InactiveIdeaWarning", Model.Idea)
 
     <!-- Use Shared Idea Details Partial -->
+    @{
+        ViewData["ShowIdeaActions"] = true;
+    }
     @await Html.PartialAsync("_IdeaDetails", Model.Idea)
 
     <!-- Attachments and Implementators Section Side by Side -->
@@ -342,6 +345,9 @@
         </div>
     </div>
 </div>
+
+<!-- Edit & Delete Idea Modal -->
+@await Html.PartialAsync("_EditIdeaModal", Model)
 
 @section Scripts {
 <script>

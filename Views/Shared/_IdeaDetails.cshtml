@@ -1,11 +1,34 @@
 @model Ideku.Models.Entities.Idea
+@{
+    var showActions = ViewData["ShowIdeaActions"] as bool? ?? false;
+}
 
 <!-- Idea Details Section -->
 <div class="card shadow mb-4">
     <div class="card-header py-3">
-        <h3 class="m-0 fw-bold text-gradient">@Model.IdeaName</h3>
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="m-0 font-weight-bold text-gradient">
+                <i class="bi bi-lightbulb me-2"></i>Idea Details
+            </h5>
+
+            @if (showActions && !Model.IsDeleted)
+            {
+                <div class="d-flex gap-2" module-access="idea_edit_delete">
+                    <button type="button" class="btn btn-sm btn-primary idea-action-btn" data-bs-toggle="modal" data-bs-target="#editIdeaModal" title="Edit Idea">
+                        <i class="bi bi-pencil me-md-1"></i><span class="d-none d-md-inline">Edit</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger-custom idea-action-btn" id="deleteIdeaBtn" title="Delete Idea">
+                        <i class="bi bi-trash me-md-1"></i><span class="d-none d-md-inline">Delete</span>
+                    </button>
+                </div>
+            }
+        </div>
     </div>
     <div class="card-body">
+        <div class="form-group-view mb-3">
+            <label>Idea Name</label>
+            <p class="fw-bold">@Model.IdeaName</p>
+        </div>
         <div class="row mb-3">
             <div class="col-md-6">
                 <div class="form-group-view">

@@ -300,6 +300,11 @@ namespace Ideku.Controllers
                 ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
                 ViewBag.ShowReactivateButton = (user?.Role?.RoleName == "Superuser" && ViewBag.IsInactive);
 
+                // Pass dropdown data to view for edit modal
+                ViewBag.Divisions = await _lookupService.GetDivisionsAsync();
+                ViewBag.Categories = await _lookupService.GetCategoriesAsync();
+                ViewBag.Events = await _lookupService.GetEventsAsync();
+
                 var viewModel = new IdeaDetailViewModel
                 {
                     Idea = idea,

@@ -1,0 +1,642 @@
+@model Ideku.ViewModels.IdeaList.IdeaDetailViewModel
+
+<!-- Edit Idea Modal -->
+@Html.AntiForgeryToken()
+
+<div class="modal fade" id="editIdeaModal" tabindex="-1" aria-labelledby="editIdeaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="editIdeaModalLabel">Edit Idea</h5>
+                        <small class="text-muted">@Model.Idea.IdeaCode</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editIdeaForm" enctype="multipart/form-data">
+                <div class="modal-body app-modal-body">
+                    <!-- Idea Details Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3"><i class="bi bi-lightbulb me-2"></i>Idea Information</h6>
+
+                        <!-- Division & Department -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">To Division <span class="text-danger">*</span></label>
+                                <select class="form-select" id="editToDivisionId" name="toDivisionId" required>
+                                    <option value="">-- Select Division --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">To Department <span class="text-danger">*</span></label>
+                                <select class="form-select" id="editToDepartmentId" name="toDepartmentId" required>
+                                    <option value="">-- Select Department --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Category & Event -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Category <span class="text-danger">*</span></label>
+                                <select class="form-select" id="editCategoryId" name="categoryId" required>
+                                    <option value="">-- Select Category --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Event (Optional)</label>
+                                <select class="form-select" id="editEventId" name="eventId">
+                                    <option value="">-- Select Event (Optional) --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Idea Name -->
+                        <div class="mb-3">
+                            <label class="form-label">Idea Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editIdeaName" name="ideaName" maxlength="150" required>
+                            <div class="form-text">Maximum 150 characters</div>
+                            <div id="editIdeaNameError" class="text-danger mt-1" style="display: none;"></div>
+                        </div>
+
+                        <!-- Issue Background -->
+                        <div class="mb-3">
+                            <label class="form-label">Issue Background <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="editIdeaDescription" name="ideaDescription" rows="4" maxlength="2000" required></textarea>
+                            <div class="form-text">Maximum 2000 characters</div>
+                        </div>
+
+                        <!-- Solution -->
+                        <div class="mb-3">
+                            <label class="form-label">Proposed Solution <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="editSolution" name="solution" rows="4" maxlength="2000" required></textarea>
+                            <div class="form-text">Maximum 2000 characters</div>
+                        </div>
+
+                        <!-- Saving Cost -->
+                        <div class="mb-3">
+                            <label class="form-label">Estimated Saving Cost (USD) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">USD</span>
+                                <input type="text" class="form-control" id="editSavingCost" name="savingCost" placeholder="Enter amount" required>
+                            </div>
+                            <small class="form-text text-muted">Estimated cost savings (e.g., 1,000 or 1,000,000)</small>
+                        </div>
+                    </div>
+
+                    <!-- Existing Attachments -->
+                    <div class="mb-4" id="existingAttachmentsSection">
+                        <h6 class="text-primary mb-3"><i class="bi bi-paperclip me-2"></i>Existing Attachments</h6>
+                        <div id="existingAttachmentsList">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- New Attachments Upload -->
+                    <div class="mb-3">
+                        <label class="form-label">Add New Attachments <span class="text-muted">(Optional)</span></label>
+
+                        <!-- File Upload Container with Dashed Border -->
+                        <div class="file-upload-container">
+                            <input type="file" id="editNewAttachments" class="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" multiple />
+
+                            <!-- Browse Files Button -->
+                            <div class="file-upload-header">
+                                <button type="button" class="btn btn-outline-gray" onclick="document.getElementById('editNewAttachments').click()">
+                                    <i class="bi bi-folder2-open me-2"></i><span class="d-none d-md-inline">Browse</span><span class="d-inline d-md-none">Browse</span>
+                                </button>
+                                <small class="form-text text-muted ms-2 d-none d-md-inline">Select one or multiple files.</small><small class="form-text text-muted d-block d-md-none ms-2">Select one or multiple files.</small>
+                            </div>
+
+                            <!-- Selected Files List -->
+                            <div id="editFilesList" class="files-list-container">
+                                <div class="text-muted text-center" id="editNoFilesMessage">
+                                    <i class="bi bi-cloud-arrow-up fs-1 d-block mb-2"></i>
+                                    No files added yet
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden inputs for files -->
+                        <div id="editHiddenFileInputs"></div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Update Idea
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-initialize when document and jQuery are ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if jQuery is loaded
+    if (typeof $ === 'undefined') {
+        console.error('jQuery is not loaded! Edit modal scripts cannot initialize.');
+        return;
+    }
+
+    // ==================================================
+    // EDIT IDEA MODAL FUNCTIONALITY
+    // ==================================================
+    const ideaData = @Html.Raw(Json.Serialize(new {
+    id = Model.Idea.Id,
+    ideaCode = Model.Idea.IdeaCode,
+    toDivisionId = Model.Idea.ToDivisionId,
+    toDepartmentId = Model.Idea.ToDepartmentId,
+    categoryId = Model.Idea.CategoryId,
+    eventId = Model.Idea.EventId,
+    ideaName = Model.Idea.IdeaName,
+    ideaDescription = Model.Idea.IdeaIssueBackground,
+    solution = Model.Idea.IdeaSolution,
+    savingCost = Model.Idea.SavingCost,
+    attachmentFiles = Model.Idea.AttachmentFiles
+}));
+
+// Initialize modal data when page loads (one-time fetch)
+let modalDataLoaded = false;
+
+// Load dropdown data when modal opens
+$('#editIdeaModal').on('show.bs.modal', async function() {
+    try {
+        console.log('=== EDIT MODAL OPENED ===');
+        console.log('Loading edit modal with data:', ideaData);
+        console.log('jQuery version:', $.fn.jquery);
+        console.log('Form elements found:', $('#editIdeaName').length);
+
+        // Populate form with current idea data
+        $('#editIdeaName').val(ideaData.ideaName);
+        $('#editIdeaDescription').val(ideaData.ideaDescription);
+        $('#editSolution').val(ideaData.solution);
+
+        // Format saving cost with commas
+        const savingCost = ideaData.savingCost.toString();
+        $('#editSavingCost').attr('data-numeric-value', savingCost);
+        $('#editSavingCost').val(formatNumberWithCommas(savingCost));
+
+        // Load dropdowns if not already loaded
+        if (!modalDataLoaded) {
+            console.log('Loading dropdowns for the first time...');
+            await loadEditDropdowns();
+            modalDataLoaded = true;
+        } else {
+            // Just set the values
+            $('#editToDivisionId').val(ideaData.toDivisionId);
+            $('#editCategoryId').val(ideaData.categoryId);
+            $('#editEventId').val(ideaData.eventId || '');
+        }
+
+        // Load departments for selected division
+        if (ideaData.toDivisionId) {
+            console.log('Loading departments for division:', ideaData.toDivisionId);
+            await loadDepartmentsForEdit(ideaData.toDivisionId);
+            $('#editToDepartmentId').val(ideaData.toDepartmentId);
+        }
+
+        // Display existing attachments
+        displayExistingAttachments();
+
+        console.log('Modal loaded successfully');
+    } catch (error) {
+        console.error('Error loading form data:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: 'Failed to load form data. Please try again.',
+            confirmButtonColor: '#dc2626'
+        });
+    }
+});
+
+// Load dropdown options
+async function loadEditDropdowns() {
+    // Get dropdown data from ViewBag (prepared by controller)
+    const divisionsData = @Html.Raw(Json.Serialize(
+        ((List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Divisions)
+        .Select(d => new { id = d.Value, name = d.Text })
+        .ToList()
+    ));
+
+    const categoriesData = @Html.Raw(Json.Serialize(
+        ((List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories)
+        .Select(c => new { id = c.Value, name = c.Text })
+        .ToList()
+    ));
+
+    const eventsData = @Html.Raw(Json.Serialize(
+        ((List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Events)
+        .Select(e => new { id = e.Value, name = e.Text })
+        .ToList()
+    ));
+
+    // Populate Divisions
+    const $divisionSelect = $('#editToDivisionId');
+    $divisionSelect.empty().append('<option value="">-- Select Division --</option>');
+    divisionsData.forEach(div => {
+        $divisionSelect.append(`<option value="${div.id}">${div.name}</option>`);
+    });
+    $divisionSelect.val(ideaData.toDivisionId);
+
+    // Populate Categories
+    const $categorySelect = $('#editCategoryId');
+    $categorySelect.empty().append('<option value="">-- Select Category --</option>');
+    categoriesData.forEach(cat => {
+        $categorySelect.append(`<option value="${cat.id}">${cat.name}</option>`);
+    });
+    $categorySelect.val(ideaData.categoryId);
+
+    // Populate Events
+    const $eventSelect = $('#editEventId');
+    $eventSelect.empty().append('<option value="">-- Select Event (Optional) --</option>');
+    eventsData.forEach(evt => {
+        $eventSelect.append(`<option value="${evt.id}">${evt.name}</option>`);
+    });
+    $eventSelect.val(ideaData.eventId || '');
+}
+
+// Load departments for a division
+async function loadDepartmentsForEdit(divisionId) {
+    const deptsResponse = await $.get('/Idea/GetDepartmentsByDivision', {
+        divisionId: divisionId
+    });
+    const $deptSelect = $('#editToDepartmentId');
+    $deptSelect.empty().append('<option value="">-- Select Department --</option>');
+    deptsResponse.forEach(dept => {
+        $deptSelect.append(`<option value="${dept.id}">${dept.name}</option>`);
+    });
+}
+
+// Cascading dropdown: Division -> Department
+$('#editToDivisionId').on('change', async function() {
+    const divisionId = $(this).val();
+    const $deptSelect = $('#editToDepartmentId');
+
+    if (divisionId) {
+        try {
+            $deptSelect.html('<option value="">Loading departments...</option>').prop('disabled', false);
+            await loadDepartmentsForEdit(divisionId);
+        } catch (error) {
+            console.error('Error loading departments:', error);
+            $deptSelect.html('<option value="">Error loading departments</option>');
+        }
+    } else {
+        $deptSelect.empty().append('<option value="">-- Select Division First --</option>').prop('disabled', true);
+    }
+});
+
+// Display existing attachments
+function displayExistingAttachments() {
+    const $attachmentsList = $('#existingAttachmentsList');
+    $attachmentsList.empty();
+
+    if (ideaData.attachmentFiles) {
+        const files = ideaData.attachmentFiles.split(';').filter(f => f.trim());
+        if (files.length > 0) {
+            files.forEach(file => {
+                const fileName = file.split('/').pop().split('\\').pop();
+                $attachmentsList.append(`
+                    <div class="attachment-item d-flex justify-content-between align-items-center mb-2">
+                        <span class="filename text-truncate me-2" title="${fileName}">
+                            <i class="bi bi-paperclip me-1"></i>${fileName}
+                        </span>
+                    </div>
+                `);
+            });
+            $('#existingAttachmentsSection').show();
+        } else {
+            $('#existingAttachmentsSection').hide();
+        }
+    } else {
+        $('#existingAttachmentsSection').hide();
+    }
+}
+
+// Format Saving Cost with thousand separator
+function formatNumberWithCommas(value) {
+    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+const editSavingCostInput = $('#editSavingCost');
+editSavingCostInput.on('input', function() {
+    const value = $(this).val();
+    const numericValue = value.replace(/[^\d]/g, '');
+
+    if (numericValue) {
+        $(this).attr('data-numeric-value', numericValue);
+        $(this).val(formatNumberWithCommas(numericValue));
+    } else {
+        $(this).removeAttr('data-numeric-value');
+    }
+});
+
+// File Upload Handler for Edit Modal
+const editFileInput = $('#editNewAttachments');
+const editFilesList = $('#editFilesList');
+const editNoFilesMessage = $('#editNoFilesMessage');
+const editHiddenFileInputs = $('#editHiddenFileInputs');
+let editSelectedFiles = new DataTransfer();
+
+editFileInput.on('change', function(e) {
+    const files = Array.from(e.target.files);
+
+    files.forEach(file => {
+        editSelectedFiles.items.add(file);
+    });
+
+    updateEditFilesList();
+    this.value = '';
+});
+
+function updateEditFilesList() {
+    editFilesList.empty();
+    editHiddenFileInputs.empty();
+
+    if (editSelectedFiles.files.length === 0) {
+        editNoFilesMessage.show();
+        return;
+    }
+
+    editNoFilesMessage.hide();
+
+    Array.from(editSelectedFiles.files).forEach((file, index) => {
+        const fileSize = (file.size / 1024).toFixed(2);
+        const fileExtension = file.name.split('.').pop().toUpperCase();
+
+        const fileItem = $(`
+            <div class="file-item">
+                <div class="file-info">
+                    <i class="bi bi-file-earmark-${getFileIcon(fileExtension)} me-2"></i>
+                    <div class="file-details">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">${fileSize} KB • ${fileExtension}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${index}">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        `);
+
+        editFilesList.append(fileItem);
+    });
+
+    editFileInput[0].files = editSelectedFiles.files;
+}
+
+function getFileIcon(extension) {
+    const iconMap = {
+        'PDF': 'pdf',
+        'DOC': 'word', 'DOCX': 'word',
+        'XLS': 'excel', 'XLSX': 'excel',
+        'PPT': 'ppt', 'PPTX': 'ppt',
+        'JPG': 'image', 'JPEG': 'image', 'PNG': 'image'
+    };
+    return iconMap[extension] || 'text';
+}
+
+editFilesList.on('click', '.remove-file', function() {
+    const index = $(this).data('index');
+    const dt = new DataTransfer();
+
+    Array.from(editSelectedFiles.files).forEach((file, i) => {
+        if (i !== index) dt.items.add(file);
+    });
+
+    editSelectedFiles = dt;
+    updateEditFilesList();
+});
+
+// Reset file upload when modal is closed
+$('#editIdeaModal').on('hidden.bs.modal', function() {
+    editSelectedFiles = new DataTransfer();
+    updateEditFilesList();
+});
+
+// Check idea name uniqueness (debounced)
+let editIdeaNameTimeout;
+$('#editIdeaName').on('input', function() {
+    clearTimeout(editIdeaNameTimeout);
+    const ideaName = $(this).val();
+
+    if (ideaName.length >= 3 && ideaName !== ideaData.ideaName) {
+        editIdeaNameTimeout = setTimeout(function() {
+            $.ajax({
+                url: '@Url.Action("CheckIdeaNameExists", "Idea")',
+                type: 'GET',
+                data: { ideaName: ideaName },
+                success: function(response) {
+                    if (response.exists) {
+                        $('#editIdeaNameError').text('This idea name already exists. Please use a different name.').show();
+                        $('#editIdeaName').addClass('is-invalid');
+                    } else {
+                        $('#editIdeaNameError').hide();
+                        $('#editIdeaName').removeClass('is-invalid');
+                    }
+                }
+            });
+        }, 500);
+    } else {
+        $('#editIdeaNameError').hide();
+        $('#editIdeaName').removeClass('is-invalid');
+    }
+});
+
+// Handle edit form submission
+$('#editIdeaForm').on('submit', function(e) {
+    e.preventDefault();
+
+    // Validate idea name
+    if ($('#editIdeaName').hasClass('is-invalid')) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Validation Error!',
+            text: 'Please fix the idea name error before submitting.',
+            confirmButtonColor: '#dc2626'
+        });
+        return;
+    }
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('Id', ideaData.id);
+    formData.append('IdeaCode', ideaData.ideaCode);
+    formData.append('ToDivisionId', $('#editToDivisionId').val());
+    formData.append('ToDepartmentId', $('#editToDepartmentId').val());
+    formData.append('CategoryId', $('#editCategoryId').val());
+    formData.append('EventId', $('#editEventId').val() || '');
+    formData.append('IdeaName', $('#editIdeaName').val());
+    formData.append('IdeaDescription', $('#editIdeaDescription').val());
+    formData.append('Solution', $('#editSolution').val());
+    // Get numeric value (without commas) for saving cost
+    const savingCostValue = $('#editSavingCost').attr('data-numeric-value') || $('#editSavingCost').val().replace(/[^\d]/g, '');
+    formData.append('SavingCost', savingCostValue);
+    formData.append('ExistingAttachments', ideaData.attachmentFiles || '');
+
+    // Add new files
+    const files = $('#editNewAttachments')[0].files;
+    for (let i = 0; i < files.length; i++) {
+        formData.append('NewAttachmentFiles', files[i]);
+    }
+
+    // Add anti-forgery token
+    formData.append('__RequestVerificationToken', $('input[name="__RequestVerificationToken"]').val());
+
+    // Show loading state
+    const $submitBtn = $(this).find('button[type="submit"]');
+    const originalText = $submitBtn.html();
+    $submitBtn.html('<i class="bi bi-hourglass-split me-2"></i>Updating...').prop('disabled', true);
+
+    // Submit form
+    $.ajax({
+        url: '@Url.Action("Edit", "Idea")',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            if (response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: response.message || 'Idea has been updated successfully!',
+                    confirmButtonColor: '#3b82f6'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: response.message || 'Failed to update idea.',
+                    confirmButtonColor: '#dc2626'
+                });
+                $submitBtn.html(originalText).prop('disabled', false);
+            }
+        },
+        error: function(xhr) {
+            let errorMessage = 'An error occurred while updating the idea.';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            } else if (xhr.responseText) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message) errorMessage = response.message;
+                } catch (e) {
+                    // Ignore parse errors
+                }
+            }
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: errorMessage,
+                confirmButtonColor: '#dc2626'
+            });
+            $submitBtn.html(originalText).prop('disabled', false);
+        }
+    });
+});
+
+// ==================================================
+// DELETE IDEA FUNCTIONALITY
+// ==================================================
+$('#deleteIdeaBtn').on('click', function() {
+    Swal.fire({
+        title: 'Confirm Deletion',
+        html: `Are you sure you want to delete the idea "<strong>${ideaData.ideaName}</strong>" (${ideaData.ideaCode})?<br><br><span class="text-danger"><strong>This action cannot be undone.</strong></span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-trash me-2"></i>Delete',
+        cancelButtonText: '<i class="bi bi-x-circle me-2"></i>Cancel',
+        customClass: {
+            confirmButton: 'btn btn-danger px-4 me-2',
+            cancelButton: 'btn btn-secondary px-4'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading state
+            Swal.fire({
+                title: 'Deleting...',
+                text: 'Please wait while we delete the idea.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Send AJAX request
+            $.ajax({
+                url: '@Url.Action("Delete", "Idea")',
+                type: 'POST',
+                data: {
+                    id: ideaData.id,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: response.message,
+                            icon: 'success',
+                            confirmButtonText: 'OK',
+                            customClass: {
+                                confirmButton: 'btn btn-success px-4'
+                            },
+                            buttonsStyling: false
+                        }).then(() => {
+                            // Redirect to ideas list
+                            window.location.href = '@Url.Action("Index", "Idea")';
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: response.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK',
+                            customClass: {
+                                confirmButton: 'btn btn-danger px-4'
+                            },
+                            buttonsStyling: false
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Delete idea error:', error);
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An error occurred while deleting the idea. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        customClass: {
+                            confirmButton: 'btn btn-danger px-4'
+                        },
+                        buttonsStyling: false
+                    });
+                }
+            });
+        }
+    });
+});
+
+}); // End DOMContentLoaded
+</script>

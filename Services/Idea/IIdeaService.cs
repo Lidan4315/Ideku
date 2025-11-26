@@ -38,6 +38,10 @@ namespace Ideku.Services.Idea
         // Validation
         Task<bool> IsIdeaNameExistsAsync(string ideaName, long? excludeIdeaId = null);
 
+        // Edit & Delete
+        Task<(bool Success, string Message)> UpdateIdeaAsync(EditIdeaViewModel model, List<IFormFile>? newFiles);
+        Task<(bool Success, string Message)> SoftDeleteIdeaAsync(long ideaId, string username);
+
         // Inactive Management
         Task<(bool Success, string Message)> ReactivateIdeaAsync(long ideaId, string activatedBy);
         Task SendReactivationEmailAsync(long ideaId);

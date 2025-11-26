@@ -448,6 +448,11 @@ namespace Ideku.Controllers
                     WorkflowHistory = workflowHistory
                 };
 
+                // Pass dropdown data to view for edit modal
+                ViewBag.Divisions = await _lookupService.GetDivisionsAsync();
+                ViewBag.Categories = await _lookupService.GetCategoriesAsync();
+                ViewBag.Events = await _lookupService.GetEventsAsync();
+
                 return View(viewModel);
             }
             catch (Exception ex)
@@ -455,6 +460,180 @@ namespace Ideku.Controllers
                 _logger.LogError(ex, "Error loading idea details: {IdeaId}", id);
                 TempData["ErrorMessage"] = "Error loading idea details";
                 return RedirectToAction("Index");
+            }
+        }
+
+        // GET: Idea/Edit/{id}
+        [ModuleAuthorize("idea_edit_delete")]
+        public async Task<IActionResult> Edit(long id)
+        {
+            try
+            {
+                var username = User.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return RedirectToAction("Login", "Auth");
+                }
+
+                // Get the idea
+                var ideasQuery = await _ideaService.GetUserIdeasAsync(username);
+                var idea = await ideasQuery
+                    .Where(i => i.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (idea == null)
+                {
+                    TempData["ErrorMessage"] = "Idea not found or you don't have permission to edit it";
+                    return RedirectToAction("Index");
+                }
+
+                // Check if idea is deleted
+                if (idea.IsDeleted)
+                {
+                    TempData["ErrorMessage"] = "Cannot edit deleted idea";
+                    return RedirectToAction("Index");
+                }
+
+                // Map idea to EditIdeaViewModel
+                var viewModel = new EditIdeaViewModel
+                {
+                    Id = idea.Id,
+                    IdeaCode = idea.IdeaCode,
+                    BadgeNumber = idea.InitiatorUser?.Employee?.EMP_ID ?? "",
+                    EmployeeName = idea.InitiatorUser?.Employee?.NAME ?? "",
+                    Position = idea.InitiatorUser?.Employee?.POSITION_TITLE ?? "",
+                    Division = idea.InitiatorUser?.Employee?.DivisionNavigation?.NameDivision ?? "",
+                    Department = idea.InitiatorUser?.Employee?.DepartmentNavigation?.NameDepartment ?? "",
+                    Email = idea.InitiatorUser?.Employee?.EMAIL ?? "",
+                    ToDivisionId = idea.ToDivisionId,
+                    ToDepartmentId = idea.ToDepartmentId,
+                    CategoryId = idea.CategoryId,
+                    EventId = idea.EventId,
+                    IdeaName = idea.IdeaName,
+                    IdeaDescription = idea.IdeaIssueBackground,
+                    Solution = idea.IdeaSolution,
+                    SavingCost = idea.SavingCost,
+                    ExistingAttachments = idea.AttachmentFiles,
+                    InitiatorUserId = idea.InitiatorUserId,
+                    EmployeeId = idea.InitiatorUser?.EmployeeId ?? "",
+
+                    // Populate dropdown lists
+                    DivisionList = await _lookupService.GetDivisionsAsync(),
+                    DepartmentList = await _lookupService.GetDepartmentsByDivisionAsync(idea.ToDivisionId),
+                    CategoryList = await _lookupService.GetCategoriesAsync(),
+                    EventList = await _lookupService.GetEventsAsync()
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading edit form for idea: {IdeaId}", id);
+                TempData["ErrorMessage"] = $"Error loading edit form: {ex.Message}";
+                return RedirectToAction("Index");
+            }
+        }
+
+        // POST: Idea/Edit
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [ModuleAuthorize("idea_edit_delete")]
+        public async Task<IActionResult> Edit(EditIdeaViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _ideaService.UpdateIdeaAsync(model, model.NewAttachmentFiles);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Idea {IdeaId} updated successfully by user {Username}",
+                        model.Id, User.Identity?.Name);
+
+                    // Check if request is AJAX
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = true, message = result.Message });
+                    }
+
+                    TempData["SuccessMessage"] = result.Message;
+                    return RedirectToAction("Details", new { id = model.Id });
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to update idea {IdeaId} for user {Username}: {ErrorMessage}",
+                        model.Id, User.Identity?.Name, result.Message);
+
+                    // Check if request is AJAX
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, message = result.Message });
+                    }
+
+                    TempData["ErrorMessage"] = result.Message;
+
+                    // Repopulate dropdown lists
+                    model.DivisionList = await _lookupService.GetDivisionsAsync();
+                    model.DepartmentList = await _lookupService.GetDepartmentsByDivisionAsync(model.ToDivisionId);
+                    model.CategoryList = await _lookupService.GetCategoriesAsync();
+                    model.EventList = await _lookupService.GetEventsAsync();
+
+                    return View(model);
+                }
+            }
+
+            // Check if request is AJAX
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                var errors = string.Join(", ", ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage));
+                return Json(new { success = false, message = errors });
+            }
+
+            // Return validation errors
+            TempData["ErrorMessage"] = "Please check your input";
+
+            // Repopulate dropdown lists
+            model.DivisionList = await _lookupService.GetDivisionsAsync();
+            model.DepartmentList = await _lookupService.GetDepartmentsByDivisionAsync(model.ToDivisionId);
+            model.CategoryList = await _lookupService.GetCategoriesAsync();
+            model.EventList = await _lookupService.GetEventsAsync();
+
+            return View(model);
+        }
+
+        // POST: Idea/Delete/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [ModuleAuthorize("idea_edit_delete")]
+        public async Task<IActionResult> Delete(long id)
+        {
+            try
+            {
+                var username = User.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return Json(new { success = false, message = "Unauthorized" });
+                }
+
+                var result = await _ideaService.SoftDeleteIdeaAsync(id, username);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Idea {IdeaId} deleted successfully by user {Username}", id, username);
+                    return Json(new { success = true, message = result.Message });
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to delete idea {IdeaId} for user {Username}: {ErrorMessage}",
+                        id, username, result.Message);
+                    return Json(new { success = false, message = result.Message });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting idea: {IdeaId}", id);
+                return Json(new { success = false, message = $"Error deleting idea: {ex.Message}" });
             }
         }
     }
