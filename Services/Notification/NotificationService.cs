@@ -592,7 +592,7 @@ namespace Ideku.Services.Notification
 
         private string GenerateMilestoneCreationRequiredEmailBody(Models.Entities.Idea idea, User implementator, List<WorkflowHistory> workflowHistory)
         {
-            var milestoneUrl = $"{_emailSettings.BaseUrl}/Milestone/Detail/{idea.Id}";
+            var milestoneUrl = $"{_emailSettings.BaseUrl}/Milestone/Details/{idea.Id}";
 
             // Build Historical Approval table rows
             var historyRows = new System.Text.StringBuilder();

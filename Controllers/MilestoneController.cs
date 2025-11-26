@@ -109,8 +109,8 @@ namespace Ideku.Controllers
             }
         }
 
-        // GET: /Milestone/Detail/{ideaId}
-        public async Task<IActionResult> Detail(long ideaId)
+        // GET: /Milestone/Details/{ideaId}
+        public async Task<IActionResult> Details(long ideaId)
         {
             try
             {

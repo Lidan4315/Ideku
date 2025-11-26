@@ -266,8 +266,8 @@ namespace Ideku.Controllers
             }
         }
 
-        // GET: IdeaList/Detail/{id}
-        public async Task<IActionResult> Detail(long id)
+        // GET: IdeaList/Details/{id}
+        public async Task<IActionResult> Details(long id)
         {
             try
             {
@@ -299,6 +299,11 @@ namespace Ideku.Controllers
                 // Set flag for inactive idea to disable UI elements
                 ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
                 ViewBag.ShowReactivateButton = (user?.Role?.RoleName == "Superuser" && ViewBag.IsInactive);
+
+                // Pass dropdown data to view for edit modal
+                ViewBag.Divisions = await _lookupService.GetDivisionsAsync();
+                ViewBag.Categories = await _lookupService.GetCategoriesAsync();
+                ViewBag.Events = await _lookupService.GetEventsAsync();
 
                 var viewModel = new IdeaDetailViewModel
                 {

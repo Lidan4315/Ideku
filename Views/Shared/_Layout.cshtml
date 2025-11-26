@@ -34,28 +34,25 @@
         <div class="mobile-navbar-brand">
             <img src="~/images/IDEKU-logo.png" alt="Ideku" class="mobile-logo" />
         </div>
-        @if (User.Identity.IsAuthenticated)
-        {
-            <div class="mobile-user-menu dropdown">
-                <button class="mobile-user-btn" type="button" id="mobileUserDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-person-circle"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mobileUserDropdown">
-                    <li class="dropdown-header">
-                        <strong>@User.Identity.Name</strong><br>
-                        <small>@User.FindFirst("FullName")?.Value</small>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <form asp-controller="Auth" asp-action="Logout" method="post">
-                            <button type="submit" class="dropdown-item text-danger">
-                                <i class="bi bi-box-arrow-right me-2"></i>Logout
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
-        }
+        <div class="mobile-user-menu dropdown">
+            <button class="mobile-user-btn" type="button" id="mobileUserDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mobileUserDropdown">
+                <li class="dropdown-header">
+                    <strong>@User.Identity.Name</strong><br>
+                    <small>@User.FindFirst("FullName")?.Value</small>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form asp-controller="Auth" asp-action="Logout" method="post">
+                        <button type="submit" class="dropdown-item text-danger">
+                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
     </nav>
 
     <!-- Sidebar Overlay (Mobile Only) -->
@@ -89,116 +86,102 @@
                         <span>My Ideas</span>
                     </a>
                 </li>
+                <li module-access="idea_all">
+                    <a asp-controller="IdeaList" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaList" ? "active" : "")">
+                        <i class="bi bi-clipboard-data-fill"></i>
+                        <span>Idea List</span>
+                    </a>
+                </li>
+                <li module-access="approval">
+                    <a asp-controller="Approval" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Approval" ? "active" : "")">
+                        <i class="bi bi-patch-check-fill"></i>
+                        <span>Need Approval</span>
+                    </a>
+                </li>
+                <li module-access="milestone">
+                    <a asp-controller="Milestone" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Milestone" ? "active" : "")">
+                        <i class="bi bi-calendar2-week"></i>
+                        <span>Milestone</span>
+                    </a>
+                </li>
+                <li module-access="monitoring">
+                    <a asp-controller="IdeaMonitoring" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaMonitoring" ? "active" : "")">
+                        <i class="bi bi-display"></i>
+                        <span>Monitoring</span>
+                    </a>
+                </li>
 
-                @if (User.Identity.IsAuthenticated)
-                {
-                    <li module-access="approval">
-                        <a asp-controller="Approval" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Approval" ? "active" : "")">
-                            <i class="bi bi-check-square-fill"></i>
-                            <span>Need Approval</span>
-                        </a>
-                    </li>
-                    <li module-access="milestone">
-                        <a asp-controller="Milestone" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Milestone" ? "active" : "")">
-                            <i class="bi bi-calendar2-week"></i>
-                            <span>Milestone</span>
-                        </a>
-                    </li>
-                    <li module-access="idea_all">
-                        <a asp-controller="IdeaList" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaList" ? "active" : "")">
-                            <i class="bi bi-clipboard-data-fill"></i>
-                            <span>Idea List</span>
-                        </a>
-                    </li>
-                    <li module-access="monitoring">
-                        <a asp-controller="IdeaMonitoring" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "IdeaMonitoring" ? "active" : "")">
-                            <i class="bi bi-display"></i>
-                            <span>Monitoring</span>
-                        </a>
-                    </li>
-                }
-
-                @if (User.Identity.IsAuthenticated && (User.IsInRole("Superuser") || User.IsInRole("Admin")))
-                {
-                    <li class="nav-section">
-                        <a href="#" class="nav-section-toggle" data-bs-toggle="collapse" data-bs-target="#settingsCollapse" aria-expanded="false" aria-controls="settingsCollapse">
-                            <i class="bi bi-gear"></i>
-                            <span>Settings</span>
-                            <i class="bi bi-chevron-right toggle-icon"></i>
-                        </a>
-                        <div class="collapse" id="settingsCollapse">
-                            <ul class="nav-section-items">
-                                <li module-access="user_management">
-                                    <a asp-controller="UserManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "UserManagement" ? "active" : "")">
-                                        <i class="bi bi-person-fill-gear"></i>
-                                        <span>User Management</span>
-                                    </a>
-                                </li>
-                                <li module-access="role_management">
-                                    <a asp-controller="RoleManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "RoleManagement" ? "active" : "")">
-                                        <i class="bi bi-briefcase-fill"></i>
-                                        <span>Role Management</span>
-                                    </a>
-                                </li>
-                                <li module-access="workflow_management">
-                                    <a asp-controller="WorkflowManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "WorkflowManagement" ? "active" : "")">
-                                        <i class="bi bi-diagram-3-fill"></i>
-                                        <span>Workflow Management</span>
-                                    </a>
-                                </li>
-                                <li module-access="approver_management">
-                                    <a asp-controller="ApproverManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "ApproverManagement" ? "active" : "")">
-                                        <i class="bi bi-person-check-fill"></i>
-                                        <span>Approver Management</span>
-                                    </a>
-                                </li>
-                                <li module-access="change_workflow">
-                                    <a asp-controller="ChangeWorkflow" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "ChangeWorkflow" ? "active" : "")">
-                                        <i class="bi bi-arrow-left-right"></i>
-                                        <span>Change Workflow</span>
-                                    </a>
-                                </li>
-                                <li module-access="bypass_stage">
-                                    <a asp-controller="BypassStage" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "BypassStage" ? "active" : "")">
-                                        <i class="bi bi-skip-forward-fill"></i>
-                                        <span>Bypass Stage</span>
-                                    </a>
-                                </li>
-                                <li module-access="access_control">
-                                    <a asp-controller="AccessControl" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "AccessControl" ? "active" : "")">
-                                        <i class="bi bi-shield-lock-fill"></i>
-                                        <span>Access Control</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-                }
+                <li class="nav-section">
+                    <a href="#" class="nav-section-toggle" data-bs-toggle="collapse" data-bs-target="#settingsCollapse" aria-expanded="false" aria-controls="settingsCollapse">
+                        <i class="bi bi-gear"></i>
+                        <span>Settings</span>
+                        <i class="bi bi-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="collapse" id="settingsCollapse">
+                        <ul class="nav-section-items">
+                            <li module-access="user_management">
+                                <a asp-controller="UserManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "UserManagement" ? "active" : "")">
+                                    <i class="bi bi-person-fill-gear"></i>
+                                    <span>User Management</span>
+                                </a>
+                            </li>
+                            <li module-access="role_management">
+                                <a asp-controller="RoleManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "RoleManagement" ? "active" : "")">
+                                    <i class="bi bi-briefcase-fill"></i>
+                                    <span>Role Management</span>
+                                </a>
+                            </li>
+                            <li module-access="workflow_management">
+                                <a asp-controller="WorkflowManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "WorkflowManagement" ? "active" : "")">
+                                    <i class="bi bi-diagram-3-fill"></i>
+                                    <span>Workflow Management</span>
+                                </a>
+                            </li>
+                            <li module-access="approver_management">
+                                <a asp-controller="ApproverManagement" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "ApproverManagement" ? "active" : "")">
+                                    <i class="bi bi-person-check-fill"></i>
+                                    <span>Approver Management</span>
+                                </a>
+                            </li>
+                            <li module-access="change_workflow">
+                                <a asp-controller="ChangeWorkflow" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "ChangeWorkflow" ? "active" : "")">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                    <span>Change Workflow</span>
+                                </a>
+                            </li>
+                            <li module-access="bypass_stage">
+                                <a asp-controller="BypassStage" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "BypassStage" ? "active" : "")">
+                                    <i class="bi bi-fast-forward-fill"></i>
+                                    <span>Bypass Stage</span>
+                                </a>
+                            </li>
+                            <li module-access="access_control">
+                                <a asp-controller="AccessControl" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "AccessControl" ? "active" : "")">
+                                    <i class="bi bi-shield-lock-fill"></i>
+                                    <span>Access Control</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
             </ul>
 
-            @if (User.Identity.IsAuthenticated)
-            {
-                <div class="sidebar-footer">
-                    <div class="user-info">
-                        <div class="user-avatar">
-                            <i class="bi bi-person-circle"></i>
-                        </div>
-                        <div class="user-details">
-                            <strong>@User.Identity.Name</strong>
-                            <small>@User.FindFirst("FullName")?.Value</small>
-                            @if (User.IsInRole("Manager") || User.IsInRole("SuperAdmin"))
-                            {
-                                <br><span class="badge bg-success">@(User.IsInRole("SuperAdmin") ? "Super Admin" : "Manager")</span>
-                            }
-                        </div>
-                        <form asp-controller="Auth" asp-action="Logout" method="post" class="logout-form">
-                            <button type="submit" class="btn-logout" title="Logout">
-                                <i class="bi bi-box-arrow-right"></i>
-                            </button>
-                        </form>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="bi bi-person-circle"></i>
                     </div>
+                    <div class="user-details">
+                        <strong>@User.Identity.Name</strong>
+                        <small>@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small>
+                    </div>
+                    <form asp-controller="Auth" asp-action="Logout" method="post" class="logout-form">
+                        <button type="submit" class="btn-logout" title="Logout">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </button>
+                    </form>
                 </div>
-            }
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -258,7 +241,12 @@
                 // Close sidebar when clicking a navigation link on mobile
                 const sidebarNavLinks = document.querySelectorAll('.sidebar .nav-links a');
                 sidebarNavLinks.forEach(link => {
-                    link.addEventListener('click', function() {
+                    link.addEventListener('click', function(e) {
+                        // Don't close sidebar if clicking on a toggle (like Settings dropdown)
+                        if (this.classList.contains('nav-section-toggle') || this.hasAttribute('data-bs-toggle')) {
+                            return;
+                        }
+
                         if (window.innerWidth <= 768) {
                             sidebar.classList.remove('open');
                             sidebarOverlay.classList.remove('active');

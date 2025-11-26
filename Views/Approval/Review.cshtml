@@ -34,7 +34,7 @@
     <!-- Attachments Section -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h5 class="m-0 font-weight-bold text-gradient">
+            <h5 class="m-0 font-weight-bold">
                 <i class="bi bi-paperclip me-2"></i>Attachments
             </h5>
         </div>
@@ -48,7 +48,9 @@
     {
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h5 class="m-0 font-weight-bold text-gradient">Validation Decision</h5>
+                <h5 class="m-0 font-weight-bold">
+                    <i class="bi bi-patch-check me-2"></i>Validation Decision
+                </h5>
             </div>
             <div class="card-body">
                 <form asp-action="Approve" asp-route-id="@Model.Idea.Id" method="post" enctype="multipart/form-data">
