@@ -15,47 +15,52 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="login-page">
-    <div class="container">
+    <div class="container-fluid">
         <div class="row justify-content-center align-items-center min-vh-100">
-            <div class="col-md-6 col-lg-4">
-                <div class="login-card">
-                    <div class="text-center mb-4">
-                        <div class="login-logo">
-                            <i class="bi bi-lightbulb"></i>
-                        </div>
-                        <h3 class="fw-bold">Welcome to Ideku</h3>
-                        <p class="text-muted">Sign in to your account</p>
-                    </div>
-
-                    <form asp-action="Login" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                        
-                        <div class="mb-3">
-                            <label asp-for="Username" class="form-label">
-                                <i class="bi bi-person me-2"></i>Username
-                            </label>
-                            <input asp-for="Username" class="form-control form-control-lg" placeholder="Enter your username" />
-                            <span asp-validation-for="Username" class="text-danger"></span>
+            <div class="col-11 col-md-10 col-lg-8 col-xl-7">
+                <div class="login-card-wide">
+                    <div class="row g-0">
+                        <!-- Left Side - Image Area -->
+                        <div class="col-md-6">
+                            <div class="login-image-section">
+                                <img src="~/images/login-image.jpeg" alt="Ideku Mining" class="login-image" />
+                            </div>
                         </div>
 
-                        <div class="mb-3 form-check">
-                            <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
-                            <label asp-for="RememberMe" class="form-check-label">
-                                Remember me
-                            </label>
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
-                            </button>
-                        </div>
-                    </form>
+                        <!-- Right Side - Form Area -->
+                        <div class="col-md-6">
+                            <div class="login-form-section">
+                                <div class="text-center mb-4">
+                                    <h3 class="fw-bold">Welcome to Ideku</h3>
+                                    <p class="text-muted">Sign in to your account</p>
+                                </div>
 
-                    <div class="text-center mt-4">
-                        <small class="text-muted">
-                            Demo credentials: <strong>superuser</strong>
-                        </small>
+                                <form asp-action="Login" method="post">
+                                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="Username" class="form-label">
+                                            <i class="bi bi-person me-2"></i>Username
+                                        </label>
+                                        <input asp-for="Username" class="form-control form-control-lg" placeholder="Enter your username" />
+                                        <span asp-validation-for="Username" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="mb-4 form-check">
+                                        <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
+                                        <label asp-for="RememberMe" class="form-check-label">
+                                            Remember me
+                                        </label>
+                                    </div>
+
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
