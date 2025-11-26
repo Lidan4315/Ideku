@@ -382,9 +382,9 @@
     }
 
     <!-- Supporting Documents Section -->
-    <div class="card mt-4">
+    <div class="card shadow mt-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
+            <h5 class="mb-0 font-weight-bold">
                 <i class="bi bi-paperclip me-2"></i>Supporting Documents
             </h5>
             @if (Model.CanEditCostSavings)
@@ -423,21 +423,26 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">Select Files</label>
                         <div class="file-upload-container">
+                            <input type="file"
+                                   id="attachmentFileInput"
+                                   name="AttachmentFiles"
+                                   class="d-none"
+                                   multiple
+                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" />
+
                             <div class="file-upload-header">
-                                <label for="attachmentFileInput" class="btn btn-outline-primary mb-0">
-                                    <i class="bi bi-folder2-open me-2"></i>Browse Files
-                                </label>
-                                <input type="file"
-                                       id="attachmentFileInput"
-                                       name="AttachmentFiles"
-                                       multiple
-                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
-                                       style="display: none;">
-                                <small class="text-muted ms-3">
-                                    <i class="bi bi-info-circle me-1"></i>
+                                <button type="button" class="btn btn-outline-gray" onclick="document.getElementById('attachmentFileInput').click()">
+                                    <i class="bi bi-folder2-open me-2"></i><span class="d-none d-md-inline">Browse Files</span><span class="d-inline d-md-none">Browse</span>
+                                </button>
+                                <small class="form-text text-muted ms-2 d-none d-md-inline">
                                     Allowed: PDF, Word, Excel, PowerPoint, Images
                                 </small>
                             </div>
+
+                            <!-- Mobile File Info (shown below button on mobile) -->
+                            <small class="form-text text-muted d-block d-md-none mt-2">
+                                Allowed: PDF, Word, Excel, PowerPoint, Images
+                            </small>
 
                             <div class="files-list-container mt-3">
                                 <div id="attachmentFilesList"></div>
@@ -466,16 +471,19 @@
 
 <!-- Add New KPI Modal -->
 <div class="modal fade" id="addKpiModal" tabindex="-1" aria-labelledby="addKpiModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addKpiModalLabel">
-                    <i class="bi bi-plus-circle me-2"></i>Add New KPI
-                </h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                    <h5 class="modal-title mb-0" id="addKpiModalLabel">Add New KPI</h5>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addKpiForm">
-                <div class="modal-body">
+                <div class="modal-body app-modal-body">
                     <input type="hidden" name="IdeaId" value="@Model.Idea.Id" />
 
                     <div class="mb-3">
@@ -529,10 +537,12 @@
                         <label for="additionalMonths" class="form-label">Additional Months <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="additionalMonths" name="AdditionalMonths"
                                min="1" max="12" value="3" required />
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i>
-                            This will add new monthly monitoring records starting from the next month after the current monitoring period.
-                        </div>
+                        <small class="form-text text-muted">Enter number of months to extend (1-12 months)</small>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        This will add new monthly monitoring records starting from the next month after the current monitoring period.
                     </div>
                 </div>
                 <div class="modal-footer app-modal-footer">
