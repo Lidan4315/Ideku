@@ -266,8 +266,8 @@ namespace Ideku.Controllers
             }
         }
 
-        // GET: IdeaList/Detail/{id}
-        public async Task<IActionResult> Detail(long id)
+        // GET: IdeaList/Details/{id}
+        public async Task<IActionResult> Details(long id)
         {
             try
             {

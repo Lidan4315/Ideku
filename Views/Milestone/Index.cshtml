@@ -105,7 +105,7 @@
                                     var s when s.StartsWith("Rejected") => "table-danger",
                                     _ => ""
                                 };
-                                <tr class="@rowClass" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Detail", new { ideaId = idea.Id })'">
+                                <tr class="@rowClass" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", new { ideaId = idea.Id })'">
                                     <td><span class="badge bg-light text-dark">@idea.IdeaCode</span></td>
                                     <td>
                                         <div class="truncate-title" title="@idea.IdeaName">
