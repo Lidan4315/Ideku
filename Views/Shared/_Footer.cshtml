@@ -1,0 +1,68 @@
+@{
+  TempData.Keep();
+  ViewData["containerNav"] = (ViewData["containerNav"] ??= "container-fluid");
+}
+
+<footer class="bg-light text-center text-lg-start border-top py-2 mt-auto">
+  <div class='@ViewData["containerNav"]'>
+    <!-- Footer Images Row -->
+    <div class="row d-flex justify-content-between align-items-center py-2 border-bottom">
+      <div class="col-6 col-lg-6">
+        <img src="~/images/footer-left.png" class="img-fluid" style="max-width: 125px;" alt="Footer Left">
+      </div>
+      <div class="col-6 col-lg-6 text-end">
+        <img src="~/images/footer-right.png" class="img-fluid" style="max-width: 150px;" alt="Footer Right">
+      </div>
+    </div>
+
+    <!-- Footer Text Row -->
+    <div class="row py-2">
+      <div class="col-12 col-lg-6 text-center text-lg-start mb-2 mb-lg-0">
+        <span class="text-muted">
+          Powered by <b><a href='#' data-bs-toggle="modal" data-bs-target="#modalFooter" class="footer-link text-decoration-none">DCoE</a></b> © 2025 -
+          <script>document.write(new Date().getFullYear())</script>
+        </span>
+      </div>
+      <div class="col-12 col-lg-6 text-center text-lg-end">
+        <span class="text-muted">All rights reserved.</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- About Modal -->
+<div class="modal fade" id="modalFooter" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content app-modal">
+      <div class="modal-header app-modal-header">
+        <div class="d-flex align-items-center">
+          <div class="modal-icon">
+            <i class="bi bi-info-circle"></i>
+          </div>
+          <div>
+            <h5 class="modal-title mb-0" id="staticBackdropLabel">About IDEKU</h5>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body app-modal-body">
+        <p class="mb-3">
+          <strong>IDEKU</strong> created by <strong>Digital Centre of Excellence (DCoE) - BPID</strong>
+        </p>
+        <p class="mb-3">
+          Any feedback or questions are welcome to contact us at:
+          <br>
+          <a href="mailto:setya.mustaqim@kpc.co.id" class="text-primary">following email</a>
+        </p>
+        <div class="text-muted small">
+          <em>/shm</em>
+        </div>
+      </div>
+      <div class="modal-footer app-modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-2"></i>Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

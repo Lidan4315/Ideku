@@ -1,0 +1,128 @@
+@{
+    ViewData["Title"] = "About IDEKU";
+}
+
+@* @section VendorStyles {
+  <link rel="stylesheet" href="" />
+}
+@section VendorScripts {
+  <script src=""></script>
+}
+@section PageScripts {
+  <script src=""></script>
+} *@
+
+@* ************** Content ************** *@
+<style>
+  .about-section {
+    position: relative;
+    /* penting agar watermark absolute di sini */
+    overflow: hidden;
+    /* supaya watermark tidak keluar area container */
+  }
+
+  /* Watermark di tengah konten */
+  .watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.25;
+    z-index: 0;
+    max-width: 75%;
+    pointer-events: none;
+  }
+
+  .divider {
+    border-bottom: 2px solid #dee2e6;
+    margin: 2rem 0 1rem 0;
+  }
+
+  /* h5 {
+    color: #0d6efd;
+    font-weight: 600;
+  } */
+
+  ul li {
+    margin-bottom: .5rem;
+  }
+</style>
+<!-- Watermark Image -->
+
+
+<div class="col-xl-12">
+  <div class="card">
+    <div class="card-body">
+      <div class="about-section mx-auto col-lg-12">
+        <img src="~/images/watermark.PNG" alt="Watermark" class="watermark">
+        <h3 class="text-center mb-1">@TempData.Peek("appName")</h3>
+        <p class="text-center text-muted mb-4">Version 1.0.0 | © 2025 PT Kaltim Prima Coal</p>
+        <div class="divider"></div>
+
+        <section>
+          <h5 class="text-gradient">Developed By</h5>
+          <p>BSAI – PT Kaltim Prima Coal
+            @* <br>In collaboration with <strong>PT TechNova Solutions</strong></p> *@
+        </section>
+
+        <div class="divider"></div>
+
+        <section>
+          <h5 class="text-gradient">Core Team</h5>
+          <ul>
+            <li><strong>Project Sponsor : Yudith Prasetyo</strong></li>
+            <li><strong>Project Management : Ahmad Habibi</strong></li>
+            <li><strong>Full Stack Software Development : Setya Huda Mustaqim</strong></li>
+            <li><strong>Full Stack Software Development : Faiq Lidan Baihaqi [Student]</strong></li>
+            <li><strong>Full Stack Software Development : Arya Kusuma [Student]</strong></li>
+            @* <li><strong>Software Development : Setya Huda Mustaqim</strong></li>
+            <li><strong>Backend & Frontend Engineering : Setya Huda Mustaqim</strong></li>
+            <li><strong>Database Administration : Setya Huda Mustaqim</strong></li>
+            <li><strong>UI/UX Design : Setya Huda Mustaqim</strong></li>
+          </ul> *@
+        </section>
+
+        <div class="divider"></div>
+
+        <section>
+          <h5 class="text-gradient">Advisory & Stakeholders</h5>
+          <ul>
+            <li>Department - Business Improvement (Business Owner)</li>
+            <li>Department - MHLT (User Representatives)</li>
+          </ul>
+        </section>
+
+        @* <div class="divider"></div>
+
+        <section>
+          <h5>Special Thanks</h5>
+          <ul>
+            <li>IT Infrastructure Team</li>
+            <li>Data Governance Team</li>
+            <li>Pilot Users & Field Testers</li>
+          </ul>
+        </section> *@
+
+        <div class="divider"></div>
+
+        <section>
+          <h5 class="text-gradient">Technology Stack</h5>
+          <ul>
+            <li><strong>Frontend:</strong> ASP. Net, Bootstrap 5</li>
+            <li><strong>Backend:</strong> ASP. Net</li>
+            <li><strong>Database:</strong> PostgreSQL</li>
+            <li><strong>DevOps:</strong> Azure DevOps</li>
+          </ul>
+        </section>
+
+        <div class="divider"></div>
+
+        <section>
+          <h5 class="text-gradient">License</h5>
+          <p class="mb-0">All rights reserved © 2025 PT Kaltim Prima Coal<br>
+            This software is proprietary and intended for internal use only.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
