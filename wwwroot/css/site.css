@@ -293,11 +293,14 @@ body.modern-page {
     min-height: 100vh;
     transition: all 0.3s ease;
     overflow-x: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .content-wrapper {
     padding: 2rem;
     max-width: 100%;
+    flex: 1;
 }
 
 /* =============================================================================

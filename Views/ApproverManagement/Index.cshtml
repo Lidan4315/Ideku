@@ -5,6 +5,7 @@
 
 @section Styles {
     <link href="~/css/pages/approver-management.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/ideas-list.css" asp-append-version="true" />
 }
 
 <div class="container-fluid">
@@ -27,11 +28,11 @@
                 <div class="card-body">
                     @if (Model.Approvers.Any())
                     {
-                        <div class="table-responsive">
+                        <div class="table-responsive-custom">
                             <table class="table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>ID</th>
+                                        <th style="width: 5%">No</th>
                                         <th>Approver Name</th>
                                         <th>Status</th>
                                         <th>Created Date</th>
@@ -42,9 +43,7 @@
                                     @foreach (var approver in Model.Approvers)
                                     {
                                         <tr class="clickable-row" data-href="@Url.Action("Details", "ApproverManagement", new { id = approver.Id })">
-                                            <td>
-                                                <span class="badge bg-light text-dark fw-bold">@approver.Id</span>
-                                            </td>
+                                            <td class="row-number"></td>
                                             <td>
                                                 <span class="badge bg-primary">@approver.ApproverName</span>
                                             </td>
@@ -191,6 +190,17 @@
             create: '@Url.Action("Create", "ApproverManagement")',
             delete: '@Url.Action("Delete", "ApproverManagement")'
         };
+
+        // Add row numbers
+        document.addEventListener('DOMContentLoaded', function() {
+            const rowNumbers = document.querySelectorAll('.row-number');
+            rowNumbers.forEach((cell, index) => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-light text-dark';
+                badge.textContent = index + 1;
+                cell.appendChild(badge);
+            });
+        });
     </script>
     <script src="~/js/pages/approver-management.js" asp-append-version="true"></script>
 }

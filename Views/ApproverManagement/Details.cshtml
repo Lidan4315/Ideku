@@ -3,10 +3,6 @@
     ViewData["Title"] = "Approver Details";
 }
 
-@section Styles {
-    <link href="~/css/pages/approver-management-details.css" rel="stylesheet" asp-append-version="true" />
-}
-
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="page-header-modern mb-4">
@@ -28,121 +24,117 @@
         </div>
     </div>
 
-    <!-- Approver Information Card -->
+    <!-- Approver Information and Roles -->
     <div class="row">
-        <div class="col-12">
+        <!-- Approver Information Card -->
+        <div class="col-md-6">
             <div class="card mb-4">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">
+                        <h5 class="mb-0 font-weight-bold">
                             <i class="bi bi-info-circle me-2"></i>Approver Information
                         </h5>
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-outline-primary approver-action-btn" onclick="openEditApproverModal(@Model.Approver.Id, '@Model.Approver.ApproverName', @Model.Approver.IsActive.ToString().ToLower())" title="Edit Approver">
-                                <i class="bi bi-pencil"></i>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary approver-action-btn" onclick="openEditApproverModal(@Model.Approver.Id, '@Model.Approver.ApproverName', @Model.Approver.IsActive.ToString().ToLower())" title="Edit Approver">
+                                <i class="bi bi-pencil me-md-1"></i><span class="d-none d-md-inline">Edit</span>
                             </button>
-                            <button type="button" class="btn btn-outline-danger approver-action-btn" onclick="confirmDeleteApprover(@Model.Approver.Id, '@Model.Approver.ApproverName')" title="Delete Approver">
-                                <i class="bi bi-trash"></i>
+                            <button type="button" class="btn btn-sm btn-danger-custom approver-action-btn" onclick="confirmDeleteApprover(@Model.Approver.Id, '@Model.Approver.ApproverName')" title="Delete Approver">
+                                <i class="bi bi-trash me-md-1"></i><span class="d-none d-md-inline">Delete</span>
                             </button>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-group mb-4">
-                                <label class="info-label">Approver ID</label>
-                                <div class="info-value">
-                                    <span class="badge bg-light text-dark fs-6 px-3 py-2">@Model.Approver.Id</span>
-                                </div>
-                            </div>
-                            
-                            <div class="info-group mb-4">
-                                <label class="info-label">Approver Code</label>
-                                <div class="info-value">
-                                    <span class="badge bg-primary fs-6 px-3 py-2">@Model.Approver.ApproverName</span>
-                                </div>
-                            </div>
-                            
-                            <div class="info-group mb-4">
-                                <label class="info-label">Status</label>
-                                <div class="info-value">
-                                    @{
-                                        var statusClass = Model.Approver.IsActive ? "bg-success" : "bg-danger";
-                                        var statusText = Model.Approver.IsActive ? "Active" : "Inactive";
-                                        var statusIcon = Model.Approver.IsActive ? "bi-check-circle" : "bi-x-circle";
-                                    }
-                                    <span class="badge @statusClass fs-6 px-3 py-2">
-                                        <i class="@statusIcon me-2"></i>@statusText
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="info-group mb-4">
-                                <label class="info-label">Created Date</label>
-                                <div class="info-value">
-                                    <div class="text-dark fw-semibold">@Model.Approver.CreatedAt.ToString("MMMM dd, yyyy")</div>
-                                    <small class="text-muted">@Model.Approver.CreatedAt.ToString("HH:mm:ss")</small>
-                                </div>
-                            </div>
-                            
-                            <div class="info-group mb-4">
-                                <label class="info-label">Last Updated</label>
-                                <div class="info-value">
-                                    @if (Model.Approver.UpdatedAt.HasValue)
-                                    {
-                                        <div class="text-dark fw-semibold">@Model.Approver.UpdatedAt.Value.ToString("MMMM dd, yyyy")</div>
-                                        <small class="text-muted">@Model.Approver.UpdatedAt.Value.ToString("HH:mm:ss")</small>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Never updated</span>
-                                    }
-                                </div>
-                            </div>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-medium">Approver Code:</td>
+                                    <td><span class="badge bg-primary">@Model.Approver.ApproverName</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Status:</td>
+                                    <td>
+                                        @if (Model.Approver.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Inactive</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Created Date:</td>
+                                    <td>
+                                        <div class="text-dark fw-semibold">@Model.Approver.CreatedAt.ToString("MMMM dd, yyyy")</div>
+                                        <small class="text-muted">@Model.Approver.CreatedAt.ToString("HH:mm:ss")</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-medium">Last Updated:</td>
+                                    <td>
+                                        @if (Model.Approver.UpdatedAt.HasValue)
+                                        {
+                                            <div class="text-dark fw-semibold">@Model.Approver.UpdatedAt.Value.ToString("MMMM dd, yyyy")</div>
+                                            <small class="text-muted">@Model.Approver.UpdatedAt.Value.ToString("HH:mm:ss")</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Never updated</span>
+                                        }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    
                 </div>
             </div>
+        </div>
 
-
-            <!-- Approver Roles -->
-            <div class="card">
+        <!-- Approver Roles Card -->
+        <div class="col-md-6">
+            <div class="card mb-4">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">
+                        <h5 class="mb-0 font-weight-bold">
                             <i class="bi bi-people me-2"></i>Approver Roles
                         </h5>
-                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addApproverRoleModal">
-                            <i class="bi bi-plus-circle me-1"></i>Add Role
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addApproverRoleModal">
+                            <i class="bi bi-plus-circle me-md-1"></i><span class="d-none d-md-inline">Add Role</span>
                         </button>
                     </div>
                 </div>
                 <div class="card-body">
                     @if (Model.ApproverRoles.Any())
                     {
-                        <div class="list-group list-group-flush">
-                            @foreach (var approverRole in Model.ApproverRoles)
-                            {
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div class="ms-2 me-auto">
-                                        <div class="fw-bold">@approverRole.RoleName</div>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div>
-                                            <span class="badge bg-primary rounded-pill">Role</span>
-                                        </div>
-                                        <button type="button" class="btn btn-outline-danger btn-sm" 
-                                                onclick="confirmDeleteApproverRole(@approverRole.Id, '@approverRole.RoleName')" 
-                                                title="Remove Role">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            }
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Role</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var approverRole in Model.ApproverRoles)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">@approverRole.RoleName</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                                        onclick="confirmDeleteApproverRole(@approverRole.Id, '@approverRole.RoleName')"
+                                                        title="Remove Role">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     }
                     else
@@ -292,7 +284,7 @@
             document.getElementById('editApproverId').value = id;
             
             // Remove APV_ prefix for display
-            var displayName = approverName.startsWith('APV_') ? approverName.substring(2) : approverName;
+            var displayName = approverName.startsWith('APV_') ? approverName.substring(4) : approverName;
             document.getElementById('editApproverName').value = displayName;
             
             document.getElementById('editIsActive').checked = isActive;

@@ -110,6 +110,12 @@
                         <span>Monitoring</span>
                     </a>
                 </li>
+                <li>
+                    <a asp-controller="About" asp-action="Index" class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "About" ? "active" : "")">
+                        <i class="bi bi-info-circle"></i>
+                        <span>About</span>
+                    </a>
+                </li>
 
                 <li class="nav-section">
                     <a href="#" class="nav-section-toggle" data-bs-toggle="collapse" data-bs-target="#settingsCollapse" aria-expanded="false" aria-controls="settingsCollapse">
@@ -189,6 +195,9 @@
             <div class="content-wrapper">
                 @RenderBody()
             </div>
+
+            <!-- Footer -->
+            @await Html.PartialAsync("_Footer")
         </div>
     </div>
 
