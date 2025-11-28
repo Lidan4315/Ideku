@@ -220,6 +220,11 @@ namespace Ideku.Controllers
                     savingCost = i.SavingCost,
                     savingCostValidated = i.SavingCostValidated,
                     currentStatus = i.CurrentStatus,
+                    implementators = i.IdeaImplementators.Select(impl => new
+                    {
+                        name = impl.User.Name,
+                        role = impl.Role
+                    }).ToList(),
                     submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
                     detailUrl = Url.Action("Details", new { ideaId = i.Id }) // Change to IdeaMonitoring Details
                 }),
