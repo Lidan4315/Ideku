@@ -292,8 +292,9 @@ namespace Ideku.Controllers
                     HasMonitoring = monitorings.Any()
                 };
 
-                // Set flag for inactive idea to disable UI elements
+                // Set flags for inactive/rejected ideas to disable UI elements
                 ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
+                ViewBag.IsRejected = idea.IsRejected && idea.CurrentStatus.StartsWith("Rejected S");
 
                 return View(viewModel);
             }

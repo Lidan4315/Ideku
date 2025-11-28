@@ -1,6 +1,11 @@
 /* =============================================================================
-   INACTIVE IDEA WARNING STYLES
-   Shared styles for inactive idea warning component
+   IDEA WARNING STYLES
+   Shared styles for inactive and rejected idea warning components
+   ============================================================================= */
+
+/* =============================================================================
+   CASE 1: INACTIVE IDEA (Auto-Rejected - 60 Days Without Approval)
+   Yellow warning for ideas that were auto-rejected by system
    ============================================================================= */
 
 .inactive-idea-card {
@@ -10,7 +15,7 @@
 
 .inactive-warning-icon {
     font-size: 4rem;
-    color: #ffc107;
+    color: #ffc107; /* Yellow warning */
 }
 
 .inactive-reason-text {
@@ -32,5 +37,42 @@
     right: 0;
     bottom: 0;
     background: rgba(128, 128, 128, 0.1);
+    pointer-events: none;
+}
+
+/* =============================================================================
+   CASE 2: REJECTED IDEA (Manually Rejected by Approver)
+   Red warning for ideas that were manually rejected
+   ============================================================================= */
+
+.rejected-idea-card {
+    background-color: #fff5f5; /* Light red background */
+    border: 1px solid #fecaca; /* Light red border */
+}
+
+.rejected-warning-icon {
+    font-size: 4rem;
+    color: #dc3545; /* Red danger color */
+}
+
+.rejected-reason-text {
+    font-size: 0.95rem;
+}
+
+.rejected-section {
+    opacity: 0.6;
+    pointer-events: none;
+    filter: grayscale(30%);
+    user-select: none;
+}
+
+.rejected-section::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(220, 53, 69, 0.05); /* Light red overlay */
     pointer-events: none;
 }

@@ -47,11 +47,17 @@
         </div>
     }
 
-    <!-- Inactive Idea Warning Card -->
+    <!-- Inactive/Rejected Idea Warning Card -->
     @await Html.PartialAsync("_InactiveIdeaWarning", Model.Idea)
 
-    <!-- Wrap monitoring section - disable if inactive -->
-    <div class="@(ViewBag.IsInactive == true ? "inactive-section position-relative" : "")">
+    @{
+        // Determine if idea is inactive (auto-rejected) or rejected (manually rejected)
+        var isDisabled = ViewBag.IsInactive == true || ViewBag.IsRejected == true;
+        var sectionClass = ViewBag.IsInactive == true ? "inactive-section" : (ViewBag.IsRejected == true ? "rejected-section" : "");
+    }
+
+    <!-- Wrap monitoring section - disable if inactive or rejected -->
+    <div class="@(isDisabled ? sectionClass + " position-relative" : "")">
 
     <!-- Monitoring Content -->
     @if (Model.HasMonitoring)
