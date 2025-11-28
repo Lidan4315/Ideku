@@ -780,7 +780,7 @@ namespace Ideku.Controllers
                 if (user?.Role?.RoleName != "Superuser")
                 {
                     TempData["ErrorMessage"] = "Only Superuser can reactivate inactive ideas.";
-                    return RedirectToAction("Detail", new { id = ideaId });
+                    return RedirectToAction("Details", new { id = ideaId });
                 }
 
                 // Call service to reactivate
@@ -800,13 +800,13 @@ namespace Ideku.Controllers
                     _logger.LogWarning("Failed to reactivate idea {IdeaId}: {Message}", ideaId, result.Message);
                 }
 
-                return RedirectToAction("Detail", new { id = ideaId });
+                return RedirectToAction("Details", new { id = ideaId });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error reactivating idea {IdeaId}", ideaId);
                 TempData["ErrorMessage"] = $"Error: {ex.Message}";
-                return RedirectToAction("Detail", new { id = ideaId });
+                return RedirectToAction("Details", new { id = ideaId });
             }
         }
 
