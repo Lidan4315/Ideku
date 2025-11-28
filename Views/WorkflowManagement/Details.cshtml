@@ -109,7 +109,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Stage #</th>
-                                        <th>Level</th>
+                                        <th>Approver</th>
                                         <th>Mandatory</th>
                                         <th>Parallel</th>
                                         <th>Actions</th>
@@ -336,24 +336,24 @@
                         </div>
                     </div>
                     
-                    <!-- Level Selection -->
+                    <!-- Approver Selection -->
                     <div class="mb-4">
-                        <label for="levelId" class="form-label">Level <span class="text-danger">*</span></label>
+                        <label for="approverId" class="form-label">Approver <span class="text-danger">*</span></label>
                         <div class="input-group input-group-enhanced">
                             <span class="input-group-text">
-                                <i class="bi bi-layers"></i>
+                                <i class="bi bi-person-check"></i>
                             </span>
-                            <select class="form-select" id="levelId" required>
-                                <option value="">Select Level</option>
-                                @foreach (var level in Model.LevelList)
+                            <select class="form-select" id="approverId" required>
+                                <option value="">Select Approver</option>
+                                @foreach (var approver in Model.ApproverList)
                                 {
-                                    <option value="@level.Value">@level.Text</option>
+                                    <option value="@approver.Value">@approver.Text</option>
                                 }
                             </select>
                         </div>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
-                            Choose the approval level for this stage
+                            Choose the approver for this stage
                         </div>
                     </div>
                     
@@ -683,10 +683,10 @@
             // Add Stage Form Submit
             $('#addStageForm').on('submit', function(e) {
                 e.preventDefault();
-        
+
                 const formData = {
                     workflowId: document.getElementById('workflowId').value,
-                    levelId: document.getElementById('levelId').value,
+                    approverId: document.getElementById('approverId').value,
                     stage: parseInt(document.getElementById('stage').value),
                     isMandatory: document.getElementById('isMandatory').checked,
                     isParallel: document.getElementById('isParallel').checked
