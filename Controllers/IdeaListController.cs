@@ -296,9 +296,17 @@ namespace Ideku.Controllers
                 var user = await _userRepository.GetByUsernameAsync(User.Identity?.Name ?? "");
                 ViewBag.UserRole = user?.Role?.RoleName ?? "";
 
-                // Set flag for inactive idea to disable UI elements
+                // ========================================================================
+                // CASE 1: Inactive Idea (Auto-Rejected - 60 Days Without Approval)
+                // ========================================================================
                 ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
                 ViewBag.ShowReactivateButton = (user?.Role?.RoleName == "Superuser" && ViewBag.IsInactive);
+
+                // ========================================================================
+                // CASE 2: Rejected Idea (Manually Rejected by Approver)
+                // ========================================================================
+                ViewBag.IsRejected = idea.IsRejected && idea.CurrentStatus.StartsWith("Rejected S");
+                ViewBag.ShowReactivateRejectedButton = (user?.Role?.RoleName == "Superuser" && ViewBag.IsRejected);
 
                 // Pass dropdown data to view for edit modal
                 ViewBag.Divisions = await _lookupService.GetDivisionsAsync();
@@ -820,6 +828,75 @@ namespace Ideku.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to send background reactivation email for idea {IdeaId}", ideaId);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Reactivate rejected idea (manually rejected by approver) - Superuser only
+        /// POST: /IdeaList/ReactivateRejectedIdea
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReactivateRejectedIdea(long ideaId)
+        {
+            try
+            {
+                // Check if user is superuser
+                var username = User.Identity?.Name ?? "";
+                var user = await _userRepository.GetByUsernameAsync(username);
+
+                if (user?.Role?.RoleName != "Superuser")
+                {
+                    TempData["ErrorMessage"] = "Only Superuser can reactivate rejected ideas.";
+                    return RedirectToAction("Details", new { id = ideaId });
+                }
+
+                // Call service to reactivate rejected idea
+                var result = await _ideaService.ReactivateRejectedIdeaAsync(ideaId, username);
+
+                if (result.Success)
+                {
+                    // Send email notifications in background (non-blocking)
+                    SendReactivateRejectedEmailInBackground(ideaId);
+
+                    TempData["SuccessMessage"] = result.Message;
+                    _logger.LogInformation("Rejected idea {IdeaId} reactivated by {Username}", ideaId, username);
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.Message;
+                    _logger.LogWarning("Failed to reactivate rejected idea {IdeaId}: {Message}", ideaId, result.Message);
+                }
+
+                return RedirectToAction("Details", new { id = ideaId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating rejected idea {IdeaId}", ideaId);
+                TempData["ErrorMessage"] = $"Error: {ex.Message}";
+                return RedirectToAction("Details", new { id = ideaId });
+            }
+        }
+
+        private void SendReactivateRejectedEmailInBackground(long ideaId)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Starting background reactivation email process for rejected idea {IdeaId}", ideaId);
+
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var ideaService = scope.ServiceProvider.GetRequiredService<IIdeaService>();
+
+                    await ideaService.SendReactivateRejectedEmailAsync(ideaId);
+
+                    _logger.LogInformation("Background reactivation email sent successfully for rejected idea {IdeaId}", ideaId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send background reactivation email for rejected idea {IdeaId}", ideaId);
                 }
             });
         }

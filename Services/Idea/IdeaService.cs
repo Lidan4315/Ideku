@@ -2113,5 +2113,195 @@ namespace Ideku.Services.Idea
         }
 
         #endregion
+
+        #region Rejected Management
+
+        /// <summary>
+        /// Reactivate rejected idea (manually rejected by approver) - Superuser only
+        /// </summary>
+        public async Task<(bool Success, string Message)> ReactivateRejectedIdeaAsync(long ideaId, string activatedBy)
+        {
+            try
+            {
+                var idea = await _context.Ideas
+                    .Include(i => i.WorkflowHistories)
+                    .Include(i => i.Workflow)
+                    .Include(i => i.InitiatorUser)
+                        .ThenInclude(u => u.Employee)
+                    .Include(i => i.TargetDivision)
+                    .Include(i => i.TargetDepartment)
+                    .Include(i => i.Category)
+                    .FirstOrDefaultAsync(i => i.Id == ideaId);
+
+                if (idea == null)
+                {
+                    return (false, "Idea not found.");
+                }
+
+                // Validate: Only manually rejected ideas can be reactivated via this method
+                if (!idea.IsRejected || !idea.CurrentStatus.StartsWith("Rejected S"))
+                {
+                    return (false, "Only manually rejected ideas can be reactivated via this action.");
+                }
+
+                // ========================================
+                // STEP 1: Extract stage number from rejection status
+                // ========================================
+                // CurrentStatus format: "Rejected S0", "Rejected S1", "Rejected S2", etc.
+                // We need to restore to "Waiting Approval S{X}" at the SAME stage
+                var stageMatch = System.Text.RegularExpressions.Regex.Match(
+                    idea.CurrentStatus,
+                    @"Rejected S(\d+)"
+                );
+
+                int rejectedStage = idea.CurrentStage; // Fallback to current stage
+                if (stageMatch.Success && int.TryParse(stageMatch.Groups[1].Value, out int extractedStage))
+                {
+                    rejectedStage = extractedStage;
+                }
+
+                // ========================================
+                // STEP 2: Determine target status based on stage
+                // ========================================
+                string targetStatus;
+
+                if (rejectedStage == 0)
+                {
+                    // Rejected at S0 → Restore to "Waiting Approval S1"
+                    targetStatus = "Waiting Approval S1";
+                }
+                else if (rejectedStage == 1)
+                {
+                    // Rejected at S1 → Check if team is assigned
+                    var hasLeader = idea.IdeaImplementators.Any(ii => ii.Role == "Leader");
+                    var hasMember = idea.IdeaImplementators.Any(ii => ii.Role == "Member");
+
+                    if (hasLeader && hasMember)
+                    {
+                        // Team already assigned → "Waiting Approval S2"
+                        targetStatus = "Waiting Approval S2";
+                    }
+                    else
+                    {
+                        // No team → "Waiting Team Assignment"
+                        targetStatus = "Waiting Team Assignment";
+                    }
+                }
+                else if (rejectedStage == 2)
+                {
+                    // Rejected at S2 → Check if milestone is created
+                    if (idea.IsMilestoneCreated)
+                    {
+                        // Milestone exists → "Waiting Approval S3"
+                        targetStatus = $"Waiting Approval S{rejectedStage + 1}";
+                    }
+                    else
+                    {
+                        // No milestone → "Waiting Milestone Creation"
+                        targetStatus = "Waiting Milestone Creation";
+                    }
+                }
+                else
+                {
+                    // For other stages → "Waiting Approval S{X+1}"
+                    targetStatus = $"Waiting Approval S{rejectedStage + 1}";
+                }
+
+                // ========================================
+                // STEP 3: REACTIVATE idea
+                // ========================================
+                idea.IsRejected = false;
+                idea.CurrentStatus = targetStatus; // Restore to approval status
+                idea.CurrentStage = rejectedStage; // Ensure stage is correct
+                idea.RejectedReason = null;
+                idea.UpdatedDate = DateTime.Now; // Reset 60 day counter
+                idea.CompletedDate = null;
+
+                // ========================================
+                // STEP 4: Log ke WorkflowHistory
+                // ========================================
+                var activator = await _userRepository.GetByUsernameAsync(activatedBy);
+                if (activator != null)
+                {
+                    var history = new WorkflowHistory
+                    {
+                        IdeaId = ideaId,
+                        ActorUserId = activator.Id,
+                        FromStage = rejectedStage,
+                        ToStage = rejectedStage, // Same stage
+                        Action = "Reactivated",
+                        Comments = $"Rejected idea reactivated by {activator.Employee?.NAME} ({activator.EmployeeId})",
+                        Timestamp = DateTime.Now
+                    };
+                    _context.WorkflowHistories.Add(history);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Email will be sent in background by controller
+                return (true, $"✅ Idea {idea.IdeaCode} successfully reactivated!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating rejected idea {IdeaId}", ideaId);
+                return (false, $"Error reactivating idea: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Send reactivation email notification to approvers for rejected idea (called by background job)
+        /// </summary>
+        public async Task SendReactivateRejectedEmailAsync(long ideaId)
+        {
+            try
+            {
+                var idea = await _context.Ideas
+                    .Include(i => i.Workflow)
+                    .Include(i => i.InitiatorUser)
+                        .ThenInclude(u => u.Employee)
+                    .Include(i => i.TargetDivision)
+                    .Include(i => i.TargetDepartment)
+                    .Include(i => i.Category)
+                    .FirstOrDefaultAsync(i => i.Id == ideaId);
+
+                if (idea == null)
+                {
+                    _logger.LogWarning("Cannot send reactivation email: Idea {IdeaId} not found", ideaId);
+                    return;
+                }
+
+                // Get approvers for current stage
+                var approvers = await _workflowService.GetApproversForNextStageAsync(idea);
+
+                if (!approvers.Any())
+                {
+                    _logger.LogWarning("No approvers found for reactivated rejected idea {IdeaId} at stage {Stage}",
+                        ideaId, idea.CurrentStage + 1);
+                    return;
+                }
+
+                // Send email notification
+                try
+                {
+                    await _notificationService.NotifyIdeaSubmitted(idea, approvers);
+
+                    _logger.LogInformation(
+                        "Reactivation notification sent for rejected idea {IdeaId} to {ApproverCount} approvers at stage {Stage}",
+                        ideaId, approvers.Count, idea.CurrentStage + 1
+                    );
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Failed to send reactivation email for rejected idea {IdeaId}", ideaId);
+                    // Don't fail just because email failed
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending reactivation email for rejected idea {IdeaId}", ideaId);
+            }
+        }
+
+        #endregion
     }
 }

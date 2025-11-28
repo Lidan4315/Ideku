@@ -132,8 +132,9 @@ namespace Ideku.Controllers
                     IsEligibleForMilestones = true // Already filtered in service
                 };
 
-                // Set flag for inactive idea to disable UI elements
+                // Set flags for inactive/rejected ideas to disable UI elements
                 ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
+                ViewBag.IsRejected = idea.IsRejected && idea.CurrentStatus.StartsWith("Rejected S");
 
                 _logger.LogInformation("[MilestoneDetail] IdeaId={IdeaId}, CurrentStage={Stage}, IsMilestoneCreated={IsMilestoneCreated}, CurrentStatus={Status}",
                     ideaId, idea.CurrentStage, idea.IsMilestoneCreated, idea.CurrentStatus);

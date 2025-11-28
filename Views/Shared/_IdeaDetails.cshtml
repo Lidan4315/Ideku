@@ -1,6 +1,8 @@
 @model Ideku.Models.Entities.Idea
 @{
     var showActions = ViewData["ShowIdeaActions"] as bool? ?? false;
+    // Disable edit/delete for inactive or rejected ideas
+    var isIdeaDisabled = ViewBag.IsInactive == true || ViewBag.IsRejected == true;
 }
 
 <!-- Idea Details Section -->
@@ -14,10 +16,10 @@
             @if (showActions && !Model.IsDeleted)
             {
                 <div class="d-flex gap-2" module-access="idea_edit_delete">
-                    <button type="button" class="btn btn-sm btn-primary idea-action-btn" data-bs-toggle="modal" data-bs-target="#editIdeaModal" title="Edit Idea">
+                    <button type="button" class="btn btn-sm btn-primary idea-action-btn" data-bs-toggle="modal" data-bs-target="#editIdeaModal" title="Edit Idea" @(isIdeaDisabled ? "disabled" : "")>
                         <i class="bi bi-pencil me-md-1"></i><span class="d-none d-md-inline">Edit</span>
                     </button>
-                    <button type="button" class="btn btn-sm btn-danger-custom idea-action-btn" id="deleteIdeaBtn" title="Delete Idea">
+                    <button type="button" class="btn btn-sm btn-danger-custom idea-action-btn" id="deleteIdeaBtn" title="Delete Idea" @(isIdeaDisabled ? "disabled" : "")>
                         <i class="bi bi-trash me-md-1"></i><span class="d-none d-md-inline">Delete</span>
                     </button>
                 </div>

@@ -51,7 +51,13 @@
             </div>
         </div>
 
-        <div class="col-md-6 @(ViewBag.IsInactive == true ? "inactive-section position-relative" : "")">
+        @{
+            // Determine if idea is inactive (auto-rejected) or rejected (manually rejected)
+            var isDisabled = ViewBag.IsInactive == true || ViewBag.IsRejected == true;
+            var sectionClass = ViewBag.IsInactive == true ? "inactive-section" : (ViewBag.IsRejected == true ? "rejected-section" : "");
+        }
+
+        <div class="col-md-6 @(isDisabled ? sectionClass + " position-relative" : "")">
             <!-- Implementators Management Section -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -61,14 +67,14 @@
                     <div class="d-flex gap-2">
                         @if (Model.Implementators.Any())
                         {
-                            <button type="button" class="btn btn-sm btn-primary" onclick="openEditTeamModal()" @(ViewBag.IsInactive == true ? "disabled" : "")>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="openEditTeamModal()" @(isDisabled ? "disabled" : "")>
                                 <i class="bi bi-people"></i>
                                 <span class="d-none d-md-inline ms-1">Manage Team</span>
                             </button>
                         }
                         else
                         {
-                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addImplementatorModal" @(ViewBag.IsInactive == true ? "disabled" : "")>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addImplementatorModal" @(isDisabled ? "disabled" : "")>
                                 <i class="bi bi-plus-circle"></i>
                                 <span class="d-none d-md-inline ms-1">Add Member</span>
                             </button>
@@ -354,7 +360,9 @@
 $(document).ready(function() {
     const ideaId = @Model.Idea.Id;
 
-    // Handle Reactivate Idea Button with SweetAlert
+    // ========================================================================
+    // Handle Reactivate Inactive Idea Button (60 Days Auto-Reject)
+    // ========================================================================
     const reactivateForm = document.getElementById('reactivateIdeaForm');
     const reactivateBtn = document.getElementById('reactivateIdeaBtn');
 
@@ -383,6 +391,42 @@ $(document).ready(function() {
 
                     // Submit form
                     reactivateForm.submit();
+                }
+            });
+        });
+    }
+
+    // ========================================================================
+    // Handle Reactivate Rejected Idea Button (Manually Rejected by Approver)
+    // ========================================================================
+    const reactivateRejectedForm = document.getElementById('reactivateRejectedIdeaForm');
+    const reactivateRejectedBtn = document.getElementById('reactivateRejectedIdeaBtn');
+
+    if (reactivateRejectedBtn && reactivateRejectedForm) {
+        reactivateRejectedBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            Swal.fire({
+                title: 'Reactivate This Rejected Idea?',
+                html: 'This will:<br>' +
+                      '• Reset the 60-day counter<br>' +
+                      '• Restore the idea to approval status at the same stage<br>' +
+                      '• Send email notifications to the approvers<br>' +
+                      '• Clear the rejection reason',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Reactivate!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading state
+                    reactivateRejectedBtn.disabled = true;
+                    reactivateRejectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+                    // Submit form
+                    reactivateRejectedForm.submit();
                 }
             });
         });

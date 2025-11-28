@@ -42,8 +42,16 @@ namespace Ideku.Services.Idea
         Task<(bool Success, string Message)> UpdateIdeaAsync(EditIdeaViewModel model, List<IFormFile>? newFiles);
         Task<(bool Success, string Message)> SoftDeleteIdeaAsync(long ideaId, string username);
 
-        // Inactive Management
+        // ========================================================================
+        // Inactive Management (Auto-Rejected - 60 Days Without Approval)
+        // ========================================================================
         Task<(bool Success, string Message)> ReactivateIdeaAsync(long ideaId, string activatedBy);
         Task SendReactivationEmailAsync(long ideaId);
+
+        // ========================================================================
+        // Rejected Management (Manually Rejected by Approver)
+        // ========================================================================
+        Task<(bool Success, string Message)> ReactivateRejectedIdeaAsync(long ideaId, string activatedBy);
+        Task SendReactivateRejectedEmailAsync(long ideaId);
     }
 }
