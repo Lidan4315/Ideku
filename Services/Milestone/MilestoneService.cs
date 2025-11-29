@@ -1,8 +1,5 @@
 using Ideku.Data.Repositories;
 using Ideku.Models.Entities;
-using Ideku.ViewModels.Common;
-using Ideku.ViewModels.Milestone;
-using Ideku.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ideku.Services.Milestone
@@ -23,9 +20,7 @@ namespace Ideku.Services.Milestone
             _ideaRepository = ideaRepository;
         }
 
-        public async Task<PagedResult<Models.Entities.Idea>> GetMilestoneEligibleIdeasAsync(
-            int page = 1,
-            int pageSize = 10,
+        public async Task<IQueryable<Models.Entities.Idea>> GetMilestoneEligibleIdeasQueryAsync(
             string? searchTerm = null,
             string? selectedDivision = null,
             string? selectedDepartment = null,
@@ -69,7 +64,7 @@ namespace Ideku.Services.Milestone
                 query = query.Where(i => i.CurrentStatus == selectedStatus);
             }
 
-            return await query.ToPagedResultAsync(page, pageSize);
+            return await Task.FromResult(query);
         }
 
         public async Task<Models.Entities.Idea?> GetMilestoneEligibleIdeaByIdAsync(long ideaId)
@@ -249,23 +244,13 @@ namespace Ideku.Services.Milestone
             }
         }
 
-        public async Task<IEnumerable<ImplementatorForPICDto>> GetAvailablePICUsersAsync(long ideaId)
+        public async Task<IEnumerable<IdeaImplementator>> GetAvailablePICUsersAsync(long ideaId)
         {
-            var idea = await _milestoneRepository.GetIdeasWithMilestoneEligibility()
-                .Include(i => i.IdeaImplementators)
-                    .ThenInclude(ii => ii.User)
-                        .ThenInclude(u => u.Employee)
-                .FirstOrDefaultAsync(i => i.Id == ideaId);
+            var idea = await _milestoneRepository.GetIdeaWithImplementatorsAsync(ideaId);
 
-            if (idea == null) return new List<ImplementatorForPICDto>();
+            if (idea == null) return new List<IdeaImplementator>();
 
-            return idea.IdeaImplementators.Select(ii => new ImplementatorForPICDto
-            {
-                Id = ii.User.Id,
-                Name = ii.User.Name,
-                Role = ii.Role,
-                Employee = ii.User.Employee
-            }).ToList();
+            return idea.IdeaImplementators.ToList();
         }
 
         public (bool IsValid, string Message) ValidateMilestoneDates(DateTime startDate, DateTime endDate)
