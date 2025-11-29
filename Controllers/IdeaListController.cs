@@ -313,7 +313,7 @@ namespace Ideku.Controllers
                 ViewBag.Categories = await _lookupService.GetCategoriesAsync();
                 ViewBag.Events = await _lookupService.GetEventsAsync();
 
-                var viewModel = new IdeaDetailViewModel
+                var viewModel = new IdeaListDetailViewModel
                 {
                     Idea = idea,
                     Implementators = implementators.ToList(),
