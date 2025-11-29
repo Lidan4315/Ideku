@@ -7,8 +7,8 @@ namespace Ideku.Services.Idea
 {
     public interface IIdeaService
     {
-        Task<CreateIdeaViewModel> PrepareCreateViewModelAsync(string username);
-        Task<(bool Success, string Message, Models.Entities.Idea? CreatedIdea)> CreateIdeaAsync(CreateIdeaViewModel model, List<IFormFile>? files);
+        // PrepareCreateViewModelAsync REMOVED - Controller will handle ViewModel population
+        Task<(bool Success, string Message, Models.Entities.Idea? CreatedIdea)> CreateIdeaAsync(Models.Entities.Idea idea, List<IFormFile>? files);
         Task<IQueryable<Models.Entities.Idea>> GetUserIdeasAsync(string username);
         Task<object?> GetEmployeeByBadgeNumberAsync(string badgeNumber);
         Task<IQueryable<Models.Entities.Idea>> GetAllIdeasQueryAsync(string username);
@@ -39,7 +39,7 @@ namespace Ideku.Services.Idea
         Task<bool> IsIdeaNameExistsAsync(string ideaName, long? excludeIdeaId = null);
 
         // Edit & Delete
-        Task<(bool Success, string Message)> UpdateIdeaAsync(EditIdeaViewModel model, List<IFormFile>? newFiles);
+        Task<(bool Success, string Message)> UpdateIdeaAsync(Models.Entities.Idea idea, List<IFormFile>? newFiles, List<long>? attachmentIdsToDelete = null);
         Task<(bool Success, string Message)> SoftDeleteIdeaAsync(long ideaId, string username);
 
         // ========================================================================

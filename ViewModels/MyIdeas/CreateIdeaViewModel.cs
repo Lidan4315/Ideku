@@ -1,8 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace Ideku.ViewModels
+namespace Ideku.ViewModels.MyIdeas
 {
+    /// <summary>
+    /// ViewModel for Create Idea (Idea/Create) page
+    /// </summary>
     public class CreateIdeaViewModel
     {
         // Initiator Profile Section

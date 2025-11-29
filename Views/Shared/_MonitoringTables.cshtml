@@ -1,0 +1,330 @@
+@model IEnumerable<Ideku.Models.Entities.IdeaMonitoring>
+
+@{
+    var isReadOnly = ViewData["IsReadOnly"] != null && (bool)ViewData["IsReadOnly"];
+    var canEditCostSavings = ViewData["CanEditCostSavings"] != null && (bool)ViewData["CanEditCostSavings"];
+    var canValidateCostSavings = ViewData["CanValidateCostSavings"] != null && (bool)ViewData["CanValidateCostSavings"];
+    var monitoringModel = Model as IEnumerable<Ideku.Models.Entities.IdeaMonitoring>;
+    var hasMonitoring = monitoringModel != null && monitoringModel.Any();
+}
+
+<!-- Monitoring Content -->
+@if (hasMonitoring)
+{
+    // Group monitorings by KPI (based on MonitoringName)
+    var allMonitorings = monitoringModel!.OrderBy(m => m.MonthFrom).ToList();
+
+    // Separate Cost Saving (displayed as "Monthly Cost Saving") and other KPIs
+    var costSavingMonitorings = allMonitorings.Where(m => m.MonitoringName != null && m.MonitoringName == "Cost Saving").ToList();
+    var kpiGroups = allMonitorings
+        .Where(m => m.MonitoringName != null && m.MonitoringName != "Cost Saving")
+        .GroupBy(m => m.MonitoringName)
+        .OrderBy(g => g.Key)
+        .ToList();
+
+    <!-- Action Buttons Row (Only if NOT read-only) -->
+    @if (!isReadOnly)
+    {
+        <div class="d-flex flex-wrap gap-2 mb-4 justify-content-end">
+            @if (canEditCostSavings)
+            {
+                <button type="button" class="btn btn-outline-primary btn-sm btn-min-width-lg" data-bs-toggle="modal" data-bs-target="#addKpiModal">
+                    <i class="bi bi-plus-circle me-md-2"></i><span class="d-none d-md-inline">Add New KPI</span>
+                </button>
+                <button type="button" class="btn btn-outline-gray btn-sm btn-min-width-lg" data-bs-toggle="modal" data-bs-target="#extendDurationModal">
+                    <i class="bi bi-calendar-plus me-md-2"></i><span class="d-none d-md-inline">Extend Duration</span>
+                </button>
+            }
+            @if (canEditCostSavings || canValidateCostSavings)
+            {
+                <button type="button" class="btn btn-primary btn-sm btn-min-width-md" id="editBtn">
+                    <i class="bi bi-pencil me-md-2"></i><span class="d-none d-md-inline">Edit</span>
+                </button>
+                <button type="button" class="btn btn-success btn-sm btn-min-width-md" id="saveBtn" style="display: none;">
+                    <i class="bi bi-check-lg me-md-2"></i><span class="d-none d-md-inline">Save</span>
+                </button>
+                <button type="button" class="btn btn-light btn-sm btn-min-width-md" id="cancelBtn" style="display: none;">
+                    <i class="bi bi-x-lg me-md-2"></i><span class="d-none d-md-inline">Cancel</span>
+                </button>
+            }
+        </div>
+    }
+
+    <!-- Monthly Cost Saving Table -->
+    @if (costSavingMonitorings.Any())
+    {
+        var orderedMonitorings = costSavingMonitorings;
+        <h4 class="mb-3">
+            Monthly Cost Saving (USD)
+        </h4>
+        <div class="monitoring-table-wrapper mb-5">
+        <div class="monitoring-grid">
+        <div class="monitoring-header">
+            <div class="label-column"></div>
+            <div class="month-columns">
+                @foreach (var monitoring in orderedMonitorings)
+                {
+                    <div class="month-column">
+                        <div class="month-header">
+                            @monitoring.MonthFrom.ToString("MMMM-yyyy").ToUpper()
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="total-column">
+                <div class="total-header">TOTAL</div>
+            </div>
+        </div>
+
+        <div style="display: flex;">
+            <div class="label-column">
+                <div class="label-cell">
+                    Plan
+                </div>
+                <div class="label-cell">
+                    Actual
+                </div>
+                <div class="label-cell">
+                    Actual Validated
+                </div>
+            </div>
+
+            <div class="month-columns">
+                @foreach (var monitoring in orderedMonitorings)
+                {
+                    <div class="month-column" data-monitoring-id="@monitoring.Id">
+                        <!-- Plan -->
+                        <div class="month-value">
+                            <!-- View Mode -->
+                            <div class="view-mode">
+                                <span class="value-display value-plan">USD @(monitoring.CostSavePlan?.ToString("N0") ?? "0")</span>
+                            </div>
+                            <!-- Edit Mode (Only if NOT read-only) -->
+                            @if (!isReadOnly && canEditCostSavings)
+                            {
+                                <div class="edit-mode">
+                                    <input type="number"
+                                           class="value-input plan"
+                                           data-monitoring-id="@monitoring.Id"
+                                           data-field="plan"
+                                           data-original="@(monitoring.CostSavePlan ?? 0)"
+                                           value="@(monitoring.CostSavePlan ?? 0)"
+                                           min="0"
+                                           placeholder="0" />
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Actual -->
+                        <div class="month-value">
+                            <!-- View Mode -->
+                            <div class="view-mode">
+                                <span class="value-display value-actual">@(monitoring.CostSaveActual.HasValue ? "USD " + monitoring.CostSaveActual.Value.ToString("N0") : "USD 0")</span>
+                            </div>
+                            <!-- Edit Mode (Only if NOT read-only) -->
+                            @if (!isReadOnly && canEditCostSavings)
+                            {
+                                <div class="edit-mode">
+                                    <input type="number"
+                                           class="value-input actual"
+                                           data-monitoring-id="@monitoring.Id"
+                                           data-field="actual"
+                                           data-original="@(monitoring.CostSaveActual ?? 0)"
+                                           value="@(monitoring.CostSaveActual ?? 0)"
+                                           min="0"
+                                           placeholder="0" />
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Validated -->
+                        <div class="month-value">
+                            <!-- View Mode -->
+                            <div class="view-mode">
+                                <span class="value-display value-validated">@(monitoring.CostSaveActualValidated.HasValue ? "USD " + monitoring.CostSaveActualValidated.Value.ToString("N0") : "Not Validated Yet")</span>
+                            </div>
+                            <!-- Edit Mode (Only if NOT read-only) -->
+                            @if (!isReadOnly && canValidateCostSavings)
+                            {
+                                <div class="edit-mode">
+                                    <input type="number"
+                                           class="value-input validated"
+                                           data-monitoring-id="@monitoring.Id"
+                                           data-field="validated"
+                                           data-original="@(monitoring.CostSaveActualValidated ?? 0)"
+                                           value="@(monitoring.CostSaveActualValidated ?? 0)"
+                                           min="0"
+                                           placeholder="0" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="total-column">
+                <div class="total-value value-plan">
+                    USD @orderedMonitorings.Sum(m => m.CostSavePlan ?? 0).ToString("N0")
+                </div>
+                <div class="total-value value-actual">
+                    USD @orderedMonitorings.Sum(m => m.CostSaveActual ?? 0).ToString("N0")
+                </div>
+                <div class="total-value value-validated">
+                    USD @orderedMonitorings.Sum(m => m.CostSaveActualValidated ?? 0).ToString("N0")
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    }
+
+    <!-- Other KPI Tables -->
+    @foreach (var kpiGroup in kpiGroups)
+    {
+        var kpiMonitorings = kpiGroup.OrderBy(m => m.MonthFrom).ToList();
+        var kpiName = kpiGroup.Key ?? "Unknown KPI";
+        var measurementUnit = kpiMonitorings.FirstOrDefault()?.MeasurementUnit ?? "";
+
+        <h4 class="mb-3 mt-4">
+            @kpiName @(!string.IsNullOrEmpty(measurementUnit) ? $"({measurementUnit})" : "")
+        </h4>
+        <div class="monitoring-table-wrapper mb-5">
+        <div class="monitoring-grid">
+        <div class="monitoring-header">
+            <div class="label-column"></div>
+            <div class="month-columns">
+                @foreach (var monitoring in kpiMonitorings)
+                {
+                    <div class="month-column">
+                        <div class="month-header">
+                            @monitoring.MonthFrom.ToString("MMMM-yyyy").ToUpper()
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="total-column">
+                <div class="total-header">TOTAL</div>
+            </div>
+        </div>
+
+        <div style="display: flex;">
+            <div class="label-column">
+                <div class="label-cell">
+                    Plan
+                </div>
+                <div class="label-cell">
+                    Actual
+                </div>
+                <div class="label-cell">
+                    Actual Validated
+                </div>
+            </div>
+
+            <div class="month-columns">
+                @foreach (var monitoring in kpiMonitorings)
+                {
+                    <div class="month-column" data-monitoring-id="@monitoring.Id">
+                        <!-- Plan -->
+                        <div class="month-value">
+                            <!-- View Mode -->
+                            <div class="view-mode">
+                                <span class="value-display value-plan">@(monitoring.CostSavePlan?.ToString("N0") ?? "0") @measurementUnit</span>
+                            </div>
+                            <!-- Edit Mode (Only if NOT read-only) -->
+                            @if (!isReadOnly && canEditCostSavings)
+                            {
+                                <div class="edit-mode">
+                                    <input type="number"
+                                           class="value-input plan"
+                                           data-monitoring-id="@monitoring.Id"
+                                           data-field="plan"
+                                           data-original="@(monitoring.CostSavePlan ?? 0)"
+                                           value="@(monitoring.CostSavePlan ?? 0)"
+                                           min="0"
+                                           placeholder="0" />
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Actual -->
+                        <div class="month-value">
+                            <!-- View Mode -->
+                            <div class="view-mode">
+                                <span class="value-display value-actual">@(monitoring.CostSaveActual?.ToString("N0") ?? "0") @measurementUnit</span>
+                            </div>
+                            <!-- Edit Mode (Only if NOT read-only) -->
+                            @if (!isReadOnly && canEditCostSavings)
+                            {
+                                <div class="edit-mode">
+                                    <input type="number"
+                                           class="value-input actual"
+                                           data-monitoring-id="@monitoring.Id"
+                                           data-field="actual"
+                                           data-original="@(monitoring.CostSaveActual ?? 0)"
+                                           value="@(monitoring.CostSaveActual ?? 0)"
+                                           min="0"
+                                           placeholder="0" />
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Validated -->
+                        <div class="month-value">
+                            <!-- View Mode -->
+                            <div class="view-mode">
+                                <span class="value-display value-validated">@(monitoring.CostSaveActualValidated.HasValue ? monitoring.CostSaveActualValidated.Value.ToString("N0") + " " + measurementUnit : "Not Validated Yet")</span>
+                            </div>
+                            <!-- Edit Mode (Only if NOT read-only) -->
+                            @if (!isReadOnly && canValidateCostSavings)
+                            {
+                                <div class="edit-mode">
+                                    <input type="number"
+                                           class="value-input validated"
+                                           data-monitoring-id="@monitoring.Id"
+                                           data-field="validated"
+                                           data-original="@(monitoring.CostSaveActualValidated ?? 0)"
+                                           value="@(monitoring.CostSaveActualValidated ?? 0)"
+                                           min="0"
+                                           placeholder="0" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="total-column">
+                <div class="total-value value-plan">
+                    @kpiMonitorings.Sum(m => m.CostSavePlan ?? 0).ToString("N0") @measurementUnit
+                </div>
+                <div class="total-value value-actual">
+                    @kpiMonitorings.Sum(m => m.CostSaveActual ?? 0).ToString("N0") @measurementUnit
+                </div>
+                <div class="total-value value-validated">
+                    @kpiMonitorings.Sum(m => m.CostSaveActualValidated ?? 0).ToString("N0") @measurementUnit
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    }
+}
+else
+{
+    <!-- Empty State -->
+    <div class="card mb-5">
+        <div class="card-body">
+            <div class="empty-state">
+                <i class="bi bi-graph-up-arrow"></i>
+                <h4 class="mt-3">No Monitoring Record Yet</h4>
+                <p class="text-muted">@(isReadOnly ? "No monitoring data available for this idea." : "Start tracking cost savings for this idea by adding a monitoring record.")</p>
+                @if (!isReadOnly && !canEditCostSavings)
+                {
+                    <p class="text-muted mt-3">
+                        <i class="bi bi-info-circle me-1"></i>Only the idea team or workstream leader can add monitoring records.
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+}

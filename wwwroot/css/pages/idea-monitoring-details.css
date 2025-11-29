@@ -61,12 +61,18 @@
     color: white;
 }
 
+.monitoring-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .monitoring-grid {
     background: white;
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible;
     border: 1px solid #e5e7eb;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    min-width: max-content;
 }
 
 .monitoring-header {
@@ -77,8 +83,12 @@
 
 .label-column {
     width: 200px;
+    min-width: 200px;
     background: #f8f9fa;
     padding: 0;
+    position: sticky;
+    left: 0;
+    z-index: 10;
 }
 
 .label-cell {
@@ -103,10 +113,12 @@
 .month-columns {
     display: flex;
     flex: 1;
+    overflow-x: visible;
 }
 
 .month-column {
     flex: 1;
+    min-width: 180px;
     text-align: center;
     border-left: 1px solid #e5e7eb;
 }
@@ -139,9 +151,13 @@
 
 .total-column {
     width: 150px;
+    min-width: 150px;
     text-align: center;
     border-left: 2px solid #e5e7eb;
     background: #fafafa;
+    position: sticky;
+    right: 0;
+    z-index: 10;
 }
 
 .total-header {
@@ -229,6 +245,18 @@
 
 .editing .edit-mode {
     display: block;
+}
+
+/* =============================================================================
+   STICKY COLUMN SHADOWS (for horizontal scroll)
+   ============================================================================= */
+
+.label-column {
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.total-column {
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
 }
 
 /* =============================================================================
