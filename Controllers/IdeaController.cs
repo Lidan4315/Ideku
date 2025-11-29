@@ -2,15 +2,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Ideku.Services.Idea;
-using Ideku.ViewModels;
-using Ideku.ViewModels.IdeaList;
+using Ideku.ViewModels.MyIdeas;
 using Ideku.Services.Workflow;
 using Ideku.Services.IdeaImplementators;
 using Ideku.Models;
+using Ideku.Models.Entities;
 using Ideku.Extensions;
 using Ideku.Helpers;
 using Ideku.Services.Lookup;
 using Ideku.Services.Milestone;
+using Ideku.Services.IdeaMonitoring;
 
 namespace Ideku.Controllers
 {
@@ -23,6 +24,7 @@ namespace Ideku.Controllers
         private readonly IIdeaImplementatorService _implementatorService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly IMilestoneService _milestoneService;
+        private readonly IIdeaMonitoringService _monitoringService;
         private readonly ILogger<IdeaController> _logger;
 
         public IdeaController(
@@ -31,6 +33,7 @@ namespace Ideku.Controllers
             ILookupService lookupService,
             IIdeaImplementatorService implementatorService,
             IMilestoneService milestoneService,
+            IIdeaMonitoringService monitoringService,
             IServiceScopeFactory serviceScopeFactory,
             ILogger<IdeaController> logger)
         {
@@ -39,6 +42,7 @@ namespace Ideku.Controllers
             _lookupService = lookupService;
             _milestoneService = milestoneService;
             _implementatorService = implementatorService;
+            _monitoringService = monitoringService;
             _serviceScopeFactory = serviceScopeFactory;
 
             _logger = logger;
@@ -56,7 +60,30 @@ namespace Ideku.Controllers
                     return RedirectToAction("Login", "Auth");
                 }
 
-                var viewModel = await _ideaService.PrepareCreateViewModelAsync(username);
+                // Get current user for fallback
+                var user = await _ideaService.GetUserByUsernameAsync(username);
+                if (user == null)
+                {
+                    return RedirectToAction("Login", "Auth");
+                }
+
+                // Controller populates ViewModel (presentation concern)
+                var viewModel = new CreateIdeaViewModel
+                {
+                    InitiatorUserId = user.Id, // Fallback if badge lookup fails
+                    BadgeNumber = "",
+                    EmployeeName = "",
+                    Position = "",
+                    Email = "",
+                    EmployeeId = "",
+
+                    // Populate dropdown lists from LookupService
+                    DivisionList = await _lookupService.GetDivisionsAsync(),
+                    CategoryList = await _lookupService.GetCategoriesAsync(),
+                    EventList = await _lookupService.GetEventsAsync(),
+                    DepartmentList = await _lookupService.GetDepartmentsByDivisionAsync("")
+                };
+
                 return View(viewModel);
             }
             catch (UnauthorizedAccessException)
@@ -78,40 +105,75 @@ namespace Ideku.Controllers
         {
             if (ModelState.IsValid)
             {
-                var result = await _ideaService.CreateIdeaAsync(model, model.AttachmentFiles);
-                
+                // Get initiator user by badge number (strict validation)
+                var employee = await _ideaService.GetEmployeeByBadgeNumberAsync(model.BadgeNumber);
+                if (employee == null)
+                {
+                    return Json(new {
+                        success = false,
+                        message = "Employee with badge number not found"
+                    });
+                }
+
+                // Get or validate user account for employee
+                var initiatorUser = await _ideaService.GetUserByUsernameAsync(model.BadgeNumber);
+                if (initiatorUser == null)
+                {
+                    return Json(new {
+                        success = false,
+                        message = "Employee does not have a user account in the system. Please contact administrator."
+                    });
+                }
+
+                // Controller maps ViewModel → Entity
+                var idea = new Models.Entities.Idea
+                {
+                    InitiatorUserId = initiatorUser.Id,
+                    ToDivisionId = model.ToDivisionId,
+                    ToDepartmentId = model.ToDepartmentId,
+                    CategoryId = model.CategoryId,
+                    EventId = model.EventId,
+                    IdeaName = model.IdeaName,
+                    IdeaIssueBackground = model.IdeaDescription,
+                    IdeaSolution = model.Solution,
+                    SavingCost = model.SavingCost ?? 0
+                };
+
+                // Service handles business logic
+                var result = await _ideaService.CreateIdeaAsync(idea, model.AttachmentFiles);
+
                 if (result.Success && result.CreatedIdea != null)
                 {
-                    _logger.LogInformation("Idea {IdeaId} - {IdeaName} created successfully by user {Username}", 
+                    _logger.LogInformation("Idea {IdeaId} - {IdeaName} created successfully by user {Username}",
                         result.CreatedIdea.Id, result.CreatedIdea.IdeaName, User.Identity?.Name);
 
                     // Send notification emails in background
                     SendEmailInBackground(result.CreatedIdea);
 
-                    return Json(new { 
-                        success = true, 
-                        message = result.Message, 
-                        ideaCode = result.CreatedIdea.IdeaCode 
+                    return Json(new {
+                        success = true,
+                        message = result.Message,
+                        ideaCode = result.CreatedIdea.IdeaCode
                     });
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to create idea for user {Username}: {ErrorMessage}", 
+                    _logger.LogWarning("Failed to create idea for user {Username}: {ErrorMessage}",
                         User.Identity?.Name, result.Message);
-                    
-                    return Json(new { 
-                        success = false, 
-                        message = result.Message 
+
+                    return Json(new {
+                        success = false,
+                        message = result.Message
                     });
                 }
             }
 
             // Return validation errors as JSON
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-            return Json(new { 
-                success = false, 
-                message = "Please check your input", 
-                errors = errors 
+            return Json(new {
+                success = false,
+                message = "Please check your input",
+                errors = errors
             });
         }
 
@@ -439,13 +501,23 @@ namespace Ideku.Controllers
                 // Get workflow history for the idea
                 var workflowHistory = await _workflowService.GetWorkflowHistoryByIdeaIdAsync(id);
 
-                // Create view model with idea and implementators
-                var viewModel = new IdeaDetailViewModel
+                // Get monitoring data for the idea (read-only)
+                var monitorings = await _monitoringService.GetMonitoringsByIdeaIdAsync(id);
+
+                // Check permissions for monitoring (read-only for My Ideas page)
+                var canEdit = await _monitoringService.CanEditCostSavingsAsync(id, username);
+                var canValidate = await _monitoringService.CanValidateCostSavingsAsync(username);
+
+                // Create view model with idea and all related data
+                var viewModel = new MyIdeasDetailViewModel
                 {
                     Idea = idea,
                     Implementators = implementators.ToList(),
                     Milestones = milestones.ToList(),
-                    WorkflowHistory = workflowHistory
+                    WorkflowHistory = workflowHistory,
+                    Monitorings = monitorings.ToList(),
+                    CanEditCostSavings = false, // Always false for My Ideas page (read-only)
+                    CanValidateCostSavings = false // Always false for My Ideas page (read-only)
                 };
 
                 // Pass dropdown data to view for edit modal
@@ -542,7 +614,22 @@ namespace Ideku.Controllers
         {
             if (ModelState.IsValid)
             {
-                var result = await _ideaService.UpdateIdeaAsync(model, model.NewAttachmentFiles);
+                // Map EditIdeaViewModel → Idea entity
+                var idea = new Idea
+                {
+                    Id = model.Id,
+                    InitiatorUserId = model.InitiatorUserId,
+                    ToDivisionId = model.ToDivisionId,
+                    ToDepartmentId = model.ToDepartmentId,
+                    CategoryId = model.CategoryId,
+                    EventId = model.EventId,
+                    IdeaName = model.IdeaName,
+                    IdeaIssueBackground = model.IdeaDescription,
+                    IdeaSolution = model.Solution,
+                    SavingCost = model.SavingCost ?? 0
+                };
+
+                var result = await _ideaService.UpdateIdeaAsync(idea, model.NewAttachmentFiles);
 
                 if (result.Success)
                 {

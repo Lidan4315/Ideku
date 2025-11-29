@@ -62,36 +62,9 @@ namespace Ideku.Services.Idea
             _logger = logger;
         }
 
-        public async Task<CreateIdeaViewModel> PrepareCreateViewModelAsync(string username)
-        {
-            if (string.IsNullOrEmpty(username))
-                throw new UnauthorizedAccessException("User not authenticated");
+        // PrepareCreateViewModelAsync REMOVED - Controller now handles ViewModel population directly
 
-            var user = await _userRepository.GetByUsernameAsync(username);
-            if (user == null)
-                throw new UnauthorizedAccessException("User not found");
-
-            return new CreateIdeaViewModel
-            {
-                // Current user info (who is creating the idea, not necessarily the initiator)
-                InitiatorUserId = user.Id,
-                
-                // Don't auto-populate initiator info - let user input badge number
-                BadgeNumber = "",
-                EmployeeName = "",
-                Position = "",
-                Email = "",
-                EmployeeId = "",
-
-                // Populate dropdown lists
-                DivisionList = await _lookupService.GetDivisionsAsync(),
-                CategoryList = await _lookupService.GetCategoriesAsync(),
-                EventList = await _lookupService.GetEventsAsync(),
-                DepartmentList = await _lookupService.GetDepartmentsByDivisionAsync("")
-            };
-        }
-
-        public async Task<(bool Success, string Message, Models.Entities.Idea? CreatedIdea)> CreateIdeaAsync(CreateIdeaViewModel model, List<IFormFile>? files)
+        public async Task<(bool Success, string Message, Models.Entities.Idea? CreatedIdea)> CreateIdeaAsync(Models.Entities.Idea idea, List<IFormFile>? files)
         {
             try
             {
@@ -103,44 +76,26 @@ namespace Ideku.Services.Idea
                 }
 
                 // Validate Idea Name uniqueness
-                var ideaNameExists = await _ideaRepository.IsIdeaNameExistsAsync(model.IdeaName);
+                var ideaNameExists = await _ideaRepository.IsIdeaNameExistsAsync(idea.IdeaName);
                 if (ideaNameExists)
                 {
                     return (false, "An idea with this name already exists. Please use a different name.", null);
                 }
 
-                // Validate employee exists
-                var employee = await _employeeRepository.GetByEmployeeIdAsync(model.BadgeNumber);
-                if (employee == null)
-                {
-                    return (false, "Employee with badge number not found", null);
-                }
-
-                // Get or create User for the employee (idea initiator)
-                var initiatorUser = await _userRepository.GetByEmployeeIdAsync(model.BadgeNumber);
-                long initiatorUserId;
-                
+                // Validate InitiatorUser exists (strict validation - no fallback)
+                var initiatorUser = await _userRepository.GetByIdAsync(idea.InitiatorUserId);
                 if (initiatorUser == null)
                 {
-                    // For now, we'll use the current logged in user's ID as initiator
-                    // In future, we might create user records automatically
-                    initiatorUserId = model.InitiatorUserId;
+                    return (false, "Initiator user not found in the system. Please contact administrator.", null);
                 }
-                else
-                {
-                    initiatorUserId = initiatorUser.Id;
-                }
-
-                // First save the idea with temporary file paths to get the ID and generate idea code
-                // We'll handle file uploads after getting the idea code
 
                 // Determine applicable workflow based on idea conditions
                 var applicableWorkflow = await _workflowManagementService.GetApplicableWorkflowAsync(
-                    model.CategoryId,
-                    model.ToDivisionId,
-                    model.ToDepartmentId,
-                    model.SavingCost ?? 0,
-                    model.EventId
+                    idea.CategoryId,
+                    idea.ToDivisionId,
+                    idea.ToDepartmentId,
+                    idea.SavingCost,
+                    idea.EventId
                 );
 
                 if (applicableWorkflow == null)
@@ -152,27 +107,19 @@ namespace Ideku.Services.Idea
                 var workflowWithStages = await _workflowManagementService.GetWorkflowByIdAsync(applicableWorkflow.Id);
                 var maxStage = workflowWithStages?.WorkflowStages?.Count() ?? 0;
 
-                // Create new Idea entity (without IdeaCode first)
-                var idea = new Models.Entities.Idea
-                {
-                    InitiatorUserId = initiatorUserId,
-                    ToDivisionId = model.ToDivisionId,
-                    ToDepartmentId = model.ToDepartmentId,
-                    CategoryId = model.CategoryId,
-                    EventId = model.EventId,
-                    IdeaName = model.IdeaName,
-                    IdeaIssueBackground = model.IdeaDescription,
-                    IdeaSolution = model.Solution,
-                    SavingCost = model.SavingCost ?? 0,
-                    AttachmentFiles = "", // Will be updated after file upload with proper naming
-                    IdeaCode = "TMP", // Temporary code
-                    WorkflowId = applicableWorkflow.Id, // Assign determined workflow
-                    MaxStage = maxStage, // Set maximum stages for this workflow
-                    CurrentStatus = "Waiting Approval S1",
-                    CurrentStage = 0, // Start from stage 0
-                    IsDeleted = false, // Default not deleted
-                    SubmittedDate = DateTime.Now
-                };
+                // Set workflow-related properties
+                idea.WorkflowId = applicableWorkflow.Id;
+                idea.CurrentStage = 1;
+                idea.MaxStage = maxStage;
+                idea.CurrentStatus = "Waiting for Approval";
+                idea.SubmittedDate = DateTime.Now;
+                idea.IsDeleted = false;
+                idea.IsRejected = false;
+
+                // Idea entity is already populated by Controller
+                // Set temporary values that will be updated after getting ID
+                idea.AttachmentFiles = ""; // Will be updated after file upload with proper naming
+                idea.IdeaCode = "TMP"; // Temporary code, will be generated based on ID
 
                 // Save using repository to get the ID
                 var createdIdea = await _ideaRepository.CreateAsync(idea);
@@ -202,7 +149,7 @@ namespace Ideku.Services.Idea
                 // WorkflowHistory will be created only for approval/rejection actions
 
                 createdIdea.IdeaCode = ideaCode; // Update the object with the final code
-                return (true, $"Idea '{model.IdeaName}' has been successfully submitted!", createdIdea);
+                return (true, $"Idea '{idea.IdeaName}' has been successfully submitted!", createdIdea);
             }
             catch (Exception ex)
             {
@@ -1820,12 +1767,12 @@ namespace Ideku.Services.Idea
         /// <summary>
         /// Update existing idea with new data
         /// </summary>
-        public async Task<(bool Success, string Message)> UpdateIdeaAsync(EditIdeaViewModel model, List<IFormFile>? newFiles)
+        public async Task<(bool Success, string Message)> UpdateIdeaAsync(Models.Entities.Idea updatedIdea, List<IFormFile>? newFiles, List<long>? attachmentIdsToDelete = null)
         {
             try
             {
                 // Get existing idea
-                var idea = await _ideaRepository.GetByIdAsync(model.Id);
+                var idea = await _ideaRepository.GetByIdAsync(updatedIdea.Id);
                 if (idea == null)
                 {
                     return (false, "Idea not found.");
@@ -1848,21 +1795,21 @@ namespace Ideku.Services.Idea
                 }
 
                 // Validate Idea Name uniqueness (exclude current idea)
-                var ideaNameExists = await _ideaRepository.IsIdeaNameExistsAsync(model.IdeaName, model.Id);
+                var ideaNameExists = await _ideaRepository.IsIdeaNameExistsAsync(updatedIdea.IdeaName, updatedIdea.Id);
                 if (ideaNameExists)
                 {
                     return (false, "An idea with this name already exists. Please use a different name.");
                 }
 
-                // Update idea properties
-                idea.ToDivisionId = model.ToDivisionId;
-                idea.ToDepartmentId = model.ToDepartmentId;
-                idea.CategoryId = model.CategoryId;
-                idea.EventId = model.EventId;
-                idea.IdeaName = model.IdeaName;
-                idea.IdeaIssueBackground = model.IdeaDescription;
-                idea.IdeaSolution = model.Solution;
-                idea.SavingCost = model.SavingCost ?? 0;
+                // Update idea properties from updatedIdea entity
+                idea.ToDivisionId = updatedIdea.ToDivisionId;
+                idea.ToDepartmentId = updatedIdea.ToDepartmentId;
+                idea.CategoryId = updatedIdea.CategoryId;
+                idea.EventId = updatedIdea.EventId;
+                idea.IdeaName = updatedIdea.IdeaName;
+                idea.IdeaIssueBackground = updatedIdea.IdeaIssueBackground;
+                idea.IdeaSolution = updatedIdea.IdeaSolution;
+                idea.SavingCost = updatedIdea.SavingCost;
                 idea.UpdatedDate = DateTime.Now;
 
                 // Handle new file uploads if any
@@ -1889,11 +1836,11 @@ namespace Ideku.Services.Idea
                 // Save changes
                 await _ideaRepository.UpdateAsync(idea);
 
-                return (true, $"Idea '{model.IdeaName}' has been successfully updated!");
+                return (true, $"Idea '{updatedIdea.IdeaName}' has been successfully updated!");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating idea {IdeaId}", model.Id);
+                _logger.LogError(ex, "Error updating idea {IdeaId}", updatedIdea.Id);
                 return (false, $"Error updating idea: {ex.Message}");
             }
         }

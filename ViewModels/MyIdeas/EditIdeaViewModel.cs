@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace Ideku.ViewModels
+namespace Ideku.ViewModels.MyIdeas
 {
     public class EditIdeaViewModel
     {
