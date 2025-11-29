@@ -91,21 +91,22 @@ namespace Ideku.Services.ChangeWorkflow
                 // Get max stage from new workflow
                 var newMaxStage = await _workflowManagementRepository.GetMaxStageForWorkflowAsync(newWorkflowId);
 
-                // Handle CurrentStage adjustment if it exceeds new MaxStage
-                var currentStageAdjusted = false;
+                // Handle CurrentStage and CurrentStatus adjustment if it exceeds new MaxStage
                 var adjustmentMessage = "";
+                var oldStatus = idea.CurrentStatus;
 
                 if (idea.CurrentStage >= newMaxStage)
                 {
-                    var newCurrentStage = newMaxStage - 1;
-                    idea.CurrentStage = newCurrentStage;
-                    currentStageAdjusted = true;
-                    adjustmentMessage = $" WARNING: CurrentStage adjusted from {oldCurrentStage} to {newCurrentStage} because it exceeded the new workflow's MaxStage ({newMaxStage}).";
+                    // Set to completed if current stage exceeds or equals new max stage
+                    idea.CurrentStage = newMaxStage;
+                    idea.CurrentStatus = "Completed";
+                    adjustmentMessage = $" Status automatically set to 'Completed' because CurrentStage ({oldCurrentStage}) exceeded or equaled the new workflow's MaxStage ({newMaxStage}).";
 
                     _logger.LogWarning(
-                        "CurrentStage adjusted for idea {IdeaCode} (ID: {IdeaId}) from stage {OldStage} to {NewStage} due to workflow change to {WorkflowName} (MaxStage: {MaxStage})",
-                        idea.IdeaCode, ideaId, oldCurrentStage, newCurrentStage, workflow.WorkflowName, newMaxStage);
+                        "Idea {IdeaCode} (ID: {IdeaId}) automatically completed: CurrentStage set to {NewStage}, Status changed from '{OldStatus}' to 'Completed' due to workflow change to {WorkflowName} (MaxStage: {MaxStage})",
+                        idea.IdeaCode, ideaId, newMaxStage, oldStatus, workflow.WorkflowName, newMaxStage);
                 }
+                // If CurrentStage < newMaxStage, keep stage and status unchanged
 
                 // Perform update
                 idea.WorkflowId = newWorkflowId;

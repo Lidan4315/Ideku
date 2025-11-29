@@ -370,7 +370,7 @@
         }
 
         <!-- Empty State -->
-        <div class="card">
+        <div class="card mb-5">
             <div class="card-body">
                 <div class="empty-state">
                     <i class="bi bi-graph-up-arrow"></i>
@@ -511,8 +511,8 @@
                         The new KPI will automatically use the same monthly duration as your existing monitoring records.
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-circle me-2"></i>Add KPI
                     </button>
@@ -542,7 +542,7 @@
                     <div class="mb-3">
                         <label for="additionalMonths" class="form-label">Additional Months <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="additionalMonths" name="AdditionalMonths"
-                               min="1" max="12" value="3" required />
+                               min="1" max="12" value="1" required />
                         <small class="form-text text-muted">Enter number of months to extend (1-12 months)</small>
                     </div>
 
@@ -566,26 +566,31 @@
 
 <!-- Create Monitoring Modal -->
 <div class="modal fade" id="createMonitoringModal" tabindex="-1" aria-labelledby="createMonitoringModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createMonitoringModalLabel">
-                    <i class="bi bi-plus-circle me-2"></i>Add Cost Saving Monitoring
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="createMonitoringModalLabel">Add Cost Saving Monitoring</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="createMonitoringForm">
-                <div class="modal-body">
+                <div class="modal-body app-modal-body">
                     <input type="hidden" name="IdeaId" value="@Model.Idea.Id" />
 
                     <div class="mb-3">
-                        <label for="monthFrom" class="form-label">Start Month</label>
+                        <label for="monthFrom" class="form-label">Start Month <span class="text-danger">*</span></label>
                         <input type="month" class="form-control" id="monthFrom" name="MonthFrom" required
                                value="@DateTime.Now.ToString("yyyy-MM")" />
                     </div>
 
                     <div class="mb-3">
-                        <label for="durationMonths" class="form-label">Duration (Months)</label>
+                        <label for="durationMonths" class="form-label">Duration (Months) <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="durationMonths" name="DurationMonths"
                                min="1" max="24" value="12" required />
                         <small class="form-text text-muted">Duration must be between 1 and 24 months</small>
@@ -596,8 +601,8 @@
                         This will create separate monitoring records for each month. You can then input the cost save plan and actual values for each month individually.
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-circle me-2"></i>Create Monitoring
                     </button>
@@ -734,7 +739,12 @@ $(document).ready(function() {
 
             if (currentValue < 0) {
                 hasError = true;
-                alert('Values cannot be negative');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Value',
+                    text: 'Values cannot be negative',
+                    confirmButtonColor: '#f59e0b'
+                });
                 return false;
             }
 
@@ -757,8 +767,27 @@ $(document).ready(function() {
 
         if (hasError) return;
 
-        // Show loading state
-        $('#saveBtn').prop('disabled', true).html('<i class="bi bi-hourglass-split me-2"></i>Saving...');
+        // Check if there are any changes to save
+        if (updates.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: 'No Changes',
+                text: 'No values have been modified.',
+                confirmButtonColor: '#3b82f6'
+            });
+            return;
+        }
+
+        // Show loading alert
+        Swal.fire({
+            title: 'Saving Changes',
+            text: 'Please wait...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
         // Send all updates
         let completedRequests = 0;
@@ -829,13 +858,22 @@ $(document).ready(function() {
             }, 0);
 
             if (completedRequests >= expectedRequests) {
-                $('#saveBtn').prop('disabled', false).html('<i class="bi bi-check-lg me-2"></i>Save');
-
                 if (allSuccess) {
-                    alert('All changes saved successfully!');
-                    location.reload();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Saved!',
+                        text: 'All changes saved successfully!',
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        location.reload();
+                    });
                 } else {
-                    alert('Some changes failed to save. Please check and try again.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Save Failed',
+                        text: 'Some changes failed to save. Please check and try again.',
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             }
         }
@@ -858,14 +896,30 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     $('#addKpiModal').modal('hide');
-                    alert(response.message);
-                    location.reload();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message,
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        location.reload();
+                    });
                 } else {
-                    alert(response.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: response.message,
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             },
             error: function(xhr) {
-                alert('Error adding KPI. Please try again.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error adding KPI. Please try again.',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         });
     });
@@ -887,13 +941,30 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     $('#extendDurationModal').modal('hide');
-                    location.reload();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Duration extended successfully!',
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        location.reload();
+                    });
                 } else {
-                    alert(response.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: response.message,
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             },
             error: function(xhr) {
-                alert('Error extending duration. Please try again.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error extending duration. Please try again.',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         });
     });
@@ -919,13 +990,30 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     $('#createMonitoringModal').modal('hide');
-                    location.reload();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Monitoring created successfully!',
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        location.reload();
+                    });
                 } else {
-                    alert(response.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: response.message,
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             },
             error: function(xhr) {
-                alert('Error creating monitoring. Please try again.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error creating monitoring. Please try again.',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         });
     });
@@ -947,13 +1035,30 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     $('#editCostSavingsModal').modal('hide');
-                    location.reload();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Cost savings updated successfully!',
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        location.reload();
+                    });
                 } else {
-                    alert(response.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: response.message,
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             },
             error: function(xhr) {
-                alert('Error updating cost savings. Please try again.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error updating cost savings. Please try again.',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         });
     });
@@ -975,13 +1080,30 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     $('#validateCostSavingsModal').modal('hide');
-                    location.reload();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Cost savings validated successfully!',
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        location.reload();
+                    });
                 } else {
-                    alert(response.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: response.message,
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             },
             error: function(xhr) {
-                alert('Error validating cost savings. Please try again.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error validating cost savings. Please try again.',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         });
     });

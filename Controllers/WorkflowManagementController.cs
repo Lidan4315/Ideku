@@ -99,7 +99,7 @@ namespace Ideku.Controllers
 
                 // Load dropdown data
                 var approvers = await _approverService.GetAllApproversAsync();
-                viewModel.LevelList = approvers.Select(a => new SelectListItem
+                viewModel.ApproverList = approvers.Select(a => new SelectListItem
                 {
                     Value = a.Id.ToString(),
                     Text = a.ApproverName

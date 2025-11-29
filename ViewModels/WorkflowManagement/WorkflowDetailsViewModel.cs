@@ -10,7 +10,7 @@ namespace Ideku.ViewModels.WorkflowManagement
         public Workflow Workflow { get; set; } = null!;
 
         // Dropdown Lists for Add Stage Form
-        public List<SelectListItem> LevelList { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> ApproverList { get; set; } = new List<SelectListItem>();
 
         // Dropdown Lists for Add Condition Form
         public List<SelectListItem> CategoryList { get; set; } = new List<SelectListItem>();
