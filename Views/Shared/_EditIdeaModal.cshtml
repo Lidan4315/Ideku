@@ -391,8 +391,6 @@ function updateEditFilesList() {
 
         editFilesList.append(fileItem);
     });
-
-    editFileInput[0].files = editSelectedFiles.files;
 }
 
 function getFileIcon(extension) {
@@ -484,10 +482,19 @@ $('#editIdeaForm').on('submit', function(e) {
     formData.append('SavingCost', savingCostValue);
     formData.append('ExistingAttachments', ideaData.attachmentFiles || '');
 
-    // Add new files
-    const files = $('#editNewAttachments')[0].files;
-    for (let i = 0; i < files.length; i++) {
-        formData.append('NewAttachmentFiles', files[i]);
+    // Add new files from editSelectedFiles (DataTransfer object)
+    // Don't use input element directly because it gets cleared
+    console.log('Before adding to FormData - editSelectedFiles:', editSelectedFiles);
+    console.log('editSelectedFiles.files:', editSelectedFiles?.files);
+    console.log('editSelectedFiles.files.length:', editSelectedFiles?.files?.length);
+
+    if (editSelectedFiles && editSelectedFiles.files) {
+        for (let i = 0; i < editSelectedFiles.files.length; i++) {
+            formData.append('NewAttachmentFiles', editSelectedFiles.files[i]);
+        }
+        console.log('Added', editSelectedFiles.files.length, 'files to FormData');
+    } else {
+        console.log('No files selected');
     }
 
     // Add anti-forgery token

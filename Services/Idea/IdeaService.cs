@@ -107,9 +107,9 @@ namespace Ideku.Services.Idea
 
                 // Set workflow-related properties
                 idea.WorkflowId = applicableWorkflow.Id;
-                idea.CurrentStage = 1;
+                idea.CurrentStage = 0; // Stage 0 = belum masuk workflow, menunggu approval pertama
                 idea.MaxStage = maxStage;
-                idea.CurrentStatus = "Waiting for Approval";
+                idea.CurrentStatus = "Waiting Approval S1"; // Menunggu approval untuk masuk Stage 1
                 idea.SubmittedDate = DateTime.Now;
                 idea.IsDeleted = false;
                 idea.IsRejected = false;
