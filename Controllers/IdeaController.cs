@@ -103,27 +103,28 @@ namespace Ideku.Controllers
         [ModuleAuthorize("idea_create")]
         public async Task<IActionResult> Create(CreateIdeaViewModel model)
         {
+            // Validate badge number exists in EMPLIST first (before ModelState validation)
+            var employee = await _ideaService.GetEmployeeByBadgeNumberAsync(model.BadgeNumber);
+            if (employee == null)
+            {
+                return Json(new {
+                    success = false,
+                    message = "Employee with badge number not found"
+                });
+            }
+
+            // Validate user account exists (before ModelState validation)
+            var initiatorUser = await _ideaService.GetUserByEmployeeIdAsync(model.BadgeNumber);
+            if (initiatorUser == null)
+            {
+                return Json(new {
+                    success = false,
+                    message = "Employee does not have a user account in the system. Please contact administrator."
+                });
+            }
+
             if (ModelState.IsValid)
             {
-                // Get initiator user by badge number (strict validation)
-                var employee = await _ideaService.GetEmployeeByBadgeNumberAsync(model.BadgeNumber);
-                if (employee == null)
-                {
-                    return Json(new {
-                        success = false,
-                        message = "Employee with badge number not found"
-                    });
-                }
-
-                // Get or validate user account for employee
-                var initiatorUser = await _ideaService.GetUserByUsernameAsync(model.BadgeNumber);
-                if (initiatorUser == null)
-                {
-                    return Json(new {
-                        success = false,
-                        message = "Employee does not have a user account in the system. Please contact administrator."
-                    });
-                }
 
                 // Controller maps ViewModel → Entity
                 var idea = new Models.Entities.Idea

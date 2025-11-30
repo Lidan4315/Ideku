@@ -211,7 +211,7 @@
 @await Html.PartialAsync("_FilePreviewModal")
 
 <!-- Edit & Delete Idea Modal -->
-@await Html.PartialAsync("_EditIdeaModal", Model)
+@await Html.PartialAsync("_EditIdeaModal", Model.Idea)
 
 @section Scripts {
 <script>

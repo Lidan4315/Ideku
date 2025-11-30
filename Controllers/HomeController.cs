@@ -1,11 +1,13 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Ideku.Models;
 using Ideku.Models.Statistics;
 using Ideku.Services.Idea;
 using Ideku.Services.Lookup;
 using Ideku.Helpers;
+using Ideku.Extensions;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
@@ -271,8 +273,10 @@ public class HomeController : Controller
             pageSize = Helpers.PaginationHelper.ValidatePageSize(pageSize);
             page = Math.Max(1, page);
 
-            var pagedResult = await _ideaService.GetIdeasListPagedAsync(
-                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var query = await _ideaService.GetIdeasListQueryAsync(
+                startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+
+            var pagedResult = await query.ToPagedResultAsync(page, pageSize);
 
             return Json(new {
                 success = true,
@@ -316,8 +320,10 @@ public class HomeController : Controller
             pageSize = Helpers.PaginationHelper.ValidatePageSize(pageSize);
             page = Math.Max(1, page);
 
-            var pagedResult = await _ideaService.GetTeamRoleListPagedAsync(
-                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var query = await _ideaService.GetTeamRoleListQueryAsync(
+                startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+
+            var pagedResult = await query.ToPagedResultAsync(page, pageSize);
 
             return Json(new
             {
@@ -359,8 +365,10 @@ public class HomeController : Controller
             pageSize = Helpers.PaginationHelper.ValidatePageSize(pageSize);
             page = Math.Max(1, page);
 
-            var pagedResult = await _ideaService.GetApprovalHistoryListPagedAsync(
-                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var query = await _ideaService.GetApprovalHistoryListQueryAsync(
+                startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+
+            var pagedResult = await query.ToPagedResultAsync(page, pageSize);
 
             return Json(new
             {
@@ -406,8 +414,10 @@ public class HomeController : Controller
             pageSize = Helpers.PaginationHelper.ValidatePageSize(pageSize);
             page = Math.Max(1, page);
 
-            var pagedResult = await _ideaService.GetIdeaCostSavingListPagedAsync(
-                page, pageSize, startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var query = await _ideaService.GetIdeaCostSavingListQueryAsync(
+                startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+
+            var pagedResult = await query.ToPagedResultAsync(page, pageSize);
 
             return Json(new
             {
@@ -491,10 +501,17 @@ public class HomeController : Controller
             var departmentData = await _ideaService.GetIdeasByAllDepartmentsChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             var stageData = await _ideaService.GetInitiativeByStageAndDivisionChartAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
             var wlData = await _ideaService.GetWLChartDataAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
-            var ideasListData = await _ideaService.GetIdeasListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
-            var teamRoleData = await _ideaService.GetTeamRoleListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
-            var ideaCostSavingData = await _ideaService.GetIdeaCostSavingListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
-            var approvalHistoryData = await _ideaService.GetApprovalHistoryListAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var ideasListQuery = await _ideaService.GetIdeasListQueryAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var ideasListData = await ideasListQuery.ToListAsync();
+
+            var teamRoleQuery = await _ideaService.GetTeamRoleListQueryAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var teamRoleData = await teamRoleQuery.ToListAsync();
+
+            var ideaCostSavingQuery = await _ideaService.GetIdeaCostSavingListQueryAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var ideaCostSavingData = await ideaCostSavingQuery.ToListAsync();
+
+            var approvalHistoryQuery = await _ideaService.GetApprovalHistoryListQueryAsync(startDate, endDate, selectedDivision, selectedStage, savingCostRange, initiatorName, initiatorBadgeNumber, ideaId, initiatorDivision, selectedStatus);
+            var approvalHistoryData = await approvalHistoryQuery.ToListAsync();
 
             // EPPlus 7: Set license context for non-commercial use
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;

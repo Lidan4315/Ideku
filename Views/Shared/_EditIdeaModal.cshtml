@@ -1,4 +1,4 @@
-@model Ideku.ViewModels.MyIdeas.MyIdeasDetailViewModel
+@model Ideku.Models.Entities.Idea
 
 <!-- Edit Idea Modal -->
 @Html.AntiForgeryToken()
@@ -13,7 +13,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title mb-0" id="editIdeaModalLabel">Edit Idea</h5>
-                        <small class="text-muted">@Model.Idea.IdeaCode</small>
+                        <small class="text-muted">@Model.IdeaCode</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -152,17 +152,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // EDIT IDEA MODAL FUNCTIONALITY
     // ==================================================
     const ideaData = @Html.Raw(Json.Serialize(new {
-    id = Model.Idea.Id,
-    ideaCode = Model.Idea.IdeaCode,
-    toDivisionId = Model.Idea.ToDivisionId,
-    toDepartmentId = Model.Idea.ToDepartmentId,
-    categoryId = Model.Idea.CategoryId,
-    eventId = Model.Idea.EventId,
-    ideaName = Model.Idea.IdeaName,
-    ideaDescription = Model.Idea.IdeaIssueBackground,
-    solution = Model.Idea.IdeaSolution,
-    savingCost = Model.Idea.SavingCost,
-    attachmentFiles = Model.Idea.AttachmentFiles
+    id = Model.Id,
+    ideaCode = Model.IdeaCode,
+    toDivisionId = Model.ToDivisionId,
+    toDepartmentId = Model.ToDepartmentId,
+    categoryId = Model.CategoryId,
+    eventId = Model.EventId,
+    ideaName = Model.IdeaName,
+    ideaDescription = Model.IdeaIssueBackground,
+    solution = Model.IdeaSolution,
+    savingCost = Model.SavingCost,
+    attachmentFiles = Model.AttachmentFiles
 }));
 
 // Initialize modal data when page loads (one-time fetch)
@@ -391,8 +391,6 @@ function updateEditFilesList() {
 
         editFilesList.append(fileItem);
     });
-
-    editFileInput[0].files = editSelectedFiles.files;
 }
 
 function getFileIcon(extension) {
@@ -484,10 +482,19 @@ $('#editIdeaForm').on('submit', function(e) {
     formData.append('SavingCost', savingCostValue);
     formData.append('ExistingAttachments', ideaData.attachmentFiles || '');
 
-    // Add new files
-    const files = $('#editNewAttachments')[0].files;
-    for (let i = 0; i < files.length; i++) {
-        formData.append('NewAttachmentFiles', files[i]);
+    // Add new files from editSelectedFiles (DataTransfer object)
+    // Don't use input element directly because it gets cleared
+    console.log('Before adding to FormData - editSelectedFiles:', editSelectedFiles);
+    console.log('editSelectedFiles.files:', editSelectedFiles?.files);
+    console.log('editSelectedFiles.files.length:', editSelectedFiles?.files?.length);
+
+    if (editSelectedFiles && editSelectedFiles.files) {
+        for (let i = 0; i < editSelectedFiles.files.length; i++) {
+            formData.append('NewAttachmentFiles', editSelectedFiles.files[i]);
+        }
+        console.log('Added', editSelectedFiles.files.length, 'files to FormData');
+    } else {
+        console.log('No files selected');
     }
 
     // Add anti-forgery token

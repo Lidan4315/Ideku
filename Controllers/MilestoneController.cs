@@ -5,6 +5,7 @@ using Ideku.Services.Workflow;
 using Ideku.Services.Notification;
 using Ideku.Data.Repositories;
 using Ideku.ViewModels.Milestone;
+using Ideku.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -56,8 +57,9 @@ namespace Ideku.Controllers
         {
             try
             {
-                var pagedIdeas = await _milestoneService.GetMilestoneEligibleIdeasAsync(
-                    page, pageSize, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
+                var query = await _milestoneService.GetMilestoneEligibleIdeasQueryAsync(
+                    searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
+                var pagedIdeas = await query.ToPagedResultAsync(page, pageSize);
 
                 // Get lookup data for filters
                 var divisions = await _lookupService.GetDivisionsAsync();
@@ -122,7 +124,16 @@ namespace Ideku.Controllers
                 }
 
                 var milestones = await _milestoneService.GetMilestonesByIdeaIdAsync(ideaId);
-                var availablePICUsers = await _milestoneService.GetAvailablePICUsersAsync(ideaId);
+                var implementators = await _milestoneService.GetAvailablePICUsersAsync(ideaId);
+
+                // Map IdeaImplementator to DTO in Controller (presentation layer)
+                var availablePICUsers = implementators.Select(ii => new ImplementatorForPICDto
+                {
+                    Id = ii.User.Id,
+                    Name = ii.User.Name,
+                    Role = ii.Role,
+                    Employee = ii.User.Employee
+                }).ToList();
 
                 var viewModel = new MilestoneDetailViewModel
                 {
@@ -340,8 +351,9 @@ namespace Ideku.Controllers
                 page = Math.Max(1, page);
 
                 // Get milestone eligible ideas with filters
-                var pagedResult = await _milestoneService.GetMilestoneEligibleIdeasAsync(
-                    page, pageSize, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
+                var query = await _milestoneService.GetMilestoneEligibleIdeasQueryAsync(
+                    searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
+                var pagedResult = await query.ToPagedResultAsync(page, pageSize);
 
                 // Return JSON with paginated results
                 return Json(new
@@ -367,7 +379,7 @@ namespace Ideku.Controllers
                             role = impl.Role
                         }).ToList(),
                         submittedDate = i.SubmittedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        detailUrl = Url.Action("Detail", new { ideaId = i.Id })
+                        detailUrl = Url.Action("Details", new { ideaId = i.Id })
                     }),
                     pagination = new
                     {
@@ -426,11 +438,11 @@ namespace Ideku.Controllers
             try
             {
                 // Get base queryable (same as Index method)
-                var ideasQuery = await _milestoneService.GetMilestoneEligibleIdeasAsync(
-                    1, int.MaxValue, searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
+                var query = await _milestoneService.GetMilestoneEligibleIdeasQueryAsync(
+                    searchTerm, selectedDivision, selectedDepartment, selectedCategory, selectedStage, selectedStatus);
 
                 // Get all filtered results (no pagination)
-                var ideas = ideasQuery.Items.ToList();
+                var ideas = await query.ToListAsync();
 
                 // Get lookup data for filter summary display
                 var categoryName = "";
@@ -470,7 +482,7 @@ namespace Ideku.Controllers
                 var fileBytes = package.GetAsByteArray();
 
                 _logger.LogInformation("ExportMilestone completed - User: {Username}, File: {FileName}, TotalRecords: {Count}, Size: {Size} bytes",
-                    username, fileName, ideas.Count, fileBytes.Length);
+                    username, fileName, ideas.Count, fileBytes.Length.ToString());
 
                 return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
             }

@@ -74,5 +74,12 @@ namespace Ideku.Data.Repositories
         /// <param name="newPICs">New list of MilestonePIC entities</param>
         /// <returns>Updated MilestonePIC entities</returns>
         Task<IEnumerable<MilestonePIC>> UpdateMilestonePICsAsync(long milestoneId, IEnumerable<MilestonePIC> newPICs);
+
+        /// <summary>
+        /// Get idea with implementators for PIC selection (with all necessary includes)
+        /// </summary>
+        /// <param name="ideaId">Idea ID</param>
+        /// <returns>Idea with implementators, users, and employee data</returns>
+        Task<Idea?> GetIdeaWithImplementatorsAsync(long ideaId);
     }
 }

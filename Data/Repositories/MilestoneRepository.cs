@@ -133,5 +133,14 @@ namespace Ideku.Data.Repositories
             await _context.SaveChangesAsync();
             return pics;
         }
+
+        public async Task<Idea?> GetIdeaWithImplementatorsAsync(long ideaId)
+        {
+            return await GetIdeasWithMilestoneEligibility()
+                .Include(i => i.IdeaImplementators)
+                    .ThenInclude(ii => ii.User)
+                        .ThenInclude(u => u.Employee)
+                .FirstOrDefaultAsync(i => i.Id == ideaId);
+        }
     }
 }

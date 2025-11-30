@@ -1,7 +1,5 @@
 using Ideku.Data.Repositories;
 using Ideku.Data.Context;
-using Ideku.ViewModels;
-using Ideku.ViewModels.Common;
 using Ideku.Models.Entities;
 using Ideku.Models.Statistics;
 using Ideku.Services.WorkflowManagement;
@@ -109,9 +107,9 @@ namespace Ideku.Services.Idea
 
                 // Set workflow-related properties
                 idea.WorkflowId = applicableWorkflow.Id;
-                idea.CurrentStage = 1;
+                idea.CurrentStage = 0; // Stage 0 = belum masuk workflow, menunggu approval pertama
                 idea.MaxStage = maxStage;
-                idea.CurrentStatus = "Waiting for Approval";
+                idea.CurrentStatus = "Waiting Approval S1"; // Menunggu approval untuk masuk Stage 1
                 idea.SubmittedDate = DateTime.Now;
                 idea.IsDeleted = false;
                 idea.IsRejected = false;
@@ -247,6 +245,11 @@ namespace Ideku.Services.Idea
         public async Task<User?> GetUserByUsernameAsync(string username)
         {
             return await _userRepository.GetByUsernameAsync(username);
+        }
+
+        public async Task<User?> GetUserByEmployeeIdAsync(string employeeId)
+        {
+            return await _userRepository.GetByEmployeeIdAsync(employeeId);
         }
 
         #endregion
@@ -1008,9 +1011,7 @@ namespace Ideku.Services.Idea
             return ideas;
         }
 
-        public async Task<ViewModels.Common.PagedResult<IdeaListItemDto>> GetIdeasListPagedAsync(
-            int page,
-            int pageSize,
+        public async Task<IQueryable<IdeaListItemDto>> GetIdeasListQueryAsync(
             DateTime? startDate = null,
             DateTime? endDate = null,
             string? selectedDivision = null,
@@ -1105,8 +1106,7 @@ namespace Ideku.Services.Idea
                     IdeaTitle = i.IdeaName
                 });
 
-            var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
-            return pagedResult;
+            return await Task.FromResult(orderedQuery);
         }
 
         public async Task<List<int>> GetAvailableStagesAsync()
@@ -1246,9 +1246,7 @@ namespace Ideku.Services.Idea
             return teamRoleData;
         }
 
-        public async Task<PagedResult<TeamRoleItemDto>> GetTeamRoleListPagedAsync(
-            int page,
-            int pageSize,
+        public async Task<IQueryable<TeamRoleItemDto>> GetTeamRoleListQueryAsync(
             DateTime? startDate = null,
             DateTime? endDate = null,
             string? selectedDivision = null,
@@ -1345,8 +1343,7 @@ namespace Ideku.Services.Idea
                     IdeaCode = x.Idea.IdeaCode
                 });
 
-            var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
-            return pagedResult;
+            return await Task.FromResult(orderedQuery);
         }
 
         public async Task<List<ApprovalHistoryItemDto>> GetApprovalHistoryListAsync(
@@ -1455,8 +1452,7 @@ namespace Ideku.Services.Idea
             return await approvalHistoryQuery.ToListAsync();
         }
 
-        public async Task<PagedResult<ApprovalHistoryItemDto>> GetApprovalHistoryListPagedAsync(
-            int page, int pageSize,
+        public async Task<IQueryable<ApprovalHistoryItemDto>> GetApprovalHistoryListQueryAsync(
             DateTime? startDate = null, DateTime? endDate = null,
             string? selectedDivision = null, int? selectedStage = null,
             string? savingCostRange = null, string? initiatorName = null,
@@ -1559,8 +1555,7 @@ namespace Ideku.Services.Idea
                     ImplementedDepartment = x.Idea.TargetDepartment.NameDepartment
                 });
 
-            var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
-            return pagedResult;
+            return await Task.FromResult(orderedQuery);
         }
 
         public async Task<List<IdeaCostSavingDto>> GetIdeaCostSavingListAsync(
@@ -1658,9 +1653,7 @@ namespace Ideku.Services.Idea
             return costSavingData;
         }
 
-        public async Task<PagedResult<IdeaCostSavingDto>> GetIdeaCostSavingListPagedAsync(
-            int page,
-            int pageSize,
+        public async Task<IQueryable<IdeaCostSavingDto>> GetIdeaCostSavingListQueryAsync(
             DateTime? startDate = null,
             DateTime? endDate = null,
             string? selectedDivision = null,
@@ -1751,8 +1744,7 @@ namespace Ideku.Services.Idea
                                        (i.SavingCostValidated.Value >= 20000 ? "more_than_20" : "less_than_20")
                 });
 
-            var pagedResult = await orderedQuery.ToPagedResultAsync(page, pageSize);
-            return pagedResult;
+            return await Task.FromResult(orderedQuery);
         }
 
         public async Task<bool> IsIdeaNameExistsAsync(string ideaName, long? excludeIdeaId = null)

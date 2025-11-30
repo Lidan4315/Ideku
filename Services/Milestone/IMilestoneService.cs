@@ -1,26 +1,20 @@
 using Ideku.Models.Entities;
-using Ideku.ViewModels.Common;
-using Ideku.ViewModels.Milestone;
 
 namespace Ideku.Services.Milestone
 {
     public interface IMilestoneService
     {
         /// <summary>
-        /// Get paginated ideas that are eligible for milestone management (S2+)
+        /// Get queryable ideas that are eligible for milestone management (S2+)
         /// </summary>
-        /// <param name="page">Page number</param>
-        /// <param name="pageSize">Items per page</param>
         /// <param name="searchTerm">Search term for filtering</param>
         /// <param name="selectedDivision">Division filter</param>
         /// <param name="selectedDepartment">Department filter</param>
         /// <param name="selectedCategory">Category filter</param>
         /// <param name="selectedStage">Stage filter</param>
         /// <param name="selectedStatus">Status filter</param>
-        /// <returns>Paginated result of eligible ideas</returns>
-        Task<PagedResult<Models.Entities.Idea>> GetMilestoneEligibleIdeasAsync(
-            int page = 1,
-            int pageSize = 10,
+        /// <returns>Queryable of eligible ideas (Controller handles pagination)</returns>
+        Task<IQueryable<Models.Entities.Idea>> GetMilestoneEligibleIdeasQueryAsync(
             string? searchTerm = null,
             string? selectedDivision = null,
             string? selectedDepartment = null,
@@ -61,7 +55,7 @@ namespace Ideku.Services.Milestone
 
         Task<(bool Success, string Message)> DeleteMilestoneAsync(long milestoneId);
 
-        Task<IEnumerable<ImplementatorForPICDto>> GetAvailablePICUsersAsync(long ideaId);
+        Task<IEnumerable<IdeaImplementator>> GetAvailablePICUsersAsync(long ideaId);
 
         (bool IsValid, string Message) ValidateMilestoneDates(DateTime startDate, DateTime endDate);
     }

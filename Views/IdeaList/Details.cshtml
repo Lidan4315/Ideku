@@ -1,4 +1,4 @@
-@model Ideku.ViewModels.IdeaList.IdeaDetailViewModel
+@model Ideku.ViewModels.IdeaList.IdeaListDetailViewModel
 
 @{
     ViewData["Title"] = "Idea Details";
@@ -353,7 +353,7 @@
 </div>
 
 <!-- Edit & Delete Idea Modal -->
-@await Html.PartialAsync("_EditIdeaModal", Model)
+@await Html.PartialAsync("_EditIdeaModal", Model.Idea)
 
 @section Scripts {
 <script>
