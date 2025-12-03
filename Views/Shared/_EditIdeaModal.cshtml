@@ -108,10 +108,15 @@
                             <!-- Browse Files Button -->
                             <div class="file-upload-header">
                                 <button type="button" class="btn btn-outline-gray" onclick="document.getElementById('editNewAttachments').click()">
-                                    <i class="bi bi-folder2-open me-2"></i><span class="d-none d-md-inline">Browse</span><span class="d-inline d-md-none">Browse</span>
+                                    <i class="bi bi-folder2-open me-2"></i><span class="d-none d-md-inline">Browse Files</span><span class="d-inline d-md-none">Browse</span>
                                 </button>
-                                <small class="form-text text-muted ms-2 d-none d-md-inline">Select one or multiple files.</small><small class="form-text text-muted d-block d-md-none ms-2">Select one or multiple files.</small>
+                                <small class="form-text text-muted ms-2 d-none d-md-inline">Select one or multiple files. Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG</small>
                             </div>
+
+                            <!-- Mobile File Info (shown below button on mobile) -->
+                            <small class="form-text text-muted d-block d-md-none mt-2">
+                                Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG
+                            </small>
 
                             <!-- Selected Files List -->
                             <div id="editFilesList" class="files-list-container">
@@ -346,80 +351,120 @@ const editFileInput = $('#editNewAttachments');
 const editFilesList = $('#editFilesList');
 const editNoFilesMessage = $('#editNoFilesMessage');
 const editHiddenFileInputs = $('#editHiddenFileInputs');
-let editSelectedFiles = new DataTransfer();
+let editSelectedFiles = [];
+let editFileCounter = 0;
 
 editFileInput.on('change', function(e) {
     const files = Array.from(e.target.files);
 
     files.forEach(file => {
-        editSelectedFiles.items.add(file);
+        const fileObj = {
+            id: editFileCounter++,
+            file: file,
+            name: file.name,
+            size: file.size,
+            type: file.type
+        };
+
+        editSelectedFiles.push(fileObj);
+        addEditFileToList(fileObj);
+        createEditHiddenInput(fileObj);
     });
 
-    updateEditFilesList();
+    updateEditFilesDisplay();
     this.value = '';
 });
 
-function updateEditFilesList() {
-    editFilesList.empty();
-    editHiddenFileInputs.empty();
+function addEditFileToList(fileObj) {
+    const fileSize = formatEditFileSize(fileObj.size);
+    const fileIcon = getEditFileIcon(fileObj.name);
 
-    if (editSelectedFiles.files.length === 0) {
-        editNoFilesMessage.show();
-        return;
-    }
-
-    editNoFilesMessage.hide();
-
-    Array.from(editSelectedFiles.files).forEach((file, index) => {
-        const fileSize = (file.size / 1024).toFixed(2);
-        const fileExtension = file.name.split('.').pop().toUpperCase();
-
-        const fileItem = $(`
-            <div class="file-item">
-                <div class="file-info">
-                    <i class="bi bi-file-earmark-${getFileIcon(fileExtension)} me-2"></i>
-                    <div class="file-details">
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-meta">${fileSize} KB • ${fileExtension}</div>
-                    </div>
+    const fileItem = `
+        <div class="d-flex align-items-center justify-content-between p-2 border rounded mb-2 bg-white" id="editFile-${fileObj.id}">
+            <div class="d-flex align-items-center">
+                <i class="bi ${fileIcon} fs-4 me-3 text-primary"></i>
+                <div>
+                    <div class="fw-medium">${fileObj.name}</div>
+                    <small class="text-muted">${fileSize}</small>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${index}">
-                    <i class="bi bi-x"></i>
-                </button>
             </div>
-        `);
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeEditFile(${fileObj.id})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
 
-        editFilesList.append(fileItem);
-    });
+    $('#editFilesList').append(fileItem);
 }
 
-function getFileIcon(extension) {
-    const iconMap = {
-        'PDF': 'pdf',
-        'DOC': 'word', 'DOCX': 'word',
-        'XLS': 'excel', 'XLSX': 'excel',
-        'PPT': 'ppt', 'PPTX': 'ppt',
-        'JPG': 'image', 'JPEG': 'image', 'PNG': 'image'
+function removeEditFile(fileId) {
+    // Remove from array
+    editSelectedFiles = editSelectedFiles.filter(f => f.id !== fileId);
+
+    // Remove from UI
+    $(`#editFile-${fileId}`).remove();
+    $(`#editHiddenFile-${fileId}`).remove();
+
+    updateEditFilesDisplay();
+}
+
+function createEditHiddenInput(fileObj) {
+    const input = $(`<input type="file" name="NewAttachmentFiles" id="editHiddenFile-${fileObj.id}" style="display:none" />`);
+
+    // Create a DataTransfer object to set the file
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(fileObj.file);
+    input[0].files = dataTransfer.files;
+
+    $('#editHiddenFileInputs').append(input);
+}
+
+function updateEditFilesDisplay() {
+    const noFilesMsg = $('#editNoFilesMessage');
+
+    if (editSelectedFiles.length === 0) {
+        noFilesMsg.show();
+    } else {
+        noFilesMsg.hide();
+    }
+}
+
+function formatEditFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getEditFileIcon(filename) {
+    const ext = filename.toLowerCase().split('.').pop();
+    const icons = {
+        'pdf': 'bi-file-earmark-pdf',
+        'doc': 'bi-file-earmark-word',
+        'docx': 'bi-file-earmark-word',
+        'xls': 'bi-file-earmark-excel',
+        'xlsx': 'bi-file-earmark-excel',
+        'ppt': 'bi-file-earmark-ppt',
+        'pptx': 'bi-file-earmark-ppt',
+        'jpg': 'bi-file-earmark-image',
+        'jpeg': 'bi-file-earmark-image',
+        'png': 'bi-file-earmark-image',
+        'gif': 'bi-file-earmark-image'
     };
-    return iconMap[extension] || 'text';
+    return icons[ext] || 'bi-file-earmark';
 }
 
-editFilesList.on('click', '.remove-file', function() {
-    const index = $(this).data('index');
-    const dt = new DataTransfer();
-
-    Array.from(editSelectedFiles.files).forEach((file, i) => {
-        if (i !== index) dt.items.add(file);
-    });
-
-    editSelectedFiles = dt;
-    updateEditFilesList();
-});
+// Expose removeEditFile globally
+window.removeEditFile = removeEditFile;
 
 // Reset file upload when modal is closed
 $('#editIdeaModal').on('hidden.bs.modal', function() {
-    editSelectedFiles = new DataTransfer();
-    updateEditFilesList();
+    editSelectedFiles = [];
+    editFileCounter = 0;
+    $('#editFilesList').empty();
+    $('#editHiddenFileInputs').empty();
+    updateEditFilesDisplay();
 });
 
 // Check idea name uniqueness (debounced)
@@ -482,17 +527,15 @@ $('#editIdeaForm').on('submit', function(e) {
     formData.append('SavingCost', savingCostValue);
     formData.append('ExistingAttachments', ideaData.attachmentFiles || '');
 
-    // Add new files from editSelectedFiles (DataTransfer object)
-    // Don't use input element directly because it gets cleared
+    // Add new files from editSelectedFiles array
     console.log('Before adding to FormData - editSelectedFiles:', editSelectedFiles);
-    console.log('editSelectedFiles.files:', editSelectedFiles?.files);
-    console.log('editSelectedFiles.files.length:', editSelectedFiles?.files?.length);
+    console.log('editSelectedFiles.length:', editSelectedFiles.length);
 
-    if (editSelectedFiles && editSelectedFiles.files) {
-        for (let i = 0; i < editSelectedFiles.files.length; i++) {
-            formData.append('NewAttachmentFiles', editSelectedFiles.files[i]);
-        }
-        console.log('Added', editSelectedFiles.files.length, 'files to FormData');
+    if (editSelectedFiles && editSelectedFiles.length > 0) {
+        editSelectedFiles.forEach(fileObj => {
+            formData.append('NewAttachmentFiles', fileObj.file);
+        });
+        console.log('Added', editSelectedFiles.length, 'files to FormData');
     } else {
         console.log('No files selected');
     }
