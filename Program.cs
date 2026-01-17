@@ -105,7 +105,13 @@ builder.Services.AddScoped<Ideku.Services.IdeaMonitoring.IIdeaMonitoringService,
 builder.Services.AddScoped<Ideku.Services.AccessControl.IAccessControlService, Ideku.Services.AccessControl.AccessControlService>();
 builder.Services.AddScoped<Ideku.Services.FileAttachment.IFileAttachmentService, Ideku.Services.FileAttachment.FileAttachmentService>();
 
-// Register Background Services
+// Register Background Job Infrastructure (Singleton for application lifetime)
+builder.Services.AddSingleton<Ideku.Services.BackgroundServices.IBackgroundJobService, Ideku.Services.BackgroundServices.BackgroundJobService>();
+
+// Register Notification Coordinator (Scoped for DI resolution)
+builder.Services.AddScoped<Ideku.Services.Notification.INotificationCoordinatorService, Ideku.Services.Notification.NotificationCoordinatorService>();
+
+// Register Background Services (Hosted Services)
 builder.Services.AddHostedService<Ideku.Services.BackgroundServices.ActingRoleReversionService>();
 builder.Services.AddHostedService<Ideku.Services.BackgroundServices.IdeaInactiveMonitorService>();
 

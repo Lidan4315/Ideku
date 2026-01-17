@@ -86,7 +86,7 @@ namespace Ideku.Services.Notification
             }
         }
 
-        public async Task NotifyIdeaApproved(Models.Entities.Idea idea, User approver)
+        public async Task NotifyIdeaApproved(Models.Entities.Idea idea, User approver, List<User>? workstreamLeaders = null)
         {
             try
             {
@@ -98,17 +98,38 @@ namespace Ideku.Services.Notification
                     .OrderBy(wh => wh.Timestamp)
                     .ToListAsync();
 
+                var emailBody = GenerateIdeaApprovedEmailBody(idea, approver, workflowHistory);
+
                 // Notify initiator
                 var initiatorEmail = new EmailMessage
                 {
                     To = idea.InitiatorUser.Employee.EMAIL,
                     Subject = $"Ideku Approved {idea.IdeaName} | {idea.IdeaCode}",
-                    Body = GenerateIdeaApprovedEmailBody(idea, approver, workflowHistory),
+                    Body = emailBody,
                     IsHtml = true
                 };
 
                 await _emailService.SendEmailAsync(initiatorEmail);
-                _logger.LogInformation("Sent idea approval notification for Idea ID: {IdeaId}", idea.Id);
+                _logger.LogInformation("Sent idea approval notification to initiator for Idea ID: {IdeaId}", idea.Id);
+
+                // Notify workstream leaders if provided (CurrentStage >= S1)
+                if (workstreamLeaders != null && workstreamLeaders.Any())
+                {
+                    foreach (var wl in workstreamLeaders)
+                    {
+                        var wlEmail = new EmailMessage
+                        {
+                            To = wl.Employee.EMAIL,
+                            Subject = $"Ideku Approved {idea.IdeaName} | {idea.IdeaCode}",
+                            Body = emailBody,
+                            IsHtml = true
+                        };
+
+                        await _emailService.SendEmailAsync(wlEmail);
+                    }
+                    _logger.LogInformation("Sent idea approval notification to {WLCount} workstream leaders for Idea ID: {IdeaId}",
+                        workstreamLeaders.Count, idea.Id);
+                }
             }
             catch (Exception ex)
             {
@@ -116,7 +137,7 @@ namespace Ideku.Services.Notification
             }
         }
 
-        public async Task NotifyIdeaRejected(Models.Entities.Idea idea, User rejector, string reason)
+        public async Task NotifyIdeaRejected(Models.Entities.Idea idea, User rejector, string reason, List<User>? workstreamLeaders = null)
         {
             try
             {
@@ -128,17 +149,38 @@ namespace Ideku.Services.Notification
                     .OrderBy(wh => wh.Timestamp)
                     .ToListAsync();
 
+                var emailBody = GenerateIdeaRejectedEmailBody(idea, rejector, reason, workflowHistory);
+
                 // Notify initiator
                 var initiatorEmail = new EmailMessage
                 {
                     To = idea.InitiatorUser.Employee.EMAIL,
                     Subject = $"Ideku Rejected {idea.IdeaName} | {idea.IdeaCode}",
-                    Body = GenerateIdeaRejectedEmailBody(idea, rejector, reason, workflowHistory),
+                    Body = emailBody,
                     IsHtml = true
                 };
 
                 await _emailService.SendEmailAsync(initiatorEmail);
-                _logger.LogInformation("Sent idea rejection notification for Idea ID: {IdeaId}", idea.Id);
+                _logger.LogInformation("Sent idea rejection notification to initiator for Idea ID: {IdeaId}", idea.Id);
+
+                // Notify workstream leaders if provided (CurrentStage >= S1)
+                if (workstreamLeaders != null && workstreamLeaders.Any())
+                {
+                    foreach (var wl in workstreamLeaders)
+                    {
+                        var wlEmail = new EmailMessage
+                        {
+                            To = wl.Employee.EMAIL,
+                            Subject = $"Ideku Rejected {idea.IdeaName} | {idea.IdeaCode}",
+                            Body = emailBody,
+                            IsHtml = true
+                        };
+
+                        await _emailService.SendEmailAsync(wlEmail);
+                    }
+                    _logger.LogInformation("Sent idea rejection notification to {WLCount} workstream leaders for Idea ID: {IdeaId}",
+                        workstreamLeaders.Count, idea.Id);
+                }
             }
             catch (Exception ex)
             {

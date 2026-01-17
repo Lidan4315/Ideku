@@ -3,6 +3,7 @@ using Ideku.Services.Workflow;
 using Ideku.Services.IdeaRelation;
 using Ideku.Services.Idea;
 using Ideku.Services.ApprovalToken;
+using Ideku.Services.Notification;
 using Ideku.ViewModels.Approval;
 using Ideku.ViewModels.DTOs;
 using Ideku.Extensions;
@@ -27,7 +28,7 @@ namespace Ideku.Controllers
         private readonly IIdeaRelationService _ideaRelationService;
         private readonly IIdeaService _ideaService;
         private readonly IWebHostEnvironment _hostEnvironment;
-        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly INotificationCoordinatorService _notificationCoordinator;
         private readonly ILogger<ApprovalController> _logger;
         private readonly IApprovalTokenService _approvalTokenService;
         private readonly IIdeaRepository _ideaRepository;
@@ -40,7 +41,7 @@ namespace Ideku.Controllers
             IIdeaRelationService ideaRelationService,
             IIdeaService ideaService,
             IWebHostEnvironment hostEnvironment,
-            IServiceScopeFactory serviceScopeFactory,
+            INotificationCoordinatorService notificationCoordinator,
             ILogger<ApprovalController> logger,
             IApprovalTokenService approvalTokenService,
             IIdeaRepository ideaRepository)
@@ -52,7 +53,7 @@ namespace Ideku.Controllers
             _ideaRelationService = ideaRelationService;
             _ideaService = ideaService;
             _hostEnvironment = hostEnvironment;
-            _serviceScopeFactory = serviceScopeFactory;
+            _notificationCoordinator = notificationCoordinator;
             _logger = logger;
             _approvalTokenService = approvalTokenService;
             _ideaRepository = ideaRepository;
@@ -405,7 +406,7 @@ namespace Ideku.Controllers
                     if (result.IsSuccess)
                     {
                         // Send email notifications in background (non-blocking)
-                        SendApprovalEmailInBackground(approvalData);
+                        _notificationCoordinator.NotifyApprovalInBackground(approvalData);
 
                         TempData["SuccessMessage"] = result.SuccessMessage;
                         return RedirectToAction(nameof(Index));
@@ -470,7 +471,7 @@ namespace Ideku.Controllers
                 await _workflowService.ProcessRejectionDatabaseAsync((long)id, username, rejectionReason);
 
                 // Send rejection notification in background (non-blocking)
-                SendRejectionEmailInBackground((long)id, username, rejectionReason);
+                _notificationCoordinator.NotifyRejectionInBackground((long)id, username, rejectionReason);
 
                 TempData["SuccessMessage"] = "Idea has been successfully rejected!";
                 return RedirectToAction(nameof(Index));
@@ -507,7 +508,7 @@ namespace Ideku.Controllers
                 await _workflowService.ProcessFeedbackAsync((long)id, username, feedbackComment);
 
                 // Send feedback notification in background (non-blocking)
-                SendFeedbackEmailInBackground((long)id, username, feedbackComment);
+                _notificationCoordinator.NotifyFeedbackInBackground((long)id, username, feedbackComment);
 
                 TempData["SuccessMessage"] = "Feedback has been successfully sent!";
                 return RedirectToAction(nameof(Index));
@@ -548,72 +549,6 @@ namespace Ideku.Controllers
             ModelState.Remove("Idea");
             ModelState.Remove("RejectionReason");
             ModelState.Remove("FeedbackComment");
-        }
-
-        private void SendApprovalEmailInBackground(ApprovalProcessDto approvalData)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    _logger.LogInformation("Starting background approval email process for idea {IdeaId}", approvalData.IdeaId);
-
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
-
-                    await workflowService.SendApprovalNotificationsAsync(approvalData);
-                    
-                    _logger.LogInformation("Background approval email sent successfully for idea {IdeaId}", approvalData.IdeaId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send background approval email for idea {IdeaId}", approvalData.IdeaId);
-                }
-            });
-        }
-
-        private void SendRejectionEmailInBackground(long ideaId, string username, string reason)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    _logger.LogInformation("Starting background rejection email process for idea {IdeaId}", ideaId);
-
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
-
-                    await workflowService.SendRejectionNotificationAsync(ideaId, username, reason);
-
-                    _logger.LogInformation("Background rejection email sent successfully for idea {IdeaId}", ideaId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send background rejection email for idea {IdeaId}", ideaId);
-                }
-            });
-        }
-
-        private void SendFeedbackEmailInBackground(long ideaId, string username, string feedbackComment)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    _logger.LogInformation("Starting background feedback email process for idea {IdeaId}", ideaId);
-
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
-
-                    await workflowService.SendFeedbackNotificationsAsync(ideaId, username, feedbackComment);
-
-                    _logger.LogInformation("Background feedback email sent successfully for idea {IdeaId}", ideaId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send background feedback email for idea {IdeaId}", ideaId);
-                }
-            });
         }
 
         [HttpGet]
@@ -679,7 +614,7 @@ namespace Ideku.Controllers
 
                 if (result.IsSuccess)
                 {
-                    SendApprovalEmailInBackground(approvalData);
+                    _notificationCoordinator.NotifyApprovalInBackground(approvalData);
                     TempData["SuccessMessage"] = $"Idea {idea.IdeaCode} - {idea.IdeaName} has been successfully approved via email!";
                     return RedirectToAction(nameof(Index));
                 }
@@ -749,7 +684,7 @@ namespace Ideku.Controllers
 
                 await _workflowService.ProcessRejectionDatabaseAsync(idea.Id, rejector.Username, "Rejected via email");
 
-                SendRejectionEmailInBackground(idea.Id, rejector.Username, "Rejected via email");
+                _notificationCoordinator.NotifyRejectionInBackground(idea.Id, rejector.Username, "Rejected via email");
 
                 TempData["SuccessMessage"] = $"Idea {idea.IdeaCode} - {idea.IdeaName} has been successfully rejected via email!";
                 return RedirectToAction(nameof(Index));

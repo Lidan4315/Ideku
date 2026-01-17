@@ -65,37 +65,18 @@
         ViewData["CanEditCostSavings"] = Model.CanEditCostSavings;
         ViewData["CanValidateCostSavings"] = Model.CanValidateCostSavings;
     }
-    @await Html.PartialAsync("_MonitoringTables", Model.Monitorings)
 
-    @if (!Model.HasMonitoring)
+    @if (!Model.HasMonitoring && Model.CanEditCostSavings)
     {
-        <!-- Action Buttons Row for Empty State -->
-        @if (Model.CanEditCostSavings)
-        {
-            <div class="d-flex gap-2 mb-4 justify-content-end">
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createMonitoringModal">
-                    <i class="bi bi-plus-circle me-2"></i>Add Monitoring
-                </button>
-            </div>
-        }
-
-        <!-- Empty State -->
-        <div class="card mb-5">
-            <div class="card-body">
-                <div class="empty-state">
-                    <i class="bi bi-display"></i>
-                    <h4 class="mt-3">No Monitoring Record Yet</h4>
-                    <p class="text-muted">Start tracking cost savings for this idea by adding a monitoring record.</p>
-                    @if (!Model.CanEditCostSavings)
-                    {
-                        <p class="text-muted mt-3">
-                            <i class="bi bi-info-circle me-1"></i>Only the idea team or workstream leader can add monitoring records.
-                        </p>
-                    }
-                </div>
-            </div>
+        <!-- Action Button for Empty State -->
+        <div class="d-flex gap-2 mb-4 justify-content-end">
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createMonitoringModal">
+                <i class="bi bi-plus-circle me-2"></i>Add Monitoring
+            </button>
         </div>
     }
+
+    @await Html.PartialAsync("_MonitoringTables", Model.Monitorings)
 
     <!-- Supporting Documents Section -->
     <div class="card shadow mb-4">

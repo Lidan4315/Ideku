@@ -1997,60 +1997,6 @@ namespace Ideku.Services.Idea
             }
         }
 
-        /// <summary>
-        /// Send reactivation email notification to approvers (called by background job)
-        /// </summary>
-        public async Task SendReactivationEmailAsync(long ideaId)
-        {
-            try
-            {
-                var idea = await _context.Ideas
-                    .Include(i => i.Workflow)
-                    .Include(i => i.InitiatorUser)
-                        .ThenInclude(u => u.Employee)
-                    .Include(i => i.TargetDivision)
-                    .Include(i => i.TargetDepartment)
-                    .Include(i => i.Category)
-                    .FirstOrDefaultAsync(i => i.Id == ideaId);
-
-                if (idea == null)
-                {
-                    _logger.LogWarning("Cannot send reactivation email: Idea {IdeaId} not found", ideaId);
-                    return;
-                }
-
-                // Get approvers for current stage
-                var approvers = await _workflowService.GetApproversForNextStageAsync(idea);
-
-                if (!approvers.Any())
-                {
-                    _logger.LogWarning("No approvers found for reactivated idea {IdeaId} at stage {Stage}",
-                        ideaId, idea.CurrentStage + 1);
-                    return;
-                }
-
-                // Send email notification
-                try
-                {
-                    await _notificationService.NotifyIdeaSubmitted(idea, approvers);
-
-                    _logger.LogInformation(
-                        "Reactivation notification sent for idea {IdeaId} to {ApproverCount} approvers at stage {Stage}",
-                        ideaId, approvers.Count, idea.CurrentStage + 1
-                    );
-                }
-                catch (Exception emailEx)
-                {
-                    _logger.LogError(emailEx, "Failed to send reactivation email for idea {IdeaId}", ideaId);
-                    // Don't fail just because email failed
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending reactivation email for idea {IdeaId}", ideaId);
-            }
-        }
-
         #endregion
 
         #region Rejected Management
@@ -2184,60 +2130,6 @@ namespace Ideku.Services.Idea
             {
                 _logger.LogError(ex, "Error reactivating rejected idea {IdeaId}", ideaId);
                 return (false, $"Error reactivating idea: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Send reactivation email notification to approvers for rejected idea (called by background job)
-        /// </summary>
-        public async Task SendReactivateRejectedEmailAsync(long ideaId)
-        {
-            try
-            {
-                var idea = await _context.Ideas
-                    .Include(i => i.Workflow)
-                    .Include(i => i.InitiatorUser)
-                        .ThenInclude(u => u.Employee)
-                    .Include(i => i.TargetDivision)
-                    .Include(i => i.TargetDepartment)
-                    .Include(i => i.Category)
-                    .FirstOrDefaultAsync(i => i.Id == ideaId);
-
-                if (idea == null)
-                {
-                    _logger.LogWarning("Cannot send reactivation email: Idea {IdeaId} not found", ideaId);
-                    return;
-                }
-
-                // Get approvers for current stage
-                var approvers = await _workflowService.GetApproversForNextStageAsync(idea);
-
-                if (!approvers.Any())
-                {
-                    _logger.LogWarning("No approvers found for reactivated rejected idea {IdeaId} at stage {Stage}",
-                        ideaId, idea.CurrentStage + 1);
-                    return;
-                }
-
-                // Send email notification
-                try
-                {
-                    await _notificationService.NotifyIdeaSubmitted(idea, approvers);
-
-                    _logger.LogInformation(
-                        "Reactivation notification sent for rejected idea {IdeaId} to {ApproverCount} approvers at stage {Stage}",
-                        ideaId, approvers.Count, idea.CurrentStage + 1
-                    );
-                }
-                catch (Exception emailEx)
-                {
-                    _logger.LogError(emailEx, "Failed to send reactivation email for rejected idea {IdeaId}", ideaId);
-                    // Don't fail just because email failed
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending reactivation email for rejected idea {IdeaId}", ideaId);
             }
         }
 
