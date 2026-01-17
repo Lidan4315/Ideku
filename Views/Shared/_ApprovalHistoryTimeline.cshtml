@@ -1,9 +1,5 @@
 @model IEnumerable<Ideku.Models.Entities.WorkflowHistory>
 
-@{
-    // This partial accepts a collection of WorkflowHistory and displays it as a timeline
-}
-
 @if (Model != null && Model.Any())
 {
     @foreach (var history in Model)
