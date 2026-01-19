@@ -12,6 +12,7 @@ using Ideku.Helpers;
 using Ideku.Services.Lookup;
 using Ideku.Services.Milestone;
 using Ideku.Services.IdeaMonitoring;
+using Ideku.Services.Notification;
 
 namespace Ideku.Controllers
 {
@@ -22,9 +23,9 @@ namespace Ideku.Controllers
         private readonly IWorkflowService _workflowService;
         private readonly ILookupService _lookupService;
         private readonly IIdeaImplementatorService _implementatorService;
-        private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly IMilestoneService _milestoneService;
         private readonly IIdeaMonitoringService _monitoringService;
+        private readonly INotificationCoordinatorService _notificationCoordinator;
         private readonly ILogger<IdeaController> _logger;
 
         public IdeaController(
@@ -34,7 +35,7 @@ namespace Ideku.Controllers
             IIdeaImplementatorService implementatorService,
             IMilestoneService milestoneService,
             IIdeaMonitoringService monitoringService,
-            IServiceScopeFactory serviceScopeFactory,
+            INotificationCoordinatorService notificationCoordinator,
             ILogger<IdeaController> logger)
         {
             _ideaService = ideaService;
@@ -43,8 +44,7 @@ namespace Ideku.Controllers
             _milestoneService = milestoneService;
             _implementatorService = implementatorService;
             _monitoringService = monitoringService;
-            _serviceScopeFactory = serviceScopeFactory;
-
+            _notificationCoordinator = notificationCoordinator;
             _logger = logger;
         }
 
@@ -148,8 +148,8 @@ namespace Ideku.Controllers
                     _logger.LogInformation("Idea {IdeaId} - {IdeaName} created successfully by user {Username}",
                         result.CreatedIdea.Id, result.CreatedIdea.IdeaName, User.Identity?.Name);
 
-                    // Send notification emails in background
-                    SendEmailInBackground(result.CreatedIdea);
+                    // Send notification emails to next stage approvers in background
+                    _notificationCoordinator.NotifyNextStageApproversInBackground(result.CreatedIdea.Id);
 
                     return Json(new {
                         success = true,
@@ -175,36 +175,6 @@ namespace Ideku.Controllers
                 success = false,
                 message = "Please check your input",
                 errors = errors
-            });
-        }
-
-        /// Helper method to send emails in background with proper scope management
-        private void SendEmailInBackground(Models.Entities.Idea idea)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    _logger.LogInformation("Starting background email process for idea {IdeaId} - {IdeaName}", 
-                        idea.Id, idea.IdeaName);
-
-                    // Create new scope for background task
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
-                    
-                    // Send notification emails
-                    await workflowService.InitiateWorkflowAsync(idea);
-                    
-                    _logger.LogInformation("Background email sent successfully for idea {IdeaId}", idea.Id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send background email for idea {IdeaId}: {ErrorMessage}", 
-                        idea.Id, ex.Message);
-                    
-                    // Future: Could add retry mechanism or admin notification
-                    // await _retryService.AddToRetryQueueAsync(idea.Id);
-                }
             });
         }
 

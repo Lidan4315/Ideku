@@ -53,7 +53,9 @@
         <p class="access-denied-text">You don't have permission to access this resource.</p>
         <div class="btn-container">
             <a asp-action="Index" asp-controller="Home" class="btn btn-primary">Go Home</a>
-            <a asp-action="Login" asp-controller="Auth" class="btn btn-light">Logout</a>
+            <form asp-action="Logout" asp-controller="Auth" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-light">Logout</button>
+            </form>
         </div>
     </div>
 </body>

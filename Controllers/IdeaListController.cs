@@ -30,8 +30,8 @@ namespace Ideku.Controllers
         private readonly ILookupService _lookupService;
         private readonly IIdeaRelationService _ideaRelationService;
         private readonly IIdeaImplementatorService _implementatorService;
+        private readonly INotificationCoordinatorService _notificationCoordinator;
         private readonly ILogger<IdeaListController> _logger;
-        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public IdeaListController(
             IIdeaService ideaService,
@@ -39,16 +39,16 @@ namespace Ideku.Controllers
             ILookupService lookupService,
             IIdeaRelationService ideaRelationService,
             IIdeaImplementatorService implementatorService,
-            ILogger<IdeaListController> logger,
-            IServiceScopeFactory serviceScopeFactory)
+            INotificationCoordinatorService notificationCoordinator,
+            ILogger<IdeaListController> logger)
         {
             _ideaService = ideaService;
             _userRepository = userRepository;
             _lookupService = lookupService;
             _ideaRelationService = ideaRelationService;
             _implementatorService = implementatorService;
+            _notificationCoordinator = notificationCoordinator;
             _logger = logger;
-            _serviceScopeFactory = serviceScopeFactory;
         }
 
         // GET: /IdeaList or /IdeaList/Index
@@ -407,8 +407,8 @@ namespace Ideku.Controllers
 
                 if (result.Success)
                 {
-                    // Send email notifications in background (non-blocking)
-                    SendTeamAssignmentEmailInBackground(request.IdeaId);
+                    // Send notification emails to next stage approvers in background
+                    _notificationCoordinator.NotifyNextStageApproversInBackground(request.IdeaId);
 
                     _logger.LogInformation("Successfully assigned {Count} implementators to idea {IdeaId} by {Username}",
                         implementators.Count, request.IdeaId, User.Identity!.Name);
@@ -468,55 +468,6 @@ namespace Ideku.Controllers
             return property?.GetValue(user);
         }
 
-        // Send email notification in background after team assignment
-        private void SendTeamAssignmentEmailInBackground(long ideaId)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    _logger.LogInformation("Starting background team assignment email process for idea {IdeaId}", ideaId);
-
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var workflowService = scope.ServiceProvider.GetRequiredService<IWorkflowService>();
-                    var ideaRepository = scope.ServiceProvider.GetRequiredService<IIdeaRepository>();
-
-                    var idea = await ideaRepository.GetByIdAsync(ideaId);
-                    if (idea == null)
-                    {
-                        _logger.LogError("Idea {IdeaId} not found in background email task", ideaId);
-                        return;
-                    }
-
-                    // Send email if status is "Waiting Approval S2" at Stage 1
-                    // This covers: team assigned at S0 then approved to S1, OR team assigned directly at S1
-                    if (idea.CurrentStage == 1 && idea.CurrentStatus == "Waiting Approval S2")
-                    {
-                        var approvers = await workflowService.GetApproversForNextStageAsync(idea);
-                        if (!approvers.Any())
-                        {
-                            _logger.LogWarning("No approvers found for idea {IdeaId} in background email task", ideaId);
-                            return;
-                        }
-
-                        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-                        await notificationService.NotifyIdeaSubmitted(idea, approvers);
-
-                        _logger.LogInformation("Background team assignment email sent successfully for idea {IdeaId} to {ApproverCount} approvers",
-                            ideaId, approvers.Count);
-                    }
-                    else
-                    {
-                        _logger.LogInformation("No email sent for idea {IdeaId} - Stage: {Stage}, Status: {Status}",
-                            ideaId, idea.CurrentStage, idea.CurrentStatus);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send background team assignment email for idea {IdeaId}", ideaId);
-                }
-            });
-        }
 
         // Export IdeaList to Excel
         [HttpGet]
@@ -788,8 +739,8 @@ namespace Ideku.Controllers
 
                 if (result.Success)
                 {
-                    // Send email notifications in background (non-blocking)
-                    SendReactivationEmailInBackground(ideaId);
+                    // Send notification emails to next stage approvers in background
+                    _notificationCoordinator.NotifyNextStageApproversInBackground(ideaId);
 
                     TempData["SuccessMessage"] = result.Message;
                     _logger.LogInformation("Idea {IdeaId} reactivated by {Username}", ideaId, username);
@@ -808,28 +759,6 @@ namespace Ideku.Controllers
                 TempData["ErrorMessage"] = $"Error: {ex.Message}";
                 return RedirectToAction("Details", new { id = ideaId });
             }
-        }
-
-        private void SendReactivationEmailInBackground(long ideaId)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    _logger.LogInformation("Starting background reactivation email process for idea {IdeaId}", ideaId);
-
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var ideaService = scope.ServiceProvider.GetRequiredService<IIdeaService>();
-
-                    await ideaService.SendReactivationEmailAsync(ideaId);
-
-                    _logger.LogInformation("Background reactivation email sent successfully for idea {IdeaId}", ideaId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send background reactivation email for idea {IdeaId}", ideaId);
-                }
-            });
         }
 
         /// <summary>
@@ -857,8 +786,8 @@ namespace Ideku.Controllers
 
                 if (result.Success)
                 {
-                    // Send email notifications in background (non-blocking)
-                    SendReactivateRejectedEmailInBackground(ideaId);
+                    // Send notification emails to next stage approvers in background
+                    _notificationCoordinator.NotifyNextStageApproversInBackground(ideaId);
 
                     TempData["SuccessMessage"] = result.Message;
                     _logger.LogInformation("Rejected idea {IdeaId} reactivated by {Username}", ideaId, username);
@@ -877,28 +806,6 @@ namespace Ideku.Controllers
                 TempData["ErrorMessage"] = $"Error: {ex.Message}";
                 return RedirectToAction("Details", new { id = ideaId });
             }
-        }
-
-        private void SendReactivateRejectedEmailInBackground(long ideaId)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    _logger.LogInformation("Starting background reactivation email process for rejected idea {IdeaId}", ideaId);
-
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    var ideaService = scope.ServiceProvider.GetRequiredService<IIdeaService>();
-
-                    await ideaService.SendReactivateRejectedEmailAsync(ideaId);
-
-                    _logger.LogInformation("Background reactivation email sent successfully for rejected idea {IdeaId}", ideaId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send background reactivation email for rejected idea {IdeaId}", ideaId);
-                }
-            });
         }
 
     }

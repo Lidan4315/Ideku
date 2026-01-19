@@ -632,22 +632,29 @@ namespace Ideku.Services.Workflow
 
                 if (user == null || idea == null) return;
 
-                // Send approval notification to initiator
-                await _notificationService.NotifyIdeaApproved(idea, user);
-                _logger.LogInformation("Approval confirmation email sent to initiator {InitiatorEmail} for Idea {IdeaId}",
-                    idea.InitiatorUser.Employee.EMAIL, approvalData.IdeaId);
+                // Get Workstream Leaders only if idea is at Stage 2 or higher (not S0->S1)
+                var workstreamLeaders = new List<Models.Entities.User>();
+                if (idea.CurrentStage > 1)
+                {
+                    workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
+                }
+
+                // Send approval notification to initiator (and workstream leaders if S2+)
+                await _notificationService.NotifyIdeaApproved(idea, user, workstreamLeaders);
+                _logger.LogInformation("Approval confirmation email sent to initiator {InitiatorEmail} and {WLCount} workstream leaders in department {DepartmentId} for Idea {IdeaId}",
+                    idea.InitiatorUser.Employee.EMAIL, workstreamLeaders.Count, idea.ToDepartmentId, approvalData.IdeaId);
 
                 // Check if idea just reached Stage 2
                 if (idea.CurrentStage == 2 && idea.CurrentStatus != "Completed")
                 {
                     // Send email to Workstream Leaders in the idea's target department
-                    var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
+                    var milestoneWorkstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
 
-                    if (workstreamLeaders.Any())
+                    if (milestoneWorkstreamLeaders.Any())
                     {
-                        await _notificationService.NotifyMilestoneCreationRequiredAsync(idea, workstreamLeaders);
+                        await _notificationService.NotifyMilestoneCreationRequiredAsync(idea, milestoneWorkstreamLeaders);
                         _logger.LogInformation("Milestone creation required email sent for Idea {IdeaId} to {WorkstreamLeaderCount} workstream leaders in department {DepartmentId}",
-                            approvalData.IdeaId, workstreamLeaders.Count, idea.ToDepartmentId);
+                            approvalData.IdeaId, milestoneWorkstreamLeaders.Count, idea.ToDepartmentId);
                     }
                     else
                     {
@@ -740,9 +747,16 @@ namespace Ideku.Services.Workflow
 
                 if (user == null || idea == null) return;
 
-                await _notificationService.NotifyIdeaRejected(idea, user, reason);
-                _logger.LogInformation("Rejection notification email sent to initiator {InitiatorEmail} for Idea {IdeaId}", 
-                    idea.InitiatorUser.Employee.EMAIL, ideaId);
+                // Get Workstream Leaders only if idea is at Stage 2 or higher (not rejection at S0 or S1)
+                var workstreamLeaders = new List<Models.Entities.User>();
+                if (idea.CurrentStage > 1)
+                {
+                    workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
+                }
+
+                await _notificationService.NotifyIdeaRejected(idea, user, reason, workstreamLeaders);
+                _logger.LogInformation("Rejection notification email sent to initiator {InitiatorEmail} and {WLCount} workstream leaders in department {DepartmentId} for Idea {IdeaId}",
+                    idea.InitiatorUser.Employee.EMAIL, workstreamLeaders.Count, idea.ToDepartmentId, ideaId);
             }
             catch (Exception ex)
             {
@@ -791,15 +805,18 @@ namespace Ideku.Services.Workflow
 
                 if (user == null || idea == null) return;
 
-                // Get Workstream Leaders in the idea's division (same as Related Divisions logic)
-                var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDivisionsAsync(
-                    new List<string> { idea.ToDivisionId });
+                // Get Workstream Leaders only if idea is at Stage 2 or higher (consistent with approval/rejection)
+                var workstreamLeaders = new List<Models.Entities.User>();
+                if (idea.CurrentStage > 1)
+                {
+                    workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
+                }
 
                 // Send email notifications
                 await _notificationService.NotifyFeedbackSent(idea, user, feedbackComment, workstreamLeaders);
 
-                _logger.LogInformation("Feedback notification emails sent for Idea {IdeaId} to initiator and {WLCount} workstream leaders",
-                    ideaId, workstreamLeaders.Count);
+                _logger.LogInformation("Feedback notification emails sent for Idea {IdeaId} to initiator and {WLCount} workstream leaders in department {DepartmentId}",
+                    ideaId, workstreamLeaders.Count, idea.ToDepartmentId);
             }
             catch (Exception ex)
             {
