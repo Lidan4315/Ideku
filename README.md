@@ -19,14 +19,34 @@ Salin dan tempel (copy-paste) kode JSON di bawah ini ke dalam file `appsettings.
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=YourServerName;Database=YourDatabaseName;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true"
+    "DefaultConnection": "Server={YourServerName};Database={YourDatabaseName};Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true"
   },
   "EmailSettings": {
     "SmtpServer": "smtp.gmail.com",
     "SmtpPort": 587,
-    "SenderEmail": "your-email@gmail.com",
-    "SenderPassword": "your-app-password",
-    "SenderName": "Ideku System"
+    "SenderEmail": "{your-email}",
+    "SenderPassword": "{your-app-password}",
+    "SenderName": "Ideku System",
+    "BaseUrl": "http://localhost:5035"
+  },
+  "ApprovalTokenSettings": {
+    "EncryptionKey": "{your enctyption code}"
+  },
+  "FileUploadSettings": {
+    "MaxFileSizeMB": {fill as needed},
+    "MaxTotalFileSizeMB": {fill as needed},
+    "AllowedExtensions": [
+      ".pdf",
+      ".doc",
+      ".docx",
+      ".xls",
+      ".xlsx",
+      ".ppt",
+      ".pptx",
+      ".jpg",
+      ".jpeg",
+      ".png"
+    ]
   },
   "Logging": {
     "LogLevel": {
