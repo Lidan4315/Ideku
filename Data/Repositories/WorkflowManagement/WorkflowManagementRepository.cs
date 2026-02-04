@@ -243,14 +243,20 @@ namespace Ideku.Data.Repositories.WorkflowManagement
                     .Where(u => u.RoleId == approverRole.RoleId && u.Employee.EMP_STATUS == "Active")
                     .ToListAsync();
 
-                // Filter by effective location using domain logic (exclusive acting approach)
+                // Filter berdasarkan lokasi efektif (divisi dan department)
                 var filteredUsers = usersWithRole.Where(u =>
                 {
-                    // Check division match if specified
+                    // Pengecualian: COO, SCFO, CEO tidak difilter berdasarkan divisi/department
+                    var roleName = u.Role?.RoleName ?? "";
+                    if (roleName == "COO" || roleName == "SCFO" || roleName == "CEO" ||
+                        roleName == "COO Act." || roleName == "SCFO Act." || roleName == "CEO Act." || roleName == "GM BPID")
+                        return true;
+
+                    // Cek kecocokan divisi jika ditentukan
                     if (!string.IsNullOrEmpty(targetDivisionId) && LocationHelper.GetEffectiveDivisionId(u) != targetDivisionId)
                         return false;
 
-                    // Check department match if specified
+                    // Cek kecocokan department jika ditentukan
                     if (!string.IsNullOrEmpty(targetDepartmentId) && LocationHelper.GetEffectiveDepartmentId(u) != targetDepartmentId)
                         return false;
 

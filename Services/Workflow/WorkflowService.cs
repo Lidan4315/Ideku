@@ -219,6 +219,15 @@ namespace Ideku.Services.Workflow
                 var userDivisionId = Helpers.LocationHelper.GetEffectiveDivisionId(user);
                 var userDepartmentId = Helpers.LocationHelper.GetEffectiveDepartmentId(user);
 
+                // Pengecualian: COO, SCFO, CEO dapat melihat dan approve idea dari semua divisi/department
+                var roleName = user.Role.RoleName;
+                if (roleName == "COO" || roleName == "SCFO" || roleName == "CEO" ||
+                    roleName == "COO Act." || roleName == "SCFO Act." || roleName == "CEO Act." || roleName == "GM BPID")
+                {
+                    userDivisionId = "";
+                    userDepartmentId = "";
+                }
+
                 // Step 3: Build SQL-compatible WHERE clause using Contains
                 // Extract workflow IDs and stages for SQL translation
                 var workflowIds = approverStagesList.Select(s => s.WorkflowId).Distinct().ToList();
