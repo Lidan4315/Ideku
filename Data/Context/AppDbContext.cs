@@ -194,11 +194,12 @@ namespace Ideku.Data.Context
 
             // =================== IDEA RELATIONSHIPS ===================
 
-            // Idea-User relationship (Initiator)
+            // Idea-User relationship (Initiator) - FK to EmployeeId instead of Id
             modelBuilder.Entity<Idea>()
                 .HasOne(i => i.InitiatorUser)
                 .WithMany(u => u.InitiatedIdeas)
                 .HasForeignKey(i => i.InitiatorUserId)
+                .HasPrincipalKey(u => u.EmployeeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Idea-Division relationship (CORRECTED)

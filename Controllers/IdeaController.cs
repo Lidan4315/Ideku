@@ -70,7 +70,7 @@ namespace Ideku.Controllers
                 // Controller populates ViewModel (presentation concern)
                 var viewModel = new CreateIdeaViewModel
                 {
-                    InitiatorUserId = user.Id, // Fallback if badge lookup fails
+                    InitiatorUserId = user.EmployeeId, // Changed: Use EmployeeId (badge number)
                     BadgeNumber = "",
                     EmployeeName = "",
                     Position = "",
@@ -129,7 +129,7 @@ namespace Ideku.Controllers
                 // Controller maps ViewModel → Entity
                 var idea = new Models.Entities.Idea
                 {
-                    InitiatorUserId = initiatorUser.Id,
+                    InitiatorUserId = initiatorUser.EmployeeId, // Changed: FK to EmployeeId (badge number)
                     ToDivisionId = model.ToDivisionId,
                     ToDepartmentId = model.ToDepartmentId,
                     CategoryId = model.CategoryId,

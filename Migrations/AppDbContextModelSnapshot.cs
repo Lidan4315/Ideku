@@ -340,8 +340,10 @@ namespace Ideku.Migrations
                         .HasColumnType("nvarchar(2000)")
                         .HasColumnName("IdeaSolution");
 
-                    b.Property<long>("InitiatorUserId")
-                        .HasColumnType("bigint")
+                    b.Property<string>("InitiatorUserId")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
                         .HasColumnName("InitiatorUserId");
 
                     b.Property<bool>("IsDeleted")
@@ -1143,6 +1145,7 @@ namespace Ideku.Migrations
                     b.HasOne("Ideku.Models.Entities.User", "InitiatorUser")
                         .WithMany("InitiatedIdeas")
                         .HasForeignKey("InitiatorUserId")
+                        .HasPrincipalKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

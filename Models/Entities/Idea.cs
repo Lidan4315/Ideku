@@ -13,7 +13,8 @@ namespace Ideku.Models.Entities
 
         [Required]
         [Column("InitiatorUserId")]
-        public long InitiatorUserId { get; set; }
+        [StringLength(10)]
+        public string InitiatorUserId { get; set; } = string.Empty;
 
         [ForeignKey("InitiatorUserId")]
         public User InitiatorUser { get; set; } = null!;

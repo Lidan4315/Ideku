@@ -6,7 +6,7 @@ namespace Ideku.Data.Repositories
     {
         Task<Idea> CreateAsync(Idea idea);
         Task<Idea?> GetByIdAsync(long id);
-        Task<IEnumerable<Idea>> GetByInitiatorAsync(long initiatorUserId);
+        Task<IEnumerable<Idea>> GetByInitiatorAsync(string initiatorUserId); // Changed: string parameter
         Task<string> GenerateIdeaCodeAsync();
         Task<bool> IsIdeaCodeExistAsync(string ideaCode);
         string GenerateIdeaCodeFromId(long ideaId);

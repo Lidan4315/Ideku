@@ -34,7 +34,7 @@ namespace Ideku.Data.Repositories
                 .FirstOrDefaultAsync(i => i.Id == id);
         }
 
-        public async Task<IEnumerable<Idea>> GetByInitiatorAsync(long initiatorUserId)
+        public async Task<IEnumerable<Idea>> GetByInitiatorAsync(string initiatorUserId) // Changed: string parameter
         {
             return await _context.Ideas
                 .Include(i => i.TargetDivision)

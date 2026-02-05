@@ -173,8 +173,12 @@ namespace Ideku.Data.Repositories
         /// Checks Ideas, WorkflowHistory, and Milestones
         public async Task<int> GetUserDependenciesCountAsync(long userId)
         {
+            // Get user's EmployeeId first
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return 0;
+
             var ideasCount = await _context.Ideas
-                .CountAsync(i => i.InitiatorUserId == userId);
+                .CountAsync(i => i.InitiatorUserId == user.EmployeeId); // Changed: compare with EmployeeId
 
             var workflowHistoryCount = await _context.WorkflowHistories
                 .CountAsync(wh => wh.ActorUserId == userId);
@@ -182,7 +186,7 @@ namespace Ideku.Data.Repositories
             var milestonesCount = await _context.Milestones
                 .Include(m => m.Idea)
                 .ThenInclude(i => i.InitiatorUser)
-                .CountAsync(m => m.Idea.InitiatorUserId == userId);
+                .CountAsync(m => m.Idea.InitiatorUserId == user.EmployeeId); // Changed: compare with EmployeeId
 
             return ideasCount + workflowHistoryCount + milestonesCount;
         }
