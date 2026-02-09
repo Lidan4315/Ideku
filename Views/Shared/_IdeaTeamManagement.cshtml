@@ -1,0 +1,297 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using Ideku.Models.Entities
+@model dynamic
+@{
+    var implementators = Model.Implementators as IEnumerable<IdeaImplementator> ?? Enumerable.Empty<IdeaImplementator>();
+    var isDisabled = Model.IsDisabled ?? false;
+    var availableUsers = Model.AvailableUsers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var allUsers = Model.AllUsers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var controllerName = Model.ControllerName as string ?? "Idea";
+    var ideaId = Model.IdeaId;
+
+    var leader = implementators.FirstOrDefault(i => i.Role == "Leader");
+    var members = implementators.Where(i => i.Role == "Member").ToList();
+    var hasTeam = leader != null || members.Any();
+}
+
+<!-- Team Assembly Card -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h5 class="m-0 font-weight-bold">
+            <i class="bi bi-people me-2"></i>Team Assembly
+        </h5>
+        <div class="d-flex gap-2">
+            @if (implementators.Any())
+            {
+                <button type="button" class="btn btn-sm btn-primary" onclick="openEditTeamModal()" @(isDisabled ? "disabled" : "")>
+                    <i class="bi bi-people"></i>
+                    <span class="d-none d-md-inline ms-1">Manage Team</span>
+                </button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addImplementatorModal" @(isDisabled ? "disabled" : "")>
+                    <i class="bi bi-plus-circle"></i>
+                    <span class="d-none d-md-inline ms-1">Add Member</span>
+                </button>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        @if (!hasTeam)
+        {
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-people" style="font-size: 2rem; opacity: 0.5;"></i>
+                <p class="mt-2 mb-0">No team assigned yet</p>
+            </div>
+        }
+        else
+        {
+            <!-- Leader Section -->
+            @if (leader != null)
+            {
+                <div class="form-group-view mb-4">
+                    <label>
+                        <i class="bi bi-star-fill text-warning me-2"></i>Leader
+                    </label>
+                    <p>@leader.User?.Name</p>
+                </div>
+            }
+
+            <!-- Members Section -->
+            @if (members.Any())
+            {
+                <!-- Members Label (only once) -->
+                <div class="form-group-view">
+                    <label>
+                        <i class="bi bi-people-fill text-primary me-2"></i>Members
+                    </label>
+                </div>
+
+                <!-- Individual Member Fields -->
+                @foreach (var member in members)
+                {
+                    <div class="form-group-view mb-3">
+                        <p>@member.User?.Name</p>
+                    </div>
+                }
+            }
+        }
+    </div>
+</div>
+
+<!-- Add Implementator Modal -->
+<div class="modal fade" id="addImplementatorModal" tabindex="-1" aria-labelledby="addImplementatorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="addImplementatorModalLabel">Add Team Member</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addImplementatorForm">
+                <div class="modal-body app-modal-body">
+                    <!-- Implementators -->
+                    <div class="mb-4">
+                        <label class="form-label">Team Assembly <span class="text-danger">*</span></label>
+
+                        <!-- Hidden inputs to store selected implementators -->
+                        <input type="hidden" name="selectedImplementators" id="selectedImplementatorsInput" />
+
+                        <!-- Button + Tags Interface - Same as Related Division with Role Selection -->
+                        <div class="tag-selection-container">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <!-- Add User Button -->
+                                @if (availableUsers.Any())
+                                {
+                                    <div class="dropdown position-relative">
+                                        <button type="button" class="btn dropdown-toggle tag-add-btn"
+                                                id="addImplementatorBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-person-plus me-2"></i>Select Member
+                                        </button>
+                                        <ul class="dropdown-menu implementator-dropdown" aria-labelledby="addImplementatorBtn" id="implementatorDropdown">
+                                            <!-- Search Input -->
+                                            <li class="dropdown-search-container">
+                                                <div class="px-3 py-2 border-bottom">
+                                                    <input type="text"
+                                                           class="form-control form-control-sm"
+                                                           id="implementatorSearch"
+                                                           placeholder="Search member by name or EMP_ID..."
+                                                           autocomplete="off">
+                                                </div>
+                                            </li>
+
+                                            <!-- User List -->
+                                            @foreach (var user in availableUsers)
+                                            {
+                                                <li class="implementator-item" data-search-text="@user.Text.ToLower()">
+                                                    <div class="dropdown-item-table" data-user-id="@user.Value" data-user-name="@user.Text">
+                                                        <div class="table-cell name-cell">
+                                                            <span class="user-name">@user.Text</span>
+                                                        </div>
+                                                        <button type="button" class="table-cell leader-cell role-btn"
+                                                                data-role="Leader" title="Assign as Leader">
+                                                            <i class="bi bi-star-fill text-warning"></i>
+                                                        </button>
+                                                        <button type="button" class="table-cell member-cell role-btn"
+                                                                data-role="Member" title="Assign as Member">
+                                                            <i class="bi bi-people-fill text-primary"></i>
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        No members available for assignment
+                                    </div>
+                                }
+
+                                <!-- Selected Implementators Tags -->
+                                <div id="selectedImplementatorTags" class="d-flex flex-wrap gap-2">
+                                    <!-- Tags will be dynamically added here -->
+                                </div>
+                            </div>
+
+                            <!-- Info message -->
+                            <div id="implementatorInfo" class="tag-info-message d-none">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong><span id="selectedImplementatorCount">0</span> member(s)</strong> selected. Only one Leader is allowed per idea.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Select members and assign roles. Each member can only have one role per idea.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Assign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Team Members Modal -->
+<div class="modal fade" id="editTeamModal" tabindex="-1" aria-labelledby="editTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content app-modal">
+            <div class="modal-header app-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="editTeamModalLabel">Edit Team Assembly</h5>
+                        <small class="text-white-50">Update team members and their roles</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editTeamForm">
+                <div class="modal-body app-modal-body">
+                    <!-- Team Members -->
+                    <div class="mb-4">
+                        <label class="form-label">Team Members</label>
+
+                        <!-- Hidden input to store selected implementators -->
+                        <input type="hidden" name="selectedEditImplementators" id="selectedEditImplementatorsInput" />
+
+                        <!-- Button + Tags Interface -->
+                        <div class="tag-selection-container">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <!-- Add User Button -->
+                                @if (allUsers.Any())
+                                {
+                                    <div class="dropdown position-relative">
+                                        <button type="button" class="btn dropdown-toggle tag-add-btn"
+                                                id="addEditImplementatorBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-person-plus me-2"></i>Add Member
+                                        </button>
+                                        <ul class="dropdown-menu implementator-dropdown" aria-labelledby="addEditImplementatorBtn" id="editImplementatorDropdown">
+                                            <!-- Search Input -->
+                                            <li class="dropdown-search-container">
+                                                <div class="px-3 py-2 border-bottom">
+                                                    <input type="text"
+                                                           class="form-control form-control-sm"
+                                                           id="editImplementatorSearch"
+                                                           placeholder="Search member by name or EMP_ID..."
+                                                           autocomplete="off">
+                                                </div>
+                                            </li>
+
+                                            <!-- User List -->
+                                            @foreach (var user in allUsers)
+                                            {
+                                                <li class="edit-implementator-item" data-search-text="@user.Text.ToLower()">
+                                                    <div class="dropdown-item-table" data-user-id="@user.Value" data-user-name="@user.Text">
+                                                        <div class="table-cell name-cell">
+                                                            <span class="user-name">@user.Text</span>
+                                                        </div>
+                                                        <button type="button" class="table-cell leader-cell edit-role-btn"
+                                                                data-role="Leader" title="Assign as Leader">
+                                                            <i class="bi bi-star-fill text-warning"></i>
+                                                        </button>
+                                                        <button type="button" class="table-cell member-cell edit-role-btn"
+                                                                data-role="Member" title="Assign as Member">
+                                                            <i class="bi bi-people-fill text-primary"></i>
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+
+                                <!-- Selected Implementators Tags -->
+                                <div id="selectedEditImplementatorTags" class="d-flex flex-wrap gap-2">
+                                    <!-- Tags will be dynamically added here -->
+                                </div>
+                            </div>
+
+                            <!-- Info message -->
+                            <div id="editImplementatorInfo" class="tag-info-message d-none">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong><span id="selectedEditImplementatorCount">0</span> member(s)</strong> selected. Only one Leader is allowed per idea.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Add or remove team members. Click on role icons to assign new members.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer app-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="bi bi-check-circle me-2"></i>Update Team
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
