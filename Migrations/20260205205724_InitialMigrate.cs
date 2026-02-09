@@ -283,6 +283,7 @@ namespace Ideku.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
+                    table.UniqueConstraint("AK_Users_EmployeeId", x => x.EmployeeId);
                     table.ForeignKey(
                         name: "FK_Users_Departments_ActingDepartmentId",
                         column: x => x.ActingDepartmentId,
@@ -321,7 +322,7 @@ namespace Ideku.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    InitiatorUserId = table.Column<long>(type: "bigint", nullable: false),
+                    InitiatorUserId = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
                     ToDivisionId = table.Column<string>(type: "char(3)", maxLength: 3, nullable: false),
                     ToDepartmentId = table.Column<string>(type: "char(3)", maxLength: 3, nullable: false),
                     CategoryId = table.Column<int>(type: "int", nullable: false),
@@ -377,7 +378,7 @@ namespace Ideku.Migrations
                         name: "FK_Ideas_Users_InitiatorUserId",
                         column: x => x.InitiatorUserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
+                        principalColumn: "EmployeeId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Ideas_Workflows_WorkflowId",

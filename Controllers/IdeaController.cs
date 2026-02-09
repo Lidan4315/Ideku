@@ -13,6 +13,7 @@ using Ideku.Services.Lookup;
 using Ideku.Services.Milestone;
 using Ideku.Services.IdeaMonitoring;
 using Ideku.Services.Notification;
+using Ideku.Data.Repositories;
 
 namespace Ideku.Controllers
 {
@@ -26,6 +27,7 @@ namespace Ideku.Controllers
         private readonly IMilestoneService _milestoneService;
         private readonly IIdeaMonitoringService _monitoringService;
         private readonly INotificationCoordinatorService _notificationCoordinator;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<IdeaController> _logger;
 
         public IdeaController(
@@ -36,6 +38,7 @@ namespace Ideku.Controllers
             IMilestoneService milestoneService,
             IIdeaMonitoringService monitoringService,
             INotificationCoordinatorService notificationCoordinator,
+            IUserRepository userRepository,
             ILogger<IdeaController> logger)
         {
             _ideaService = ideaService;
@@ -45,6 +48,7 @@ namespace Ideku.Controllers
             _implementatorService = implementatorService;
             _monitoringService = monitoringService;
             _notificationCoordinator = notificationCoordinator;
+            _userRepository = userRepository;
             _logger = logger;
         }
 
@@ -70,14 +74,13 @@ namespace Ideku.Controllers
                 // Controller populates ViewModel (presentation concern)
                 var viewModel = new CreateIdeaViewModel
                 {
-                    InitiatorUserId = user.Id, // Fallback if badge lookup fails
+                    InitiatorUserId = user.EmployeeId,
                     BadgeNumber = "",
                     EmployeeName = "",
                     Position = "",
                     Email = "",
                     EmployeeId = "",
 
-                    // Populate dropdown lists from LookupService
                     DivisionList = await _lookupService.GetDivisionsAsync(),
                     CategoryList = await _lookupService.GetCategoriesAsync(),
                     EventList = await _lookupService.GetEventsAsync(),
@@ -129,7 +132,7 @@ namespace Ideku.Controllers
                 // Controller maps ViewModel → Entity
                 var idea = new Models.Entities.Idea
                 {
-                    InitiatorUserId = initiatorUser.Id,
+                    InitiatorUserId = initiatorUser.EmployeeId, // Changed: FK to EmployeeId (badge number)
                     ToDivisionId = model.ToDivisionId,
                     ToDepartmentId = model.ToDepartmentId,
                     CategoryId = model.CategoryId,
@@ -479,6 +482,13 @@ namespace Ideku.Controllers
                 var canEdit = await _monitoringService.CanEditCostSavingsAsync(id, username);
                 var canValidate = await _monitoringService.CanValidateCostSavingsAsync(username);
 
+                // Get available users for team assignment
+                var availableUsers = await _implementatorService.GetAvailableUsersForAssignmentAsync(id);
+                var allUsers = await _implementatorService.GetAllUsersAsync();
+
+                // Get current user for role checking
+                var user = await _userRepository.GetByUsernameAsync(username);
+
                 // Create view model with idea and all related data
                 var viewModel = new MyIdeasDetailViewModel
                 {
@@ -488,13 +498,34 @@ namespace Ideku.Controllers
                     WorkflowHistory = workflowHistory,
                     Monitorings = monitorings.ToList(),
                     CanEditCostSavings = false, // Always false for My Ideas page (read-only)
-                    CanValidateCostSavings = false // Always false for My Ideas page (read-only)
+                    CanValidateCostSavings = false, // Always false for My Ideas page (read-only)
+                    AvailableUsers = availableUsers.Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                    {
+                        Value = GetUserProperty(u, "id")?.ToString(),
+                        Text = GetUserProperty(u, "displayText")?.ToString()
+                    }).ToList(),
+                    AllUsers = allUsers.Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                    {
+                        Value = GetUserProperty(u, "id")?.ToString(),
+                        Text = GetUserProperty(u, "displayText")?.ToString()
+                    }).ToList()
                 };
 
                 // Pass dropdown data to view for edit modal
                 ViewBag.Divisions = await _lookupService.GetDivisionsAsync();
                 ViewBag.Categories = await _lookupService.GetCategoriesAsync();
                 ViewBag.Events = await _lookupService.GetEventsAsync();
+
+                // Set user role for reactivate button permission
+                ViewBag.UserRole = user?.Role?.RoleName ?? "";
+
+                // CASE 1: Inactive Idea (Auto-Rejected - 60 Days Without Approval)
+                ViewBag.IsInactive = idea.IsRejected && idea.CurrentStatus == "Inactive";
+                ViewBag.ShowReactivateButton = (user?.Role?.RoleName == "Superuser" && ViewBag.IsInactive);
+
+                // CASE 2: Rejected Idea (Manually Rejected by Approver)
+                ViewBag.IsRejected = idea.IsRejected && idea.CurrentStatus.StartsWith("Rejected S");
+                ViewBag.ShowReactivateRejectedButton = (user?.Role?.RoleName == "Superuser" && ViewBag.IsRejected);
 
                 return View(viewModel);
             }
@@ -693,6 +724,90 @@ namespace Ideku.Controllers
                 _logger.LogError(ex, "Error deleting idea: {IdeaId}", id);
                 return Json(new { success = false, message = $"Error deleting idea: {ex.Message}" });
             }
+        }
+
+        // AJAX: Assign multiple implementators in a single transaction
+        [HttpPost]
+        public async Task<JsonResult> AssignMultipleImplementators([FromBody] AssignMultipleImplementatorsRequest request)
+        {
+            try
+            {
+                if (request == null || request.Implementators == null || !request.Implementators.Any())
+                {
+                    return Json(new { success = false, message = "No implementators provided." });
+                }
+
+                // Convert DTO to tuple list
+                var implementators = request.Implementators
+                    .Select(i => (i.UserId, i.Role))
+                    .ToList();
+
+                var result = await _implementatorService.AssignMultipleImplementatorsAsync(
+                    User.Identity!.Name!,
+                    request.IdeaId,
+                    implementators);
+
+                if (result.Success)
+                {
+                    // Send notification emails to next stage approvers in background
+                    _notificationCoordinator.NotifyNextStageApproversInBackground(request.IdeaId);
+
+                    _logger.LogInformation("Successfully assigned {Count} implementators to idea {IdeaId} by {Username}",
+                        implementators.Count, request.IdeaId, User.Identity!.Name);
+                }
+
+                return Json(new { success = result.Success, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assigning multiple implementators to idea {IdeaId}", request?.IdeaId);
+                return Json(new { success = false, message = "An error occurred while assigning implementators." });
+            }
+        }
+
+        // AJAX: Update team implementators (remove + add in single transaction)
+        [HttpPost]
+        public async Task<JsonResult> UpdateTeamImplementators([FromBody] UpdateTeamImplementatorsRequest request)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return Json(new { success = false, message = "Invalid request." });
+                }
+
+                // Convert DTO to tuple list
+                var implementatorsToAdd = request.ImplementatorsToAdd
+                    .Select(i => (i.UserId, i.Role))
+                    .ToList();
+
+                var result = await _implementatorService.UpdateTeamImplementatorsAsync(
+                    User.Identity!.Name!,
+                    request.IdeaId,
+                    request.ImplementatorsToRemove,
+                    implementatorsToAdd);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Successfully updated team for idea {IdeaId}: removed {RemovedCount}, added {AddedCount} by {Username}",
+                        request.IdeaId, request.ImplementatorsToRemove.Count, implementatorsToAdd.Count, User.Identity!.Name);
+                }
+
+                return Json(new { success = result.Success, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating team implementators for idea {IdeaId}", request?.IdeaId);
+                return Json(new { success = false, message = "An error occurred while updating team implementators." });
+            }
+        }
+
+        // Helper method to get property from anonymous object
+        private object? GetUserProperty(object user, string propertyName)
+        {
+            var type = user.GetType();
+            var property = type.GetProperty(propertyName);
+            return property?.GetValue(user);
         }
     }
 }

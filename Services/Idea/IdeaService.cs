@@ -81,7 +81,7 @@ namespace Ideku.Services.Idea
                 }
 
                 // Validate InitiatorUser exists (strict validation - no fallback)
-                var initiatorUser = await _userRepository.GetByIdAsync(idea.InitiatorUserId);
+                var initiatorUser = await _userRepository.GetByEmployeeIdAsync(idea.InitiatorUserId); // Changed: use EmployeeId
                 if (initiatorUser == null)
                 {
                     return (false, "Initiator user not found in the system. Please contact administrator.", null);
@@ -166,7 +166,7 @@ namespace Ideku.Services.Idea
 
             // Get base queryable with all necessary includes
             return _ideaRepository.GetQueryableWithIncludes()
-                .Where(idea => idea.InitiatorUserId == user.Id)
+                .Where(idea => idea.InitiatorUserId == user.EmployeeId) // Changed: compare with EmployeeId
                 .OrderByDescending(idea => idea.SubmittedDate)
                 .ThenByDescending(idea => idea.Id);
         }
@@ -1865,7 +1865,7 @@ namespace Ideku.Services.Idea
                 }
 
                 // Authorization: Only allow initiator or Superuser to delete
-                if (idea.InitiatorUserId != user.Id && user.Role.RoleName != "Superuser")
+                if (idea.InitiatorUserId != user.EmployeeId && user.Role.RoleName != "Superuser") // Changed: compare with EmployeeId
                 {
                     return (false, "You are not authorized to delete this idea.");
                 }

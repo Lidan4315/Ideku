@@ -81,7 +81,7 @@ namespace Ideku.ViewModels.MyIdeas
 
         // Hidden fields
         public string IdeaCode { get; set; } = string.Empty;
-        public long InitiatorUserId { get; set; }
+        public string InitiatorUserId { get; set; } = string.Empty; // Changed: string (badge number)
         public string EmployeeId { get; set; } = string.Empty;
     }
 }
