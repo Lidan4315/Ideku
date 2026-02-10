@@ -23,5 +23,13 @@ namespace Ideku.Data.Repositories.IdeaImplementators
         /// <param name="ideaId">Idea ID</param>
         /// <returns>Count of members assigned to the idea</returns>
         Task<int> GetMemberCountAsync(long ideaId);
+
+        /// <summary>
+        /// Check if user is assigned as Leader for an idea
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="ideaId">Idea ID</param>
+        /// <returns>True if user is leader, false otherwise</returns>
+        Task<bool> IsUserLeaderOfIdeaAsync(long userId, long ideaId);
     }
 }

@@ -427,5 +427,61 @@ namespace Ideku.Services.IdeaImplementators
                 return (false, "An error occurred while updating team implementators.");
             }
         }
+
+        public async Task<bool> CanManageTeamAsync(string username, long ideaId)
+        {
+            try
+            {
+                // Get the current user
+                var user = await _userRepository.GetByUsernameAsync(username);
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found: Username={Username}", username);
+                    return false;
+                }
+
+                // Get the idea
+                var idea = await _ideaRepository.GetByIdAsync(ideaId);
+                if (idea == null)
+                {
+                    _logger.LogWarning("Idea not found: IdeaId={IdeaId}", ideaId);
+                    return false;
+                }
+
+                // Check if user is Superuser
+                if (user.Role?.RoleName == "Superuser")
+                {
+                    return true;
+                }
+
+                // Check if user is the initiator (by EmployeeId/badge number)
+                if (idea.InitiatorUserId == user.EmployeeId)
+                {
+                    return true;
+                }
+
+                // Check if user is the team leader
+                var isLeader = await _implementatorRepository.IsUserLeaderOfIdeaAsync(user.Id, ideaId);
+                if (isLeader)
+                {
+                    return true;
+                }
+
+                // Check if user is Workstream Leader from the same department
+                var workstreamLeaders = await _userRepository.GetWorkstreamLeadersByDepartmentAsync(idea.ToDepartmentId);
+                if (workstreamLeaders.Any(wl => wl.Id == user.Id))
+                {
+                    return true;
+                }
+
+                _logger.LogInformation("User not authorized to manage team: Username={Username}, IdeaId={IdeaId}", username, ideaId);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking team management authorization: Username={Username}, IdeaId={IdeaId}", username, ideaId);
+                return false;
+            }
+        }
     }
 }
