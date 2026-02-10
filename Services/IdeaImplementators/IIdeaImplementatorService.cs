@@ -80,5 +80,14 @@ namespace Ideku.Services.IdeaImplementators
             long ideaId,
             List<long> implementatorsToRemove,
             List<(long UserId, string Role)> implementatorsToAdd);
+
+        /// <summary>
+        /// Check if user is authorized to manage team for an idea
+        /// User is authorized if they are: Initiator, Superuser, or Team Leader
+        /// </summary>
+        /// <param name="username">Username to check authorization</param>
+        /// <param name="ideaId">Idea ID</param>
+        /// <returns>True if authorized, false otherwise</returns>
+        Task<bool> CanManageTeamAsync(string username, long ideaId);
     }
 }

@@ -89,5 +89,11 @@ namespace Ideku.Data.Repositories.IdeaImplementators
                 .Where(ii => ii.IdeaId == ideaId && ii.Role == "Member")
                 .CountAsync();
         }
+
+        public async Task<bool> IsUserLeaderOfIdeaAsync(long userId, long ideaId)
+        {
+            return await _context.IdeaImplementators
+                .AnyAsync(ii => ii.IdeaId == ideaId && ii.UserId == userId && ii.Role == "Leader");
+        }
     }
 }

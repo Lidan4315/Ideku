@@ -395,6 +395,19 @@ namespace Ideku.Controllers
                     return Json(new { success = false, message = "No implementators provided." });
                 }
 
+                // Authorization: Check if user can manage team
+                var username = User.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return Json(new { success = false, message = "User not authenticated." });
+                }
+
+                var canManage = await _implementatorService.CanManageTeamAsync(username, request.IdeaId);
+                if (!canManage)
+                {
+                    return Json(new { success = false, unauthorized = true, message = "You don't have permission to add members." });
+                }
+
                 // Convert DTO to tuple list
                 var implementators = request.Implementators
                     .Select(i => (i.UserId, i.Role))
@@ -432,6 +445,19 @@ namespace Ideku.Controllers
                 if (request == null)
                 {
                     return Json(new { success = false, message = "Invalid request." });
+                }
+
+                // Authorization: Check if user can manage team
+                var username = User.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return Json(new { success = false, message = "User not authenticated." });
+                }
+
+                var canManage = await _implementatorService.CanManageTeamAsync(username, request.IdeaId);
+                if (!canManage)
+                {
+                    return Json(new { success = false, unauthorized = true, message = "You don't have permission to manage team" });
                 }
 
                 // Convert DTO to tuple list

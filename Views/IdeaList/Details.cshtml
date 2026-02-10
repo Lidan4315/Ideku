@@ -230,8 +230,8 @@ $(document).ready(function() {
                     });
                 } else {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
+                        icon: response.unauthorized ? 'warning' : 'error',
+                        title: response.unauthorized ? 'Access Denied!' : 'Error!',
                         text: response.message,
                         confirmButtonColor: '#3b82f6'
                     });
@@ -920,8 +920,8 @@ function processTeamChanges(toAdd, toRemove, submitBtn, originalText) {
                 });
             } else {
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
+                    icon: response.unauthorized ? 'warning' : 'error',
+                    title: response.unauthorized ? 'Access Denied!' : 'Error!',
                     text: response.message,
                     confirmButtonColor: '#3b82f6'
                 });
